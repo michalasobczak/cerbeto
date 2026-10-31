@@ -2,6 +2,8 @@
 name = "cerbeto"
 version = "0.1.0"
 description = "Cerbeto — a tiny neural network that grows up from random weights."
+license = "LicenseRef-PolyForm-Noncommercial-1.0.0"
+license-files = ["../LICENSE.md"]
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "numpy>=2.1",

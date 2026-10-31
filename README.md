@@ -91,3 +91,10 @@ Smoke-train a fresh student for 30 minutes:
 ```bash
 uv run cerbeto train --smoke --minutes 30
 ```
+
+## License
+Cerbeto — its concept, specifications and code — © 2026 Michał Sobczak.
+
+Licensed under the **[PolyForm Noncommercial License 1.0.0](LICENSE.md)**: you may read, run, modify, fork and share it for any **noncommercial** purpose (personal projects, research, education, hobby), keeping the copyright notice. **Commercial use requires the author's written permission** — please get in touch via [GitHub](https://github.com/michalasobczak).
+
+The school library is not part of this repository; its corpora keep their own licences (BabyLM — MIT, TinyStories — CDLA-Sharing-1.0, Wikipedia — CC BY-SA 4.0, FineWeb-Edu — ODC-By 1.0), recorded in each shelf's `manifest.json`.
