@@ -8,11 +8,13 @@ accumulation: 2               # effective batch 16 × 512
 lr: 0.002
 min_lr_ratio: 0.1
 warmup_steps: 500
+rewarm_steps: 200            # after each growth: short warm-up, then a fresh cosine segment
+rewarm_peak_ratio: 0.7       # segment peak = 70% of lr
 weight_decay: 0.1
 grad_clip: 1.0
 activation_checkpointing: false   # the 32 GB Mac has room; needed only on 16 GB machines (spec 0002 G5)
 eval_every_tokens: 5000000
-eval_batches: 8               # fixed validation batches per shelf
+eval_batches: 32              # fixed validation batches per shelf (~130k tokens) — growth decisions hinge on ~1% changes
 checkpoint_every_minutes: 30
 seed: 0
 
@@ -27,6 +29,7 @@ growth:
   plateau_windows: 3          # grow when validation loss improved < min_improvement over this many evals
   min_improvement: 0.01
   min_tokens_between: 20000000
+  deadlines_tokens: [60000000, 120000000, 180000000, 240000000]   # grow at the latest here, so the student reaches 29.9M
   schedule:                   # 6.9M → 14.0M → 15.8M → 26.7M → 29.9M
     - [{op: grow_model_dim, new_d: 384}, {op: grow_width, extra_heads: 4, extra_mlp: 352}]
     - [{op: grow_depth}]

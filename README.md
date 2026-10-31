@@ -13,7 +13,7 @@ The project uses **[Rondo](https://workwithrondo.com)** as its reference enginee
 - [MANIFESTO.md](MANIFESTO.md) is the engineering manifesto — implementation principles applied to every specification.
 
 ## Current state (2026-10-31)
-- Specifications 0001–0007 written; **0001** (school library and tokenizer) and **0002** (student architecture and growth) delivered — 0001 G5 (human review of shelf samples) pending. **0003** nursery in progress: the growing student is learning to talk (300M tokens, ~10–14 h on the M1 Pro).
+- Specifications 0001–0007 written; **0001** (school library and tokenizer) and **0002** (student architecture and growth) delivered — 0001 G5 (human review of shelf samples) pending. **0003** nursery in progress: the growing student is learning to talk (300M tokens, growing 6.9M → 29.9M on the way; ~15 h on the M1 Pro).
 - School library downloaded offline into `data/library/` (outside git): BabyLM-2026-Strict, TinyStories V2, Simple English Wikipedia, FineWeb-Edu (1 shard) — about 4.8 GB.
 - Shelves built (`data/shelves/`): stage 0 has 628M training tokens (speech 84M, stories 544M); stages 1–3: books 37M, world 0.8M, edu 4.4M.
 - Own BPE tokenizer: 8192 tokens, 1.24 tokens/word on TinyStories.

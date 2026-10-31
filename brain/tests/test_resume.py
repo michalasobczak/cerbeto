@@ -1,6 +1,8 @@
 """Gate G1 (spec 0003): resuming from a checkpoint gives the same next batch and the same loss."""
 import copy
 
+import pytest
+
 import numpy as np
 import torch
 
@@ -57,3 +59,30 @@ def test_growth_on_plateau_follows_schedule(tmp_path):
     t.step()  # the transplanted optimizer trains the grown student
     t.grow()  # schedule exhausted → no-op
     assert t.state["growth_index"] == 1
+
+
+def test_growth_restarts_the_learning_rate_segment(tmp_path):
+    _fake_shelves(tmp_path / "shelves", TINY.vocab_size)
+    t = _trainer(tmp_path)
+    t.cfg["growth"]["schedule"] = [[{"op": "grow_depth"}]]
+    for _ in range(5):
+        t.step()
+    t.state["tokens"] = 90_000  # late in training: the cosine has nearly decayed
+    late = t.lr()
+    t.grow("deadline")
+    assert t.state["segment"]["start_tokens"] == 90_000
+    assert t.lr() < late  # the re-warm starts gently, protecting the old weights
+    t.state["step"] += t.cfg["rewarm_steps"]
+    assert t.lr() == pytest.approx(t.cfg["lr"] * t.cfg["rewarm_peak_ratio"], rel=1e-6)  # back near 70% of the peak
+
+
+def test_deadline_forces_growth_without_plateau(tmp_path):
+    _fake_shelves(tmp_path / "shelves", TINY.vocab_size)
+    t = _trainer(tmp_path)
+    t.cfg["growth"]["deadlines_tokens"] = [1_000]
+    assert not t.deadline_reached()
+    t.state["tokens"] = 1_000
+    assert t.deadline_reached() and not t.plateau()
+    t.cfg["growth"]["schedule"] = [[{"op": "grow_depth"}]]
+    t.grow("deadline")
+    assert not t.deadline_reached()  # next deadline does not exist

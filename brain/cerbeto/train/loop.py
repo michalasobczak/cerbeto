@@ -54,7 +54,8 @@ class Trainer:
         self.opt = self._optimizer(self.model)
         self.rng = np.random.default_rng(cfg["seed"])
         self.state = {"step": 0, "tokens": 0, "growth_index": 0, "evals": [], "last_growth_tokens": 0,
-                      "version": 0}
+                      "version": 0, "segment": {"start_step": 0, "start_tokens": 0, "peak": cfg["lr"],
+                                                "warmup": cfg["warmup_steps"]}}
         self.model.checkpointing = cfg["activation_checkpointing"]
 
     def _optimizer(self, model: Student) -> torch.optim.AdamW:
@@ -72,10 +73,14 @@ class Trainer:
         return self.cfg["phases"][-1]
 
     def lr(self) -> float:
-        warm = min(1.0, (self.state["step"] + 1) / self.cfg["warmup_steps"])
-        frac = min(1.0, self.state["tokens"] / self.cfg["total_tokens"])
-        floor = self.cfg["min_lr_ratio"]
-        return self.cfg["lr"] * warm * (floor + (1 - floor) * 0.5 * (1 + math.cos(math.pi * frac)))
+        """Warm-up + cosine within the current segment. Every growth starts a new segment (re-warm to
+        `rewarm_peak_ratio` · lr, then decay to the floor by the end of training) so new neurons can learn."""
+        seg = self.state["segment"]
+        warm = min(1.0, (self.state["step"] - seg["start_step"] + 1) / seg["warmup"])
+        span = max(1, self.cfg["total_tokens"] - seg["start_tokens"])
+        frac = min(1.0, (self.state["tokens"] - seg["start_tokens"]) / span)
+        floor = self.cfg["lr"] * self.cfg["min_lr_ratio"]
+        return warm * (floor + (seg["peak"] - floor) * 0.5 * (1 + math.cos(math.pi * frac)))
 
     def next_batch(self) -> tuple[torch.Tensor, int]:
         mix = self.phase()["mix"]
@@ -110,6 +115,11 @@ class Trainer:
         out["mean"] = float(np.mean(list(out.values())))
         return out
 
+    def deadline_reached(self) -> bool:
+        deadlines = self.cfg["growth"].get("deadlines_tokens", [])
+        i = self.state["growth_index"]
+        return i < len(deadlines) and self.state["tokens"] >= deadlines[i]
+
     def plateau(self) -> bool:
         g = self.cfg["growth"]
         losses = [e["mean"] for e in self.state["evals"]]
@@ -118,7 +128,7 @@ class Trainer:
             return False
         return (losses[-w - 1] - losses[-1]) / losses[-w - 1] < g["min_improvement"]
 
-    def grow(self) -> None:
+    def grow(self, trigger: str = "plateau") -> None:
         schedule = self.cfg["growth"]["schedule"]
         if self.state["growth_index"] >= len(schedule):
             return
@@ -130,7 +140,7 @@ class Trainer:
                     kwargs["std"] = self.new_std
                 model = growth.apply(model, op["op"], self.probe, k=self.k_eval, max_params=self.max_params,
                                      max_delta_loss=self.max_delta_loss, log_path=self.growth_log,
-                                     reason=f"plateau at {self.state['tokens']:,} tokens", **kwargs)
+                                     reason=f"{trigger} at {self.state['tokens']:,} tokens", **kwargs)
         except growth.GrowthRejected as e:
             self.log(event="growth_rejected", error=str(e))
             self.state["last_growth_tokens"] = self.state["tokens"]
@@ -140,7 +150,10 @@ class Trainer:
         self.model = model
         self.state["growth_index"] += 1
         self.state["last_growth_tokens"] = self.state["tokens"]
-        self.log(event="growth", params=model.num_params(), config=model.cfg.to_dict())
+        self.state["segment"] = {"start_step": self.state["step"], "start_tokens": self.state["tokens"],
+                                 "peak": self.cfg["lr"] * self.cfg["rewarm_peak_ratio"],
+                                 "warmup": self.cfg["rewarm_steps"]}
+        self.log(event="growth", trigger=trigger, params=model.num_params(), config=model.cfg.to_dict())
 
     # --- persistence ----------------------------------------------------------------------------
     def log(self, **row) -> None:
@@ -202,8 +215,10 @@ class Trainer:
                 rate = (self.state["tokens"] - tok0) / (time.time() - t0)
                 self.log(event="eval", train_loss=loss, valid=ev, lr=self.lr(), params=self.model.num_params(),
                          phase=self.phase()["name"], tokens_per_s=round(rate))
-                if self.grows and self.plateau():
-                    self.grow()
+                if self.grows and self.deadline_reached():
+                    self.grow("deadline")
+                elif self.grows and self.plateau():
+                    self.grow("plateau")
             if time.time() - last_save >= self.cfg["checkpoint_every_minutes"] * 60:
                 self.log(event="checkpoint", path=str(self.save()))
                 last_save = time.time()

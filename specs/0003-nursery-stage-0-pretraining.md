@@ -1,6 +1,6 @@
 # 0003 — Nursery: language learning (stage 0) and baseline measurement
 
-Status: in progress (growing student training since 2026-10-31 20:46) · Depends on: 0001, 0002 · Unblocks: 0005
+Status: in progress (growing student training since 2026-10-31 21:55, attempt 2) · Depends on: 0001, 0002 · Unblocks: 0005
 
 ## 1. TL;DR
 We teach the student to speak English on the stage 0 shelves (child-directed speech → simple stories), in parallel with a control student of fixed size 30M. Speech is kept as a **conversation with roles** (adult `<|human|>` ↔ child `<|student|>`), so turn-taking is learned from day one. Proof: the nursery exam (BLiMP + a conversation probe) and a recorded baseline measurement for all grades 1–3.
@@ -30,6 +30,8 @@ The student starts with random weights, so before it begins lessons with a teach
 | Control (fixed 30M) | 12–15 h |
 | Total | ~20 h — fits within the limit, small margin |
 
+**Attempt 1 (20:46–21:50) was stopped at 52.9M tokens** (mean validation loss 9.07 → 3.66, no growth yet): the trend showed the plateau rule alone would leave the student at ~15M by the end, which would make the control comparison meaningless. Attempt 2 adds growth deadlines, learning-rate re-warm and larger validation; expected end ~12:00–14:00 on 2026-11-01. Logs of attempt 1: `runs/nursery/attempt1/`.
+
 **Measured throughput (2026-10-31, M1 Pro, fp32, micro-batch 8 × 512, accumulation 2, no activation checkpointing):** growing student at 6.9M — ~12.6k tokens/s; control student at 29.9M — ~3.3k tokens/s. Revised estimate for 300M tokens: growing ~10–14 h (slows down as it grows), control **~25 h**. Together ~35–40 h → exceeds the 24 h criterion; the control student runs separately (e.g. over a weekend) on the same 300M tokens, so comparability is kept.
 
 The students are trained **sequentially** (first the growing one, then the control one), e.g. over two nights; simultaneous training would share the same GPU with no gain. Precision per 0002: **fp32** (G6 measured fp16 as slower on M1 Pro). Training uses activation checkpointing and micro-batches of 8 × 512 with gradient accumulation (0002 memory measurement); its ~30% speed cost is not yet in the time budget above — re-estimate after the first hour of the real run.
@@ -51,7 +53,9 @@ The students are trained **sequentially** (first the growing one, then the contr
 ## 5. Functional Domain Changes
 **Rules:**
 - The control student differs only by the absence of growth/pruning; the data seed is identical.
-- Growth in the nursery is allowed when the validation loss decreases by < 1% over 3 consecutive evaluation windows.
+- Growth in the nursery happens when the validation loss decreases by < 1% over 3 consecutive evaluation windows (at least 20M tokens after the previous growth) **or at the latest at a deadline: 60M, 120M, 180M and 240M tokens**. The deadlines guarantee the growing student reaches 29.9M before the end of the nursery, so the comparison with the control student is about *growing*, not about *final size*.
+- After every growth the learning rate starts a new segment: 200-step re-warm to 70% of the peak, then cosine decay to the floor by the end of training — new neurons need a usable learning rate to learn.
+- Growth decisions use 32 fixed validation batches per shelf (~130k tokens) — the plateau test hinges on ~1% changes.
 - Checkpoint every 30 min and at the end of each phase; every checkpoint is a version (manifesto §4).
 - The nursery exam runs on a validation set the student has not seen.
 
