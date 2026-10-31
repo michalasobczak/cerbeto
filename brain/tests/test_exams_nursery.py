@@ -41,3 +41,15 @@ def test_blimp_prefers_higher_logprob_sentence(monkeypatch):
     monkeypatch.setattr(blimp, "sentence_logprobs",
                         lambda m, s, k, d: [-1.0 if x.startswith("good") else -5.0 for x in s])
     assert blimp.evaluate(None, 1, "cpu")["accuracy"] == 1.0
+
+
+@pytest.mark.skipif(not (paths.LIBRARY / "blimp").exists(), reason="BLiMP not downloaded")
+def test_blimp_excludes_pairs_seen_in_training(tmp_path, monkeypatch):
+    """Gate N1 (spec 0003): an exam pair whose sentence occurs in training data is never scored."""
+    import json
+    from cerbeto.exams import blimp
+    good, bad = next(iter(blimp._all_pairs().values()))[0]
+    leaked = tmp_path / "leaked.json"
+    leaked.write_text(json.dumps([blimp._norm(good)]))
+    monkeypatch.setattr(blimp, "LEAKED", leaked)
+    assert all((good, bad) != p for ps in blimp.pairs().values() for p in ps)

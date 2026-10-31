@@ -73,7 +73,7 @@ The students are trained **sequentially** (first the growing one, then the contr
 | G6 | Unit | `s0_speech`: in CHILDES every child turn starts with `<|student|>`, every adult turn with `<|human|>`; the tokenizer keeps both as single tokens | `pytest tests/test_shelves.py` | full run |
 | G4 | Integration | Baseline measurement for grades 1–3 recorded for both students (runs on the saved post-nursery checkpoints once 0004 exam pools exist) | file `runs/nursery/baseline.json` | 0005 |
 | G5 | Manual | 20 random student utterances readable by a human | review | 0007 |
-| N1 | Negative | No exam example (BLiMP, grades 1–3) appears in the training data | hash check | G2–G4 |
+| N1 | Negative | No exam example (BLiMP, grades 1–3) that appears in the training data is scored: the leak check records every BLiMP sentence found verbatim (normalized) in the stage 0 shelves, and those pairs are excluded from the exam (first check: 1,495 of 119,704 sentences, mostly simple TinyStories sentences — ~1.2%) | `cerbeto exam` leak check + `pytest tests/test_exams_nursery.py` | G2–G4 |
 
 ## 8. Expected Outcome
 - **Direct:** a student speaking simple English.

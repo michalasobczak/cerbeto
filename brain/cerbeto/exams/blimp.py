@@ -13,14 +13,22 @@ from cerbeto.model.student import Student
 from cerbeto.tokenizer import load as load_tokenizer
 
 BLIMP = paths.LIBRARY / "blimp"
+LEAKED = BLIMP / "leaked_sentences.json"  # written by check_leak; such pairs are excluded from the exam
 
 
-def pairs(limit_per_phenomenon: int | None = None) -> dict[str, list[tuple[str, str]]]:
+def _all_pairs() -> dict[str, list[tuple[str, str]]]:
     out = {}
     for f in sorted(BLIMP.glob("*/train-*.parquet")):
         rows = pq.read_table(f, columns=["sentence_good", "sentence_bad"]).to_pylist()
-        out[f.parent.name] = [(r["sentence_good"], r["sentence_bad"]) for r in rows][:limit_per_phenomenon]
+        out[f.parent.name] = [(r["sentence_good"], r["sentence_bad"]) for r in rows]
     return out
+
+
+def pairs(limit_per_phenomenon: int | None = None) -> dict[str, list[tuple[str, str]]]:
+    """Minimal pairs for the exam — without any pair whose sentence occurs in the training data."""
+    leaked = set(json.loads(LEAKED.read_text())) if LEAKED.exists() else set()
+    return {ph: [p for p in ps if _norm(p[0]) not in leaked and _norm(p[1]) not in leaked][:limit_per_phenomenon]
+            for ph, ps in _all_pairs().items()}
 
 
 @torch.no_grad()
@@ -60,14 +68,18 @@ def _norm(s: str) -> str:
 
 def check_leak(shelves: list[str]) -> dict:
     """Gate N1 (spec 0003): count BLiMP sentences that occur verbatim (normalized) in the training shelves."""
-    targets = {_norm(s) for ps in pairs().values() for pair in ps for s in pair}
-    hits = defaultdict(int)
+    targets = {_norm(s) for ps in _all_pairs().values() for pair in ps for s in pair}
+    hits, leaked = defaultdict(int), set()
     splitter = re.compile(r"(?<=[.!?])\s+|\n")
     for shelf in shelves:
         with (paths.SHELVES / shelf / "train.jsonl").open() as f:
             for line in f:
                 text = json.loads(line)["text"].replace("<|human|>", "").replace("<|student|>", "")
                 for sentence in splitter.split(text):
-                    if _norm(sentence) in targets:
+                    if (n := _norm(sentence)) in targets:
                         hits[shelf] += 1
-    return {"blimp_sentences": len(targets), "hits": dict(hits)}
+                        leaked.add(n)
+    LEAKED.write_text(json.dumps(sorted(leaked)))
+    excluded = sum(len(ps) for ps in _all_pairs().values()) - sum(len(ps) for ps in pairs().values())
+    return {"blimp_sentences": len(targets), "hits": dict(hits), "leaked_unique": len(leaked),
+            "pairs_excluded": excluded}
