@@ -29,3 +29,4 @@ The input document from which specifications 0001–0007 were derived. It is not
 | 14 | Default teacher: **`nemotron-3.5-bolt:e4b`** (7.2 GB, ~36 tok/s, the same on 32 and 16 GB); fallback `qwen3.8:27b-mlx` | 0005, 0007 |
 | 15 | Day/sleep rhythm **sequential** by default (shared GPU); nursery of both students sequentially, ~20 h on M1 Pro | 0003, 0005 |
 | 16 | Project name: **Cerbeto** (Esperanto: "little brain"); public repository `michalasobczak/cerbeto`, package `cerbeto` | — |
+| 17 | **Social skills training** first: preschool starts with conversation (greet, thank, agree/disagree, opinion with a reason, honest "I don't know"); nursery speech keeps conversation roles | 0003, 0004 |

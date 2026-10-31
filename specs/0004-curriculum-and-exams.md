@@ -3,18 +3,29 @@
 Status: planned · Depends on: 0001 · Unblocks: 0005
 
 ## 1. TL;DR
-We define the school curriculum (preschool, grade 1, grade 2) as task generators whose answer is known to the program, with adjustable difficulty, and exams in three variants: known types, harder than in training, and new combinations. Proof: generator tests and a fixed, hashed exam pool.
+We define the school curriculum (preschool, grade 1, grade 2) — starting with **social skills training** (conversation: greeting, thanking, agreeing/disagreeing, giving an opinion, saying "I don't know") — as task generators whose answer is known to the program, with adjustable difficulty, and exams in three variants: known types, harder than in training, and new combinations. Proof: generator tests and a fixed, hashed exam pool.
 
 ## 2. Abstract
-The student is to learn "like a human at school, step by step": no coding, with mathematics introduced slowly and always in the context of language. The MVP priority is a measurable improvement in reasoning on **new** tasks, so the truth must come from code (manifesto §3), and the exams must contain tasks outside the training distribution. The scope of stages 0–3 has been agreed.
+The student is to learn "like a human at school, step by step": no coding, with mathematics introduced slowly and always in the context of language. The MVP priority is a measurable improvement in reasoning on **new** tasks, so the truth must come from code (manifesto §3), and the exams must contain tasks outside the training distribution. The scope of stages 0–3 has been agreed. Children learn to talk with people before they learn to read and count, so the first subject of preschool is **social skills**: polite routines, agreeing and disagreeing, giving an opinion with a reason, and — most valuable — honestly saying "I don't know" instead of making things up.
 
 ## 3. Objective
 **Goals — curriculum:**
 | Stage | Skills (generators) |
 |---|---|
-| 1 — preschool | questions about the world from a mini knowledge base (colours, animals and their sounds, body parts), opposites, bigger/smaller, categories ("Is a cat an animal?") |
+| 1 — preschool | **social skills** (see below); questions about the world from a mini knowledge base (colours, animals and their sounds, body parts), opposites, bigger/smaller, categories ("Is a cat an animal?") |
 | 2 — grade 1 | reading comprehension (story from a template → who/what/where question), counting objects up to 20, addition and subtraction within 10 |
 | 3 — grade 2 | order of events, cause–effect, addition/subtraction up to 100, one-step word problems, comparisons and relations (2–3 elements) |
+
+**Goals — social skills (preschool):**
+| Skill | Example | Graded by |
+|---|---|---|
+| Polite routines — greet, thank, apologize, say goodbye | "Hello!" → "Hi! How are you?"; "Here is a cookie." → "Thank you!" | code (list of fitting phrases per situation) + teacher rubric |
+| Agree / disagree | "The sky is green." → "No, the sky is blue." | **code** — truth from the mini knowledge base |
+| Saying "I don't know" | a question whose answer is not in the conversation or the knowledge base → "I don't know." | **code** — the generator knows which questions are unanswerable |
+| Opinion with a reason | "Do you like rain?" → "No, I don't like rain because I get wet." | teacher rubric (an opinion + a reason) |
+| Asking for clarification | an ambiguous request → "What do you mean?" | teacher rubric |
+
+All dialogue tasks use the chat format: `<|human|>` turn → `<|student|>` turn.
 
 **Goals — exams (for every skill):**
 - `id` — the same types and difficulty as in training;
@@ -34,6 +45,8 @@ The student is to learn "like a human at school, step by step": no coding, with 
 | `config/curriculum.yaml` (stages, skills, thresholds, difficulty) | data | to create |
 | `brain/cerbeto/curriculum/generators/*.py` | system | to create |
 | `brain/cerbeto/curriculum/world.yaml` (preschool mini knowledge base) | data | to create |
+| `brain/cerbeto/curriculum/generators/social.py` (polite routines, agree/disagree, "I don't know", opinions) | system | to create |
+| `brain/cerbeto/exams/rubrics/*.md` (teacher rubrics for soft skills) | data | to create |
 | `brain/cerbeto/exams/grader.py` (answer normalization and grading) | system | to create |
 | `data/exams/*.jsonl` + `hashes.txt` | data | to create |
 
@@ -45,12 +58,14 @@ The student is to learn "like a human at school, step by step": no coding, with 
 - **Passing a grade:** ≥ 85% on `id` and ≥ 70% on `ood_hard` for every skill of the stage [`ood` thresholds TO BE VERIFIED after the baseline measurement].
 - **Forgetting gate:** a drop of > 2 pp on the exam of any earlier grade → version rejected.
 - Exam seeds come from a reserved range; the training generator refuses to use them.
+- **Honesty rule:** every exam variant of every grade contains ~10% unanswerable questions; answering them with a made-up fact counts as an error, "I don't know" as correct. Answerable questions answered with "I don't know" count as errors too (no hiding behind it).
+- Rubric-graded skills (opinion, clarification, part of polite routines) are graded by the assistant examiner (0005) and reported separately; the pass decision of a grade relies on code-graded skills only.
 - The curriculum increases in difficulty within a grade (`difficulty` 1→5) according to the student's results.
 
 **Resilience:** a change of a generator changes the pool hash → exams are versioned (`exam_set_version`), results are comparable only within a version.
 
 ## 6. Critical Path
-1. Task format + grader → 2. grade 1 generators (reading, counting) → 3. preschool → 4. grade 2 → 5. freezing the exam pools.
+1. Task format (incl. chat format) + grader → 2. preschool social skills → 3. preschool world knowledge → 4. grade 1 (reading, counting) → 5. grade 2 → 6. freezing the exam pools.
 
 **Completion condition:** `cerbeto exam build` creates all pools; `cerbeto exam run --student <version>` returns a results table per skill and variant.
 
@@ -62,7 +77,9 @@ The student is to learn "like a human at school, step by step": no coding, with 
 | G3 | Unit | Grader: table of 200 edge cases (spaces, letter case, numbers in words) | `pytest tests/test_grader.py` | 0005 |
 | G4 | Integration | Disjointness: 0 shared hashes between the exam pool and 1M training tasks | `cerbeto exam check-leak` | 0005 |
 | G5 | Manual | 30 tasks per grade read by a human — sensible for a child | review | 0005 |
+| G6 | Unit | Every grade's exam pool contains 8–12% unanswerable questions; the grader scores "I don't know" correct only on those | `pytest tests/test_grader.py` | 0005 |
 | N1 | Negative | The training generator throws an exception for an exam seed | test | always |
+| N2 | Negative | A made-up answer to an unanswerable question is never graded as correct | `pytest tests/test_grader.py` | always |
 
 ## 8. Expected Outcome
 - **Direct:** the school curriculum and an independent examiner in code.

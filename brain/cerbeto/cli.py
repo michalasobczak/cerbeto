@@ -19,6 +19,13 @@ def main() -> None:
     tk = sub.add_parser("tokenizer", help="own BPE tokenizer (spec 0001)")
     tk.add_subparsers(dest="cmd", required=True).add_parser("train")
 
+    tr = sub.add_parser("train", help="train a student")
+    tr.add_argument("--smoke", action="store_true", help="fresh student, fixed time budget (spec 0002)")
+    tr.add_argument("--minutes", type=float, default=30)
+    tr.add_argument("--precision", choices=["fp32", "fp16"], default="fp32")
+    tr.add_argument("--shelf", default="s0_stories")
+    tr.add_argument("--batch", type=int, default=16)
+
     args = parser.parse_args()
     if args.group == "library" and args.cmd == "build":
         from cerbeto.library.shelves import build_all
@@ -29,6 +36,12 @@ def main() -> None:
     elif args.group == "library" and args.cmd == "report":
         from cerbeto.library.report import report
         sys.exit(0 if report() else 1)
+    elif args.group == "train":
+        if not args.smoke:
+            parser.error("only --smoke training exists so far (full training: spec 0003)")
+        from cerbeto.train.smoke import run
+        summary = run(args.minutes, args.precision, args.shelf, args.batch)
+        sys.exit(0 if summary["drop"] >= 0.5 else 1)
     elif args.group == "tokenizer" and args.cmd == "train":
         from cerbeto.library.shelves import load_config
         from cerbeto.tokenizer import train

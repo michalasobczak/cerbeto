@@ -1,6 +1,6 @@
 # 0002 — Student: architecture, growth, pruning, renewal
 
-Status: planned · Depends on: 0001 · Unblocks: 0003, 0005
+Status: delivered · Depends on: 0001 · Unblocks: 0003, 0005
 
 ## 1. TL;DR
 We build our own student network: a transformer with a recurrent loop ("thinking in a loop"), starting at ~8M parameters, with operators for growth (neurogenesis), pruning and neuron renewal, growing up to a max. of 30M. Proof: tests showing that growth does not change the network's behaviour, and that training converges on the nursery data.
@@ -40,20 +40,25 @@ The specification requires an experimental architecture, iterative reasoning and
 
 **Growth rules:**
 - `grow_depth`: new core layer with zeroed output projections (attention out, MLP down) → function unchanged.
-- `grow_width`: new MLP neurons with input weights per GradMax (or small random) and zero output weights.
-- `grow_model_dim`: new residual-stream dimensions zeroed; RMSNorm gain corrected by √(d_new/d_old).
+- `grow_width`: new MLP neurons (and/or attention heads) with small random input weights and zero output weights.
+- General rule for every new unit: *writer side* (weights that write into the residual stream or the logits) = 0, *reader side* = small random (std 0.01). Zero/zero would be a dead saddle point — new units would never receive a gradient.
+- `grow_model_dim`: new residual-stream dimensions zeroed; every RMSNorm gain multiplied by √(d_old/d_new) and the norm epsilon by d_old/d_new (the mean square now runs over more, zero, dimensions) — this keeps the normalized old dimensions exactly unchanged.
 - Optimizer state for new parameters zeroed; for old ones preserved.
 - Every operator appends an event to `growth_log.jsonl` (what, where, how many parameters, reason).
 
 **Pruning and renewal:**
 - Neuron utility = mean |activation| × ‖output weights‖ (continual backprop, Dohare et al. 2024).
-- Renewal: every sleep, reinitialization of ≤ 1% of the least useful neurons (maturity ≥ N steps).
+- Renewal: every sleep, reinitialization of ≤ 1% of the least useful neurons (maturity ≥ N steps): incoming weights redrawn, outgoing weights zeroed, their optimizer moments reset. Not exactly function-preserving — the old, least useful contribution disappears.
 - Pruning: after growth, when a neuron has utility < threshold for 3 sleeps — removal.
 
 **Precision and device:**
 - Device selected automatically: MPS → CUDA → CPU.
 - fp32 by default; optionally mixed fp16 (autocast + gradient scaling), if it passes gate G6. **bf16 forbidden** (no hardware support on M1).
 - Master weights and optimizer state always in fp32; checkpoint in fp32.
+
+**Memory (from the G5 measurement):**
+- Full backprop through K = 6 core iterations at 30M parameters and batch 16 × 512 peaked at **18.9 GB** — the recurrent core multiplies activation memory by K.
+- Therefore training uses **activation checkpointing** (`Student.checkpointing = True`: only block inputs are kept, the rest is recomputed in the backward pass) and **micro-batches of 8 × 512** with gradient accumulation. Measured peak at 30M, K = 6: **3.05 GB** (RSS + MPS driver memory, incl. allocator cache; live tensors ~0.46 GB).
 
 **Resilience:** every operator works on a copy; if the condition |Δ loss| ≤ 0.01 is not met, the operation is rejected and logged.
 
@@ -83,6 +88,14 @@ The specification requires an experimental architecture, iterative reasoning and
 ## 9. Additional Information
 - **Rejected alternatives:** LoRA adapters (unnecessary at 30M); MLX as the training backend (Apple Silicon only; weights in safetensors keep the path open to inference in MLX); spiking networks; bf16 (no hardware support on M1); Core ML / Neural Engine — postponed (the NPU does not support training; inference via Core ML would require reconversion after every growth and unrolling the loop to a fixed K — to be reassessed after 0005).
 - **Reference hardware:** MacBook Pro Apple M1 Pro, 32 GB; measured (PyTorch 2.15, MPS, matmul 4096²): CPU fp32 1.5 TFLOPS, GPU fp32 3.6, fp16 4.2, bf16 2.1 TFLOPS.
-- **Technical debt:** GradMax may be simplified to a small random initialization in the first version.
+- **Technical debt:**
+  - GradMax simplified to a small random initialization of the reader side (std 0.01).
+  - G5 passes with a thin margin (3.05 of 3.07 GB); if 0003 needs headroom: chunked cross-entropy over the 8192-token vocabulary, or truncated backprop through the core (requires input injection into the core).
+- **Measured results (2026-10-31, M1 Pro, 6.9M student, `s0_stories`, 30 min each):**
+  | Precision | Steps | Valid loss start → end | Drop | Tokens/s |
+  |---|---|---|---|---|
+  | fp32 | 3115 | 9.08 → 1.75 | 81% | 14,193 |
+  | fp16 autocast | 2976 | 9.08 → 1.76 | 81% | 13,558 |
+  G4 passed (≥ 50%). G6: fp16 is 4.5% *slower* (gate needs ≥ 15% faster) → **fp32 stays** the training precision; re-run G6 when the student reaches 30M.
 - **Sources:** Net2Net (Chen et al., 2015); GradMax (Evci et al., 2022); Stacking Your Transformers (Du et al., 2024); Loss of plasticity in deep continual learning (Dohare et al., Nature 2024); EWC (Kirkpatrick et al., 2017); recurrent-depth transformers (Geiping et al., 2025).
 - **Open questions:** order of growth operators (depth vs width) — decided by the experiment in 0005.

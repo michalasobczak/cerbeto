@@ -13,10 +13,12 @@ The project uses **[Rondo](https://workwithrondo.com)** as its reference enginee
 - [MANIFESTO.md](MANIFESTO.md) is the engineering manifesto — implementation principles applied to every specification.
 
 ## Current state (2026-10-31)
-- Specifications 0001–0007 written; **0001** (school library and tokenizer) delivered — G5 (human review of shelf samples) pending.
+- Specifications 0001–0007 written; **0001** (school library and tokenizer) and **0002** (student architecture and growth) delivered — 0001 G5 (human review of shelf samples) pending. Next: **0003** nursery.
 - School library downloaded offline into `data/library/` (outside git): BabyLM-2026-Strict, TinyStories V2, Simple English Wikipedia, FineWeb-Edu (1 shard) — about 4.8 GB.
 - Shelves built (`data/shelves/`): stage 0 has 628M training tokens (speech 84M, stories 544M); stages 1–3: books 37M, world 0.8M, edu 4.4M.
 - Own BPE tokenizer: 8192 tokens, 1.24 tokens/word on TinyStories.
+- Student: 6.9M parameters at start, can grow to 30M without changing its behaviour; 30 min of training from scratch already writes simple coherent stories (validation loss 9.08 → 1.75). Training precision fp32; a 30M student trains within ~3 GB.
+- Curriculum direction: preschool starts with **social skills** — conversation, politeness, agreeing/disagreeing, opinions and an honest "I don't know".
 - Admin panel code: not written yet.
 - Reference hardware: MacBook Pro M1 Pro, 32 GB — PyTorch uses the GPU via MPS (fp32/fp16, no bf16).
 - Default teacher: `nemotron-3.5-bolt:e4b` in local Ollama (probe: 5/5 correct, ~36 tok/s).
@@ -74,7 +76,11 @@ Build shelves, train the tokenizer, tokenize and check the gates (from `brain/`)
 ```bash
 uv run cerbeto library build && uv run cerbeto tokenizer train && uv run cerbeto library tokenize && uv run cerbeto library report
 ```
-Run the tests:
+Run the tests (add `-m slow` for the GPU memory gate):
 ```bash
 uv run pytest
+```
+Smoke-train a fresh student for 30 minutes:
+```bash
+uv run cerbeto train --smoke --minutes 30
 ```
