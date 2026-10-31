@@ -1,0 +1,9 @@
+# Biblioteka (dane treningowe) i artefakty uczenia — poza repozytorium
+/data/
+/runs/
+/checkpoints/
+.remember/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
