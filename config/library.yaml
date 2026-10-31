@@ -1,0 +1,44 @@
+# School library — shelves (spec 0001). Source paths are relative to data/library/
+tokenizer:
+  vocab_size: 8192
+  sample_mb_per_shelf: 60      # balanced sample for BPE training
+valid_per_mille: 5             # 0.5% of documents go to validation (deterministic, by hash)
+
+shelves:
+  s0_speech:
+    stage: 0
+    description: Speech — child-directed conversation (CHILDES), phone calls, spoken English, movie subtitles
+    fk_max: null               # FK is not applied to dialogue (technical debt in 0001)
+    sources:
+      - {kind: speech, path: babylm/childes.train.txt, chunk_lines: 32, license: "MIT (BabyLM-2026-Strict); upstream: CHILDES/TalkBank ground rules"}
+      - {kind: speech, path: babylm/switchboard.train.txt, chunk_lines: 32, license: "MIT (BabyLM-2026-Strict); upstream: Switchboard (LDC)"}
+      - {kind: speech, path: babylm/bnc_spoken.train.txt, chunk_lines: 32, license: "MIT (BabyLM-2026-Strict); upstream: BNC"}
+      - {kind: speech, path: babylm/open_subtitles.train.txt, chunk_lines: 32, license: "MIT (BabyLM-2026-Strict); upstream: OpenSubtitles"}
+  s0_stories:
+    stage: 0
+    description: Simple stories using the vocabulary of a 3–4-year-old
+    fk_max: null
+    sources:
+      - {kind: tinystories, path: tinystories/TinyStoriesV2-GPT4-train.txt, valid_path: tinystories/TinyStoriesV2-GPT4-valid.txt, license: "CDLA-Sharing-1.0 (TinyStories)"}
+  s1_books:
+    stage: 1
+    description: Public-domain children's books
+    fk_max: null
+    sources:
+      - {kind: lines, path: babylm/gutenberg.train.txt, chunk_lines: 24, license: "MIT (BabyLM-2026-Strict); upstream: Project Gutenberg, public domain"}
+  s2_world:
+    stage: 2
+    description: World knowledge — Simple English Wikipedia, paragraphs up to grade 4
+    fk_max: 4.0
+    min_words: 15
+    sources:
+      - {kind: wiki_parquet, path: simplewiki/simplewiki-20231101.parquet, license: "CC BY-SA 4.0 (Wikipedia)"}
+      - {kind: babylm_wiki, path: babylm/simple_wiki.train.txt, license: "MIT (BabyLM-2026-Strict); upstream: Wikipedia CC BY-SA"}
+  s3_edu:
+    stage: 3
+    description: Educational web text (FineWeb-Edu), paragraphs up to grade 4
+    fk_max: 4.0
+    min_words: 20
+    min_edu_score: 3
+    sources:
+      - {kind: fineweb_parquet, path: fineweb_edu/sample10BT_000_00000.parquet, license: "ODC-By 1.0 (FineWeb-Edu)"}

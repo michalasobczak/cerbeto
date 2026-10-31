@@ -1,5 +1,5 @@
 #!/bin/bash
-# Pobieranie półek biblioteki (poza gitem). Wznawialne: curl -C -
+# Downloads the school library shelves (kept outside git). Resumable: curl -C -
 set -u
 HF=https://huggingface.co/datasets
 D=${LIBRARY_DIR:-$(cd "$(dirname "$0")/.." && pwd)/data/library}

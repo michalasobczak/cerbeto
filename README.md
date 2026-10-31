@@ -1,64 +1,80 @@
 # Cerbeto
 
-*Cerbeto* (esperanto: *cerbo* „mózg” + *-et-* zdrobnienie) — „móżdżek”.
+*Cerbeto* (Esperanto: *cerbo* "brain" + *-et-* diminutive) — "little brain".
 
-Autorski, mały model neuronowy (8→30M parametrów, od losowych wag), który uczy się angielskiego i rozumowania „jak dziecko w szkole”: żłobek → przedszkole → klasa 1 → klasa 2, prowadzony przez duży lokalny LLM-nauczyciel, w rytmie dzień (lekcje) / sen (konsolidacja) / egzamin, rosnąc w trakcie nauki.
+A small neural network of our own (8 → 30M parameters, starting from random weights) that learns English and reasoning "like a child at school": nursery → preschool → grade 1 → grade 2. It is taught by a large local LLM teacher, follows a day (lessons) / sleep (consolidation) / exam rhythm, and grows while it learns.
 
-Projekt prowadzony jest metodyką **CDD** (Context-Driven Development): ten plik opisuje stan „tu i teraz”, `specs/` — zamiar każdej zmiany, `CHANGELOG.md` — co faktycznie dostarczono, testy — dowód. Zasady implementacyjne: [MANIFESTO.md](MANIFESTO.md).
+## Methodology
+The project uses **[Rondo](https://workwithrondo.com)** as its reference engineering and project methodology — **CDD (Context-Driven Development)**:
+- this README describes the "here and now" state: domain, functional architecture, critical path;
+- `specs/` holds the intent of every change, each written in Rondo's nine-section structure (TL;DR, Abstract, Objective, Artefact Inventory, Functional Domain Changes, Critical Path, Control Gates, Expected Outcome, Additional Information);
+- `CHANGELOG.md` records what was actually delivered;
+- tests are the proof, derived from each specification's control gates;
+- [MANIFESTO.md](MANIFESTO.md) is the engineering manifesto — implementation principles applied to every specification.
 
-## Stan obecny (2026-10-31)
-- Specyfikacje 0001–0007 spisane; realizowana jest **0001** (biblioteka i tokenizer).
-- Biblioteka pobrana offline do `data/library/` (poza gitem): BabyLM-2026-Strict, TinyStories V2, Simple English Wikipedia, FineWeb-Edu (1 shard) — ok. 4,8 GB.
-- Kod mózgu i panelu: jeszcze nie istnieje.
-- Sprzęt referencyjny: MacBook Pro M1 Pro 32 GB — PyTorch używa GPU przez MPS (fp32/fp16, bez bf16).
-- Domyślny nauczyciel: `nemotron-3.5-bolt:e4b` w lokalnej Ollamie (sonda: 5/5, ~36 tok/s).
+## Current state (2026-10-31)
+- Specifications 0001–0007 written; **0001** (school library and tokenizer) delivered — G5 (human review of shelf samples) pending.
+- School library downloaded offline into `data/library/` (outside git): BabyLM-2026-Strict, TinyStories V2, Simple English Wikipedia, FineWeb-Edu (1 shard) — about 4.8 GB.
+- Shelves built (`data/shelves/`): stage 0 has 628M training tokens (speech 84M, stories 544M); stages 1–3: books 37M, world 0.8M, edu 4.4M.
+- Own BPE tokenizer: 8192 tokens, 1.24 tokens/word on TinyStories.
+- Admin panel code: not written yet.
+- Reference hardware: MacBook Pro M1 Pro, 32 GB — PyTorch uses the GPU via MPS (fp32/fp16, no bf16).
+- Default teacher: `nemotron-3.5-bolt:e4b` in local Ollama (probe: 5/5 correct, ~36 tok/s).
 
-## Domena
-| Pojęcie | Znaczenie |
+## Domain
+| Term | Meaning |
 |---|---|
-| Uczeń | własna sieć (transformer z obiegiem zwrotnym), rośnie od ~8M do 30M parametrów |
-| Uczeń kontrolny | ta sama nauka, stały rozmiar 30M — dowód, czy wzrost pomaga |
-| Nauczyciel | duży LLM (lokalnie przez Ollama) w roli wychowawcy, korepetytora lub egzaminatora pomocniczego |
-| Biblioteka / półki | korpusy tekstów dobrane do poziomu (etapy 0–3) |
-| Lekcja | zadanie z generatora (prawda z kodu) + dialog z nauczycielem |
-| Hipokamp | szybka pamięć przeżyć dnia (SQLite) |
-| Sen | konsolidacja przeżyć do wag + powtórki + utrwalanie (EWC) + odnowa neuronów |
-| Egzamin | niezależna ocena kodem: `id`, `ood_hard`, `ood_combo`; bramka zapominania ≤ 2 pp |
-| Wersja | niezmienny stan ucznia po każdej zmianie wag; awans albo cofnięcie |
+| Student | our own network (transformer with a recurrent core), grows from ~8M to 30M parameters |
+| Control student | same learning, fixed size of 30M — proof of whether growth helps |
+| Teacher | large LLM (locally via Ollama) acting as homeroom teacher, tutor or assistant examiner |
+| Library / shelves | text corpora matched to difficulty level (stages 0–3) |
+| Lesson | a task from a generator (ground truth from code) + a dialogue with the teacher |
+| Hippocampus | fast memory of the day's experiences (SQLite) |
+| Sleep | consolidating experiences into weights + review + consolidation (EWC) + neuron renewal |
+| Exam | independent grading by code: `id`, `ood_hard`, `ood_combo`; forgetting gate ≤ 2 pp |
+| Version | immutable student state after every weight change; promotion or rollback |
 
-## Architektura funkcjonalna
+## Functional architecture
 ```
                  ┌──────────────── panel/ (Rails 8, :3100) ────────────────┐
-                 │ nauczyciele · szkoła na żywo · postępy · mózg · wersje · │
-                 │ biblioteka · rozmowa (człowiek poprawia ucznia)          │
+                 │ teachers · live school · progress · brain · versions ·   │
+                 │ library · chat (a human can correct the student)         │
                  └───────────────────────┬──────────────────────────────────┘
                                          │ HTTP (specs/contracts/brain-api.yaml)
 ┌──────────────────────────── brain/ (Python + PyTorch, :8700) ──────────────────────────┐
-│ library/tokenizer ─▶ model (uczeń, wzrost, EWC) ◀─ school: dzień ─▶ sen ─▶ egzamin      │
-│                         ▲                         │   ▲                 │              │
-│                     versions ◀────────────────────┘   │ hipokamp        curriculum +   │
-│                                                       │ (SQLite)        exams (kod)    │
-└───────────────────────────────────────────────────────┼────────────────────────────────┘
-                                                        │ OpenAI-compatible
-                                                Ollama (nauczyciel, lokalnie)
+│ library/tokenizer ─▶ model (student, growth, EWC) ◀─ school: day ─▶ sleep ─▶ exam       │
+│                         ▲                          │   ▲                │              │
+│                     versions ◀─────────────────────┘   │ hippocampus    curriculum +   │
+│                                                        │ (SQLite)       exams (code)   │
+└────────────────────────────────────────────────────────┼───────────────────────────────┘
+                                                         │ OpenAI-compatible
+                                                 Ollama (teacher, local)
 ```
 
-## Ścieżka krytyczna MVP
-0001 biblioteka i tokenizer → 0002 uczeń → 0003 żłobek + pomiar bazowy → 0004 program i egzaminy → 0005 szkoła (priorytet MVP: wzrost `ood` po cyklach) → 0006 panel → 0007 dystrybucja offline.
+## MVP critical path
+0001 library and tokenizer → 0002 student → 0003 nursery + baseline → 0004 curriculum and exams → 0005 school (MVP priority: `ood` improvement after learning cycles) → 0006 admin panel → 0007 offline distribution.
 
-## Struktura repozytorium
+## Repository layout
 ```
 README.md  MANIFESTO.md  CHANGELOG.md
-specs/            specyfikacje zmian (NNNN-slug.md) + źródło i kontrakty
-scripts/          skrypty (pobieranie biblioteki, pakowanie)
-brain/            mózg — Python (do utworzenia, 0001+)
-panel/            panel — Rails (do utworzenia, 0006)
-config/           program nauczania, architektura, rytm, nauczyciele (do utworzenia)
-data/ runs/ checkpoints/   poza gitem
+specs/            change specifications (NNNN-slug.md) + source document and contracts
+scripts/          scripts (library download, packaging)
+brain/            brain — Python package `cerbeto`
+panel/            admin panel — Rails (to be created, 0006)
+config/           library, curriculum, architecture, rhythm, teachers
+data/ runs/ checkpoints/   outside git
 ```
 
-## Uruchomienie (stan obecny)
-Pobranie biblioteki (wznawialne, ~5 GB):
+## Getting started (current state)
+Download the library (resumable, ~5 GB):
 ```bash
 ./scripts/download_library.sh
+```
+Build shelves, train the tokenizer, tokenize and check the gates (from `brain/`):
+```bash
+uv run cerbeto library build && uv run cerbeto tokenizer train && uv run cerbeto library tokenize && uv run cerbeto library report
+```
+Run the tests:
+```bash
+uv run pytest
 ```
