@@ -43,3 +43,22 @@ def test_valid_split_is_deterministic_and_small():
 def test_no_library_data_tracked_by_git():
     out = subprocess.run(["git", "ls-files", "data/"], cwd=paths.REPO, capture_output=True, text=True, check=True)
     assert out.stdout.strip() == ""
+
+
+def test_speech_shelf_has_conversation_roles_as_single_tokens():
+    """Gate G6 (spec 0003)."""
+    shelf = paths.SHELVES / "s0_speech" / "valid.jsonl"
+    if not shelf.exists() or not paths.TOKENIZER_FILE.exists():
+        pytest.skip("speech shelf not built")
+    from cerbeto.tokenizer import load
+    tok = load()
+    human, student = tok.token_to_id("<|human|>"), tok.token_to_id("<|student|>")
+    with shelf.open() as f:
+        docs = [json.loads(line)["text"] for _, line in zip(range(300), f)]
+    with_roles = [d for d in docs if d.startswith(("<|human|>", "<|student|>"))]
+    assert with_roles, "no conversation with roles found"
+    for doc in with_roles:
+        for line in doc.split("\n"):
+            assert line.startswith(("<|human|> ", "<|student|> "))
+        ids = tok.encode(doc).ids
+        assert ids.count(human) + ids.count(student) == len(doc.split("\n"))

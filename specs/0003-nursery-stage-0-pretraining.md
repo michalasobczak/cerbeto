@@ -1,6 +1,6 @@
 # 0003 — Nursery: language learning (stage 0) and baseline measurement
 
-Status: planned · Depends on: 0001, 0002 · Unblocks: 0005
+Status: in progress (growing student training since 2026-10-31 20:46) · Depends on: 0001, 0002 · Unblocks: 0005
 
 ## 1. TL;DR
 We teach the student to speak English on the stage 0 shelves (child-directed speech → simple stories), in parallel with a control student of fixed size 30M. Speech is kept as a **conversation with roles** (adult `<|human|>` ↔ child `<|student|>`), so turn-taking is learned from day one. Proof: the nursery exam (BLiMP + a conversation probe) and a recorded baseline measurement for all grades 1–3.
@@ -30,6 +30,8 @@ The student starts with random weights, so before it begins lessons with a teach
 | Control (fixed 30M) | 12–15 h |
 | Total | ~20 h — fits within the limit, small margin |
 
+**Measured throughput (2026-10-31, M1 Pro, fp32, micro-batch 8 × 512, accumulation 2, no activation checkpointing):** growing student at 6.9M — ~12.6k tokens/s; control student at 29.9M — ~3.3k tokens/s. Revised estimate for 300M tokens: growing ~10–14 h (slows down as it grows), control **~25 h**. Together ~35–40 h → exceeds the 24 h criterion; the control student runs separately (e.g. over a weekend) on the same 300M tokens, so comparability is kept.
+
 The students are trained **sequentially** (first the growing one, then the control one), e.g. over two nights; simultaneous training would share the same GPU with no gain. Precision per 0002: **fp32** (G6 measured fp16 as slower on M1 Pro). Training uses activation checkpointing and micro-batches of 8 × 512 with gradient accumulation (0002 memory measurement); its ~30% speed cost is not yet in the time budget above — re-estimate after the first hour of the real run.
 
 ## 4. Artefact Inventory
@@ -41,7 +43,8 @@ The students are trained **sequentially** (first the growing one, then the contr
 | `brain/cerbeto/library/sources.py` — speech reader with conversation roles | system | to change |
 | `brain/cerbeto/exams/conversation_probe.yaml` + rubric | data | to create |
 | `data/library/blimp/` (BabyLM-community/BabyLM-BLIMP-Filtered) | data | to create |
-| `config/nursery.yaml` | data | to create |
+| `config/nursery.yaml` (phases, mix, growth schedule 6.9M → 14.0M → 15.8M → 26.7M → 29.9M) | data | to create |
+| `brain/cerbeto/teachers/__init__.py` + `config/teachers.yaml` (minimal Ollama client for grading; extended in 0005) | system | to create |
 | `checkpoints/{growing,control}/v0001…` | data | to create |
 | `runs/nursery/metrics.jsonl` | data | to create |
 
@@ -68,7 +71,7 @@ The students are trained **sequentially** (first the growing one, then the contr
 | G2 | Integration | BLiMP ≥ 65% (growing student) | `cerbeto exam nursery` | 0005 |
 | G3 | Integration | Conversation probe ≥ 60% fitting replies | `cerbeto exam nursery --conversation` | 0005 |
 | G6 | Unit | `s0_speech`: in CHILDES every child turn starts with `<|student|>`, every adult turn with `<|human|>`; the tokenizer keeps both as single tokens | `pytest tests/test_shelves.py` | full run |
-| G4 | Integration | Baseline measurement for grades 1–3 recorded for both students | file `runs/nursery/baseline.json` | 0005 |
+| G4 | Integration | Baseline measurement for grades 1–3 recorded for both students (runs on the saved post-nursery checkpoints once 0004 exam pools exist) | file `runs/nursery/baseline.json` | 0005 |
 | G5 | Manual | 20 random student utterances readable by a human | review | 0007 |
 | N1 | Negative | No exam example (BLiMP, grades 1–3) appears in the training data | hash check | G2–G4 |
 

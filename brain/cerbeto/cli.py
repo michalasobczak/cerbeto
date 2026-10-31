@@ -26,6 +26,22 @@ def main() -> None:
     tr.add_argument("--shelf", default="s0_stories")
     tr.add_argument("--batch", type=int, default=16)
 
+    nu = sub.add_parser("nursery", help="stage 0 language learning (spec 0003)")
+    nu_sub = nu.add_subparsers(dest="cmd", required=True)
+    nr = nu_sub.add_parser("run", help="train (or resume) a student in the nursery")
+    nr.add_argument("--student", choices=["growing", "control"], required=True)
+    nr.add_argument("--fresh", action="store_true", help="ignore existing checkpoints")
+    nr.add_argument("--max-tokens", type=int)
+
+    ex = sub.add_parser("exam", help="exams")
+    ex_sub = ex.add_subparsers(dest="cmd", required=True)
+    en = ex_sub.add_parser("nursery", help="BLiMP + conversation probe (spec 0003)")
+    en.add_argument("--student", default="growing")
+    en.add_argument("--version")
+    en.add_argument("--blimp", action="store_true")
+    en.add_argument("--conversation", action="store_true")
+    en.add_argument("--device", default="cpu", help="cpu keeps the GPU free for training")
+
     args = parser.parse_args()
     if args.group == "library" and args.cmd == "build":
         from cerbeto.library.shelves import build_all
@@ -42,6 +58,16 @@ def main() -> None:
         from cerbeto.train.smoke import run
         summary = run(args.minutes, args.precision, args.shelf, args.batch)
         sys.exit(0 if summary["drop"] >= 0.5 else 1)
+    elif args.group == "nursery" and args.cmd == "run":
+        from cerbeto.train.loop import Trainer, load_config
+        trainer = Trainer(args.student, load_config())
+        if not args.fresh and trainer.resume():
+            print(f"resumed {args.student} at {trainer.state['tokens']:,} tokens")
+        trainer.run(args.max_tokens)
+    elif args.group == "exam" and args.cmd == "nursery":
+        from cerbeto.exams.nursery import run as run_exam
+        both = not (args.blimp or args.conversation)
+        run_exam(args.student, args.version, args.blimp or both, args.conversation or both, args.device)
     elif args.group == "tokenizer" and args.cmd == "train":
         from cerbeto.library.shelves import load_config
         from cerbeto.tokenizer import train

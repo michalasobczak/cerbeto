@@ -50,3 +50,13 @@ def test_speech_reader_drops_annotations(tmp_path):
     raw = "*MOT:\tdo you like this room?\n*CHI:\t[laughs].\n][CHI turns around]\n= = = childes/x.cha = = =\n*CHI:\tyeah.\n"
     (tmp_path / "c.txt").write_text(raw)
     assert list(speech(tmp_path / "c.txt", chunk_lines=10)) == ["do you like this room?\nyeah."]
+
+
+def test_childes_conversation_roles(tmp_path):
+    from cerbeto.library.sources import speech
+    raw = ("*MOT:\thello sweetie.\n*MOT:\tdo you want a cookie?\n*CHI:\tyes please.\n"
+           "*CHI:\t[laughs].\n*FAT:\there you go.\n*CHI:\tthank you.\n")
+    (tmp_path / "c.txt").write_text(raw)
+    assert list(speech(tmp_path / "c.txt", chunk_lines=10, roles="childes")) == [
+        "<|human|> hello sweetie. do you want a cookie?\n<|student|> yes please.\n"
+        "<|human|> here you go.\n<|student|> thank you."]

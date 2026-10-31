@@ -5,7 +5,10 @@ from pathlib import Path
 
 import pyarrow.parquet as pq
 
-_SPEAKER = re.compile(r"^\*?[A-Z0-9]{1,4}:\t")
+_SPEAKER = re.compile(r"^\*?([A-Z0-9]{1,4}):\t")
+HUMAN, STUDENT = "<|human|>", "<|student|>"
+# Who is the "student" in each conversational corpus: the child in CHILDES, speaker B in Switchboard.
+_STUDENT_SPEAKER = {"childes": "CHI", "switchboard": "B"}
 _WIKI_TITLE = re.compile(r"^= = = .* = = =$")
 
 
@@ -20,14 +23,29 @@ def _chunks(lines: Iterator[str], size: int) -> Iterator[str]:
         yield "\n".join(buf)
 
 
-def _clean_speech(path: Path) -> Iterator[str]:
+def _clean_speech(path: Path, roles: str | None = None) -> Iterator[str]:
+    """Utterances, one per line. With `roles`, consecutive lines of one speaker are merged into a turn
+    prefixed by `<|student|>` (the child / speaker B) or `<|human|>` (everyone else)."""
+    student = _STUDENT_SPEAKER.get(roles or "")
+    turn_role, turn = None, []
     with path.open(encoding="utf-8", errors="replace") as f:
         for raw in f:
+            m = _SPEAKER.match(raw.strip())
             line = _SPEAKER.sub("", raw.strip()).lstrip("- ").strip()
             # drop transcription annotations ([laughs], ][CHI turns]), file headers and metadata lines
             if not line or line.startswith(("[", "]", "%", "@", "= = =")):
                 continue
-            yield line
+            if student is None:
+                yield line
+                continue
+            role = (STUDENT if m.group(1) == student else HUMAN) if m else turn_role or HUMAN
+            if role != turn_role and turn:
+                yield f"{turn_role} {' '.join(turn)}"
+                turn = []
+            turn_role = role
+            turn.append(line)
+    if turn:
+        yield f"{turn_role} {' '.join(turn)}"
 
 
 def _plain_lines(path: Path) -> Iterator[str]:
@@ -37,8 +55,8 @@ def _plain_lines(path: Path) -> Iterator[str]:
                 yield line
 
 
-def speech(path: Path, chunk_lines: int, **_) -> Iterator[str]:
-    yield from _chunks(_clean_speech(path), chunk_lines)
+def speech(path: Path, chunk_lines: int, roles: str | None = None, **_) -> Iterator[str]:
+    yield from _chunks(_clean_speech(path, roles), chunk_lines)
 
 
 def lines(path: Path, chunk_lines: int, **_) -> Iterator[str]:

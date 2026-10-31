@@ -1,0 +1,13 @@
+# Teachers (spec 0005 extends this). Local Ollama by default — offline, no API costs.
+default: nemotron
+teachers:
+  nemotron:
+    provider: ollama
+    base_url: http://localhost:11434
+    model: nemotron-3.5-bolt:e4b
+    roles: [homeroom, tutor, assistant_examiner]
+  qwen27b:
+    provider: ollama
+    base_url: http://localhost:11434
+    model: qwen3.8:27b-mlx
+    roles: [assistant_examiner]

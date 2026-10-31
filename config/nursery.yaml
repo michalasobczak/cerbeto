@@ -1,0 +1,34 @@
+# Nursery — stage 0 language learning (spec 0003).
+total_tokens: 300000000
+phases:                       # data order mimics development: first conversation, then stories
+  - {name: A-speech, fraction: 0.3, mix: {s0_speech: 1.0}}
+  - {name: B-speech+stories, fraction: 0.7, mix: {s0_speech: 0.25, s0_stories: 0.75}}
+micro_batch: 8                # 8 × 512 tokens per micro-batch
+accumulation: 2               # effective batch 16 × 512
+lr: 0.002
+min_lr_ratio: 0.1
+warmup_steps: 500
+weight_decay: 0.1
+grad_clip: 1.0
+activation_checkpointing: false   # the 32 GB Mac has room; needed only on 16 GB machines (spec 0002 G5)
+eval_every_tokens: 5000000
+eval_batches: 8               # fixed validation batches per shelf
+checkpoint_every_minutes: 30
+seed: 0
+
+students:
+  growing:
+    grow: true
+  control:
+    grow: false
+    config: {d_model: 512, n_heads: 16, mlp_hidden: 1408, n_core: 4}   # 29.9M from the start
+
+growth:
+  plateau_windows: 3          # grow when validation loss improved < min_improvement over this many evals
+  min_improvement: 0.01
+  min_tokens_between: 20000000
+  schedule:                   # 6.9M → 14.0M → 15.8M → 26.7M → 29.9M
+    - [{op: grow_model_dim, new_d: 384}, {op: grow_width, extra_heads: 4, extra_mlp: 352}]
+    - [{op: grow_depth}]
+    - [{op: grow_model_dim, new_d: 512}, {op: grow_width, extra_heads: 4, extra_mlp: 352}]
+    - [{op: grow_depth}]

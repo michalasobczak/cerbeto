@@ -1,0 +1,20 @@
+# Nursery conversation probe (spec 0003, gate G3): everyday situations a small child can handle.
+# The student sees "<|human|> {say}" and answers as "<|student|>"; the teacher grades the reply 1–5.
+rubric: |
+  You grade replies of a very young child (2–4 years old) who is learning English.
+  Decide whether the child's reply is a fitting next turn in the conversation.
+  Ignore small grammar mistakes and very short answers — "yes.", "thank you!", "bye bye." can be perfect.
+  Score 5 = clearly fitting and natural; 4 = fitting; 3 = acceptable, loosely related;
+  2 = mostly unrelated or confusing; 1 = unrelated, empty or nonsense.
+  Answer only with JSON: {"score": <1-5>, "reason": "<short reason>"}
+situations:
+  greeting: ["Hello!", "Hi there, good morning!", "Hello, how are you today?", "Hi! Nice to see you.", "Good night, sweetie."]
+  thanks: ["Here is a cookie for you.", "I made you a sandwich.", "Here, you can have my red crayon.", "This present is for you.", "I fixed your toy car."]
+  goodbye: ["I have to go now. Bye!", "See you tomorrow!", "Grandma is leaving now.", "It's time to say goodbye to your friend.", "Bye bye, see you later!"]
+  about_self: ["What is your name?", "How old are you?", "What is your favorite color?", "Do you have a pet?", "What do you like to eat?"]
+  offers: ["Do you want some juice?", "Would you like to play with the ball?", "Do you want to go to the park?", "Shall we read a book?", "Do you want an apple or a banana?"]
+  feelings: ["Are you sad?", "Why are you crying?", "Are you tired?", "Are you happy today?", "Did you have fun at the park?"]
+  apology_and_help: ["Oops, I stepped on your toy. I'm sorry.", "Can you help me pick up the blocks?", "Can you give me the spoon, please?", "You spilled the milk.", "Please put your shoes on."]
+  questions_about_world: ["What does a dog say?", "What color is the sky?", "Where is your nose?", "Is it hot or cold outside?", "What do you do with a cup?"]
+  agree_disagree: ["Cats can fly, right?", "Is the grass green?", "Fish live in the water, don't they?", "Is the sun cold?", "Do cows say moo?"]
+  dont_know: ["What is the name of my teacher's cat?", "What did I eat for breakfast yesterday?", "How many birds are in the forest?", "What is in my pocket?", "Where did I put my keys?"]

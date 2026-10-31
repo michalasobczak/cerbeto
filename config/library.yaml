@@ -7,11 +7,11 @@ valid_per_mille: 5             # 0.5% of documents go to validation (determinist
 shelves:
   s0_speech:
     stage: 0
-    description: Speech — child-directed conversation (CHILDES), phone calls, spoken English, movie subtitles
+    description: "Speech — child-directed conversation with roles (CHILDES child = <|student|>, adults = <|human|>), phone calls, spoken English, movie subtitles"
     fk_max: null               # FK is not applied to dialogue (technical debt in 0001)
     sources:
-      - {kind: speech, path: babylm/childes.train.txt, chunk_lines: 32, license: "MIT (BabyLM-2026-Strict); upstream: CHILDES/TalkBank ground rules"}
-      - {kind: speech, path: babylm/switchboard.train.txt, chunk_lines: 32, license: "MIT (BabyLM-2026-Strict); upstream: Switchboard (LDC)"}
+      - {kind: speech, path: babylm/childes.train.txt, chunk_lines: 32, roles: childes, license: "MIT (BabyLM-2026-Strict); upstream: CHILDES/TalkBank ground rules"}
+      - {kind: speech, path: babylm/switchboard.train.txt, chunk_lines: 32, roles: switchboard, license: "MIT (BabyLM-2026-Strict); upstream: Switchboard (LDC)"}
       - {kind: speech, path: babylm/bnc_spoken.train.txt, chunk_lines: 32, license: "MIT (BabyLM-2026-Strict); upstream: BNC"}
       - {kind: speech, path: babylm/open_subtitles.train.txt, chunk_lines: 32, license: "MIT (BabyLM-2026-Strict); upstream: OpenSubtitles"}
   s0_stories:
