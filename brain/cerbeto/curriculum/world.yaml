@@ -1,0 +1,229 @@
+# Preschool mini knowledge base (spec 0004) — the only "world knowledge" the curriculum asks about.
+# Written by hand, small on purpose. `rare` members are kept out of training questions about that relation
+# and appear only in `ood_hard` exams.
+
+colors:            # thing: [colour, other accepted colours]
+  sky: [blue]
+  grass: [green]
+  banana: [yellow]
+  snow: [white]
+  carrot: [orange]
+  coal: [black]
+  strawberry: [red]
+  leaf: [green]
+  milk: [white]
+  tomato: [red]
+  lemon: [yellow]
+  frog: [green]
+  pig: [pink]
+  crow: [black]
+  cloud: [white, grey, gray]
+  chocolate: [brown]
+  cherry: [red]
+  sun: [yellow]
+  orange: [orange]
+  elephant: [grey, gray]
+color_words: [red, blue, green, yellow, white, black, orange, pink, brown, grey, gray, purple]
+
+sounds:            # animal: [sound, other accepted sounds]
+  dog: [woof, bark, "bow wow"]
+  cat: [meow, miaow]
+  cow: [moo]
+  duck: [quack]
+  sheep: [baa]
+  pig: [oink]
+  horse: [neigh]
+  bird: [tweet, chirp]
+  lion: [roar]
+  owl: [hoot, "hoo"]
+  frog: [ribbit, croak]
+  mouse: [squeak]
+  bee: [buzz]
+  snake: [hiss]
+  donkey: [hee-haw, "hee haw"]
+  wolf: [howl, awoo]
+sounds_rare: [donkey, wolf, owl]
+
+body:              # what you do: body part [accepted forms]
+  see: [eyes, eye]
+  hear: [ears, ear]
+  smell: [nose]
+  taste: [tongue, mouth]
+  walk: [legs, feet, leg, foot]
+  chew: [teeth, tooth]
+  clap: [hands, hand]
+  think: [brain, head]
+body_parts: [eyes, ears, nose, tongue, mouth, legs, feet, teeth, hands, brain, head, arms, fingers]
+
+opposites:         # pairs, both directions are asked
+  - [big, small, little]
+  - [hot, cold]
+  - [up, down]
+  - [day, night]
+  - [happy, sad]
+  - [fast, slow]
+  - [open, closed, shut]
+  - [wet, dry]
+  - [full, empty]
+  - [loud, quiet]
+  - [hard, soft]
+  - [in, out]
+  - [clean, dirty]
+  - [old, new, young]
+  - [light, dark]
+  - [tall, short]
+  - [good, bad]
+  - ["yes", "no"]
+  - [push, pull]
+  - [win, lose]
+opposites_rare: [[push, pull], [win, lose], [clean, dirty]]
+
+sizes:             # rough size rank of animals and things, for "which is bigger"
+  ant: 1
+  bee: 1
+  mouse: 2
+  frog: 2
+  bird: 3
+  rabbit: 4
+  cat: 4
+  dog: 5
+  sheep: 6
+  pig: 6
+  lion: 7
+  horse: 8
+  cow: 8
+  bear: 8
+  elephant: 10
+  whale: 11
+sizes_rare: [ant, whale, bear]
+
+categories:
+  animal: [dog, cat, cow, horse, bird, fish, duck, pig, sheep, lion, elephant, frog, bear, mouse, rabbit, monkey, whale, bee, snake, owl]
+  fruit: [apple, banana, orange, grape, pear, strawberry, cherry, lemon, peach, plum]
+  vehicle: [car, bus, train, bike, boat, plane, truck]
+  toy: [ball, doll, kite, teddy bear, yo-yo, puzzle]
+  clothes: [shirt, hat, sock, shoe, coat, dress, scarf]
+categories_rare:
+  animal: [whale, bee, snake, owl]
+  fruit: [plum, peach, cherry]
+  vehicle: [boat, plane]
+
+abilities:         # can X? (both directions are statements for agree/disagree)
+  fly: [bird, duck, bee, owl, plane]
+  swim: [fish, duck, frog, whale]
+  bark: [dog]
+  climb trees: [cat, monkey]
+cannot:
+  fly: [cat, dog, cow, pig, fish, horse, elephant, sheep]
+  swim: [car, chair, rock]
+  bark: [cat, cow, fish, bird]
+  climb trees: [fish, elephant, whale]
+
+routines:          # situation lines → phrases that fit, and a natural reply used as the training target
+  greeting:
+    say: ["Hello!", "Hi there!", "Good morning!", "Hi! Nice to see you.", "Hey, hello!", "Hi! I'm {name}.",
+          "Hello! My name is {name}.", "Good morning! I'm {name}.", "Hi! It's me, {name}."]
+    accept: [hi, hello, hey, good morning, morning, nice to see you]
+    reply: "Hello! Nice to see you."
+    situation: ["Your friend says hello to you. What do you say?", "Your teacher says good morning. What do you say back?"]
+  thanks:
+    say: ["Here is {gift} for you.", "This is {gift} for you.", "I made you {gift}.", "You can have {gift}.",
+          "I brought you {gift}.", "Look, {gift} for you!"]
+    accept: [thank you, thanks, thank]
+    reply: "Thank you!"
+    situation: ["Your friend gives you a birthday present. What do you say?", "Grandma gives you an apple. What do you say?"]
+  goodbye:
+    say: ["Bye!", "I have to go now. Goodbye!", "See you {when}!", "Bye bye, see you {when}!", "I'm going home now. Bye!",
+          "Goodbye! See you {when}."]
+    accept: [bye, goodbye, good bye, see you, see ya]
+    reply: "Bye! See you!"
+    situation: ["Your friend is going home. What do you say?", "Grandma is leaving. What do you say to her?"]
+  forgive:
+    say: ["I'm sorry I {oops}.", "Sorry, I {oops}.", "Oops, I {oops}. I'm sorry."]
+    accept: [it's okay, that's okay, it's ok, that's ok, it's all right, it's alright, that's all right, no problem, it's fine, that's fine, okay, ok]
+    reply: "That's okay."
+    situation: ["Your friend says sorry for taking your toy. What do you say?"]
+  apologize:
+    say: ["You {hurt}!", "Ouch, you {hurt}!", "Hey, you {hurt}!"]
+    accept: [sorry]
+    reply: "I'm sorry."
+    situation: ["You spilled your friend's juice. What do you say?", "You bumped into your teacher. What do you say?"]
+  welcome:
+    say: ["Thank you for {favor}!", "Thanks for {favor}!", "Thank you so much for {favor}."]
+    accept: [you're welcome, you are welcome, no problem, welcome]
+    reply: "You're welcome!"
+    situation: ["Your friend says thank you for the toy. What do you say?"]
+  bless:
+    say: ["Achoo!", "Achoo! Achoo!"]
+    accept: [bless you]
+    reply: "Bless you!"
+    situation: ["Your mom sneezes. What do you say?"]
+  how_are_you:
+    say: ["How are you?", "How are you today?", "How are you doing?"]
+    accept: [fine, good, great, okay, ok, well, happy, not bad, very good]
+    reply: "I'm fine, thank you."
+    situation: ["Your teacher asks how you are. What do you say?"]
+
+fill:              # placeholders in routine lines
+  gift: [a cookie, an apple, a flower, a sticker, a balloon, a red crayon, a sandwich, a toy car, a drawing, a candy]
+  when: [tomorrow, later, soon, on Monday, next week, after school]
+  oops: [bumped into you, took your pencil, stepped on your toy, broke your crayon, spilled your juice, took your seat]
+  hurt: [stepped on my foot, bumped into me, took my crayon, pulled my hair, broke my tower, took my ball]
+  favor: [helping me, the cookie, sharing, the flower, playing with me, the sticker, waiting for me]
+
+opinions:          # topic: [reason to like, reason not to like]
+  rain: ["I can jump in puddles", "I get wet"]
+  ice cream: ["it is sweet and cold", "it is too cold"]
+  dogs: ["they are friendly", "they are loud"]
+  carrots: ["they are crunchy", "they taste funny"]
+  the park: ["I can play on the swings", "it is too far"]
+  baths: ["I can play with bubbles", "the water gets in my eyes"]
+  snow: ["I can build a snowman", "it is cold"]
+  books: ["the stories are fun", "they are long"]
+  cats: ["they are soft", "they scratch"]
+  bedtime: ["I hear a story", "I want to play more"]
+
+clarify:
+  say: ["{verb} that.", "{verb} it.", "{verb} the thing.", "{verb} that one.", "Can you {lverb} it?",
+        "Can you {lverb} that one?", "Put it {there}.", "Put that {there}.", "Can you do it now?"]
+  verb: [Give me, Bring me, Hand me, Pass me, Get me]
+  lverb: [get, bring, find, move, fix]
+  there: [there, over there, up there, down there]
+  accept: [which one, what do you mean, which, what, where, what thing]
+  reply: "What do you mean? Which one?"
+
+names: [Tom, Lily, Sam, Mia, Ben, Anna, Leo, Emma, Jack, Zoe, Max, Ella, Nick, Ruby, Dan, Lucy]
+pets: {dog: [Rex, Buddy, Spot], cat: [Kitty, Mittens, Snowy], fish: [Bubbles, Goldie], bird: [Tweety, Sunny], rabbit: [Hoppy, Flop]}
+objects: [ball, kite, hat, bike, cup, book, car, doll, bag, coat]
+places: [park, beach, school, zoo, garden, shop, farm, library]
+events:            # [base form, past form] — daily activities for order-of-events stories
+  - [eat breakfast, ate breakfast]
+  - [go to school, went to school]
+  - [play with the dog, played with the dog]
+  - [read a book, read a book]
+  - [take a bath, took a bath]
+  - [draw a picture, drew a picture]
+  - [feed the cat, fed the cat]
+  - [ride a bike, rode a bike]
+  - [watch a cartoon, watched a cartoon]
+  - [build a sandcastle, built a sandcastle]
+  - [eat lunch, ate lunch]
+  - [visit grandma, visited grandma]
+  - [sing a song, sang a song]
+  - [water the flowers, watered the flowers]
+causes:            # cause sentence, question, answer, wrong option, effect sentence (for reverse questions)
+  - ["{n} left the ice cream in the sun.", "Did the ice cream melt or freeze?", melt, freeze, "The ice cream melted."]
+  - ["{n} dropped a glass on the floor.", "Did the glass break or grow?", break, grow, "The glass broke."]
+  - ["It rained all day.", "Was the grass wet or dry?", wet, dry, "The grass was wet."]
+  - ["{n} did not eat lunch.", "Was {n} hungry or full?", hungry, full, "{n} was hungry."]
+  - ["{n} ran around the park for a long time.", "Was {n} tired or sleepy?", tired, sleepy, "{n} was tired."]
+  - ["{n} forgot the umbrella and it rained.", "Did {n} get wet or stay dry?", wet, dry, "{n} got wet."]
+  - ["{n} watered the seeds every day.", "Did the plants grow or die?", grow, die, "The plants grew."]
+  - ["{n} turned off the light.", "Was the room dark or bright?", dark, bright, "The room was dark."]
+  - ["{n} put on a big warm coat in the snow.", "Was {n} warm or cold?", warm, cold, "{n} was warm."]
+  - ["{n} lost the favorite toy.", "Was {n} happy or sad?", sad, happy, "{n} was sad."]
+  - ["{n} got a new puppy for a birthday.", "Was {n} happy or sad?", happy, sad, "{n} was happy."]
+  - ["{n} did not sleep all night.", "Was {n} tired or awake in the morning?", tired, awake, "{n} was tired in the morning."]
+  - ["The balloon touched a sharp pin.", "Did the balloon pop or float?", pop, float, "The balloon popped."]
+  - ["{n} put the milk in the fridge.", "Was the milk cold or hot?", cold, hot, "The milk was cold."]
+causes_rare: [12, 13]   # indices kept out of training (ood_hard)

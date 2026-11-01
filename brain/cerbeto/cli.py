@@ -41,6 +41,25 @@ def main() -> None:
     en.add_argument("--blimp", action="store_true")
     en.add_argument("--conversation", action="store_true")
     en.add_argument("--device", default="cpu", help="cpu keeps the GPU free for training")
+    ex_sub.add_parser("build", help="generate and freeze the school exam pools (spec 0004)")
+    lk = ex_sub.add_parser("check-leak", help="exam prompts vs training tasks (spec 0004 G4)")
+    lk.add_argument("--tasks", type=int, default=1_000_000)
+    er = ex_sub.add_parser("run", help="school exams for a student version (spec 0004)")
+    er.add_argument("--student", default="growing")
+    er.add_argument("--version")
+    er.add_argument("--device")
+    er.add_argument("--limit", type=int, help="only the first N tasks of every pool (quick check)")
+
+    sc = sub.add_parser("school", help="school (spec 0004 smoke check; full school: spec 0005)")
+    sc_sub = sc.add_subparsers(dest="cmd", required=True)
+    sm = sc_sub.add_parser("smoke", help="short direct lessons from the generators, then exams")
+    sm.add_argument("--student", default="growing")
+    sm.add_argument("--version")
+    sm.add_argument("--minutes", type=float, default=30)
+    sm.add_argument("--stage", default="preschool", help="preschool | grade1 | grade2 | all")
+    sm.add_argument("--lr", type=float, default=3e-4)
+    sm.add_argument("--device")
+    sm.add_argument("--no-exam", action="store_true", help="skip the exams afterwards")
 
     ch = sub.add_parser("chat", help="talk to a student in the terminal")
     ch.add_argument("--student", default="growing")
@@ -81,6 +100,28 @@ def main() -> None:
         from cerbeto.exams.nursery import run as run_exam
         both = not (args.blimp or args.conversation)
         run_exam(args.student, args.version, args.blimp or both, args.conversation or both, args.device)
+    elif args.group == "exam" and args.cmd == "build":
+        from cerbeto.exams.school import build
+        m = build()
+        print(f"{m['tasks']:,} exam tasks in {len(m['pools'])} pools · exam set {m['exam_set_version']}")
+        small = {k: v["tasks"] for k, v in m["pools"].items() if v["tasks"] < 300}
+        if small:
+            print("smaller pools (small task space):", small)
+    elif args.group == "exam" and args.cmd == "check-leak":
+        from cerbeto.exams.school import check_leak
+        r = check_leak(args.tasks)
+        print(r)
+        sys.exit(0 if r["collisions_in_training_stream"] == 0 else 1)
+    elif args.group == "exam" and args.cmd == "run":
+        from cerbeto.exams.school import run as run_school_exam
+        run_school_exam(args.student, args.version, args.device, args.limit)
+    elif args.group == "school" and args.cmd == "smoke":
+        from cerbeto.school.smoke import run as run_smoke
+        r = run_smoke(args.student, args.version, args.minutes, None if args.stage == "all" else args.stage,
+                      lr=args.lr, device=args.device)
+        if not args.no_exam:
+            from cerbeto.exams.school import run as run_school_exam
+            run_school_exam("smoke", r["path"].rsplit("/", 1)[1], args.device)
     elif args.group == "chat":
         from cerbeto.talk import run as run_chat
         run_chat(args.student, args.version, args.device, args.k, args.temperature, args.say)

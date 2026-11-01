@@ -3,7 +3,7 @@
 Status: delivered for the growing student (2026-11-01) — still open: control student run, G4 baseline (waits for 0004 exam pools), G5 human review · Depends on: 0001, 0002 · Unblocks: 0005
 
 ## 1. TL;DR
-We teach the student to speak English on the stage 0 shelves (child-directed speech → simple stories), in parallel with a control student of fixed size 30M. Speech is kept as a **conversation with roles** (adult `<|human|>` ↔ child `<|student|>`), so turn-taking is learned from day one. Proof: the nursery exam (BLiMP + a conversation probe) and a recorded baseline measurement for all grades 1–3.
+We teach the student to speak English on the stage 0 shelves (child-directed speech → simple stories), in parallel with a control student of fixed size 30M. Speech is kept as a **conversation with roles** (adult `<|human|>` ↔ child `<|student|>`), so turn-taking is learned from day one. Proof: the nursery exam (BLiMP + a conversation probe) and a recorded baseline measurement for all school stages 1–3 (preschool, grade 1, grade 2).
 
 ## 2. Abstract
 The student starts with random weights, so before it begins lessons with a teacher it must master language. This is the most compute-heavy stage (≥ 250M tokens) and it happens once, centrally, on a 32 GB computer; people receive a student that already speaks (0007). The data order mimics development: first child-directed speech, then stories. A child learns language **in conversation**, so the speech shelf keeps who is speaking: in CHILDES the child's turns become `<|student|>` and the adults' turns `<|human|>` — the same chat format the student later uses with the teacher and in the admin panel. (In 0001 speaker tags were stripped; this specification rebuilds `s0_speech` with roles.) To prove the project's thesis, we train in parallel a control student without growth (30M from the start).
@@ -14,7 +14,7 @@ The student starts with random weights, so before it begins lessons with a teach
 - `s0_speech` rebuilt with conversation roles: CHILDES `*CHI` → `<|student|>`, every other speaker → `<|human|>`; Switchboard A/B → alternating `<|human|>`/`<|student|>`; subtitles and BNC (no reliable speaker info) stay plain text.
 - Nursery curriculum: phase A `s0_speech` (~30% of tokens), phase B a mix of `s0_speech` + `s0_stories` (~70%).
 - Growing student (start ~8M, growth according to 0002 on plateau) and control student (fixed 30M) on the same data in the same order.
-- Nursery exam and baseline measurement: results of both students on the grade 1–3 exams (0004) **before** school.
+- Nursery exam and baseline measurement: results of both students on the stage 1–3 exams (0004: preschool, grade 1, grade 2) **before** school.
 
 **Out of scope:** lessons with a teacher, hippocampus, sleep.
 
@@ -64,7 +64,7 @@ The students are trained **sequentially** (first the growing one, then the contr
 **Data:** ~2 × 300 MB of checkpoints, metrics in JSONL.
 
 ## 6. Critical Path
-1. Training loop + resuming → 2. phase A on the growing student (short test run) → 3. BLiMP exam → 4. full run of both students in the background → 5. baseline measurement for grades 1–3.
+1. Training loop + resuming → 2. phase A on the growing student (short test run) → 3. BLiMP exam → 4. full run of both students in the background → 5. baseline measurement for stages 1–3.
 
 **Completion condition:** both students have a "post-nursery" version with exam results and the baseline measurement recorded in `runs/nursery/`.
 
@@ -75,13 +75,13 @@ The students are trained **sequentially** (first the growing one, then the contr
 | G2 | Integration | BLiMP ≥ 65% (growing student) — **passed: 65.9%** | `cerbeto exam nursery` | 0005 |
 | G3 | Integration | Conversation probe ≥ 60% fitting replies — **passed: 80%, but the grading is too lenient (see §9); from now on a baseline measurement, not a blocking gate** | `cerbeto exam nursery --conversation` | — |
 | G6 | Unit | `s0_speech`: in CHILDES every child turn starts with `<|student|>`, every adult turn with `<|human|>`; the tokenizer keeps both as single tokens | `pytest tests/test_shelves.py` | full run |
-| G4 | Integration | Baseline measurement for grades 1–3 recorded for both students (runs on the saved post-nursery checkpoints once 0004 exam pools exist) | file `runs/nursery/baseline.json` | 0005 |
+| G4 | Integration | Baseline measurement for stages 1–3 recorded for both students (runs on the saved post-nursery checkpoints once 0004 exam pools exist) | file `runs/nursery/baseline.json` | 0005 |
 | G5 | Manual | 20 random student utterances readable by a human | review | 0007 |
-| N1 | Negative | No exam example (BLiMP, grades 1–3) that appears in the training data is scored: the leak check records every BLiMP sentence found verbatim (normalized) in the stage 0 shelves, and those pairs are excluded from the exam (first check: 26 unique BLiMP sentences occur in the shelves — 1,495 occurrences, almost all simple TinyStories sentences; 27 of ~60k pairs excluded) | `cerbeto exam` leak check + `pytest tests/test_exams_nursery.py` | G2–G4 |
+| N1 | Negative | No exam example (BLiMP, stages 1–3) that appears in the training data is scored: the leak check records every BLiMP sentence found verbatim (normalized) in the stage 0 shelves, and those pairs are excluded from the exam (first check: 26 unique BLiMP sentences occur in the shelves — 1,495 occurrences, almost all simple TinyStories sentences; 27 of ~60k pairs excluded) | `cerbeto exam` leak check + `pytest tests/test_exams_nursery.py` | G2–G4 |
 
 ## 8. Expected Outcome
 - **Direct:** a student speaking simple English.
-- **Measurable:** BLiMP, perplexity, conversation probe, baseline measurement for grades 1–3.
+- **Measurable:** BLiMP, perplexity, conversation probe, baseline measurement for stages 1–3.
 - **Side effects:** a dozen or so hours of full GPU load.
 - **Rollback:** any nursery checkpoint.
 

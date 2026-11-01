@@ -14,7 +14,8 @@ The project uses **[Rondo](https://workwithrondo.com)** as its reference enginee
 
 ## Current state (2026-11-01)
 - Specifications 0001–0007 written; **0001** (school library and tokenizer) and **0002** (student architecture and growth) delivered — 0001 G5 (human review of shelf samples) pending.
-- **0003** nursery delivered for the growing student: 300M tokens in 15 h 42 min on the M1 Pro, grown 6.9M → 29.9M, validation loss 9.07 → 2.25. BLiMP 65.9% (gate 65%), conversation probe 80% (gate 60%, grading too lenient). It takes short, toddler-like conversational turns ("How old are you?" → "I got two.") but answers "yeah" even to false statements — learning truth and honest "I don't know" is the job of school (0004–0005). Still open: the control student run and the grade 1–3 baseline.
+- **0003** nursery delivered for the growing student: 300M tokens in 15 h 42 min on the M1 Pro, grown 6.9M → 29.9M, validation loss 9.07 → 2.25. BLiMP 65.9% (gate 65%), conversation probe 80% (gate 60%, grading too lenient). It takes short, toddler-like conversational turns ("How old are you?" → "I got two.") but answers "yeah" even to false statements — learning truth and honest "I don't know" is the job of school (0004–0005). Still open: the control student run and the school baseline (preschool, grade 1, grade 2).
+- **0004** curriculum and exams delivered: 16 skills across preschool, grade 1 and grade 2, 10,830 frozen exam tasks graded by code. Baseline after the nursery: no stage passed (5–40%), with a "yeah" and "I don't know" reflex. A first preschool smoke run (direct lessons, no teacher) is trained; its exam is pending. Open: the 30M limit leaves no room for growth in school (0005).
 - School library downloaded offline into `data/library/` (outside git): BabyLM-2026-Strict, TinyStories V2, Simple English Wikipedia, FineWeb-Edu (1 shard) — about 4.8 GB.
 - Shelves built (`data/shelves/`): stage 0 has 628M training tokens (speech 84M, stories 544M); stages 1–3: books 37M, world 0.8M, edu 4.4M.
 - Own BPE tokenizer: 8192 tokens, 1.24 tokens/word on TinyStories.
@@ -56,7 +57,7 @@ Observed outside the formal exam, in conversation with the same checkpoint. In s
 | Phase | What happens | Expected effect on the student | How we will know |
 |---|---|---|---|
 | **0003 — control student** | The same 300M-token nursery for a fixed 30M student, no growth (~25 h, run separately) | Nothing new for the student itself — a reference point for the project's thesis | Its BLiMP and validation loss next to the growing student's; later the same school results |
-| **0004 — curriculum and exams** | Task generators whose answers are known to the code: preschool social skills (agree/disagree by truth, honest "I don't know", opinions with a reason), a mini knowledge base (colours, animals, body parts, opposites, categories), then reading comprehension and counting (grade 1), order of events, cause–effect, numbers to 100 and one-step word problems (grade 2); frozen exam pools in three variants (`id`, `ood_hard`, `ood_combo`), ~10% unanswerable questions | No training yet — the **baseline**: an honest measurement of what both nursery students score on grades 1–3 before school (expected: low, with "yeah" and random facts graded as errors) | Exam tables per skill × variant; `runs/nursery/baseline.json` |
+| **0004 — curriculum and exams** | Task generators whose answers are known to the code: preschool social skills (agree/disagree by truth, honest "I don't know", opinions with a reason), a mini knowledge base (colours, animals, body parts, opposites, categories), then reading comprehension and counting (grade 1), order of events, cause–effect, numbers to 100 and one-step word problems (grade 2); frozen exam pools in three variants (`id`, `ood_hard`, `ood_combo`), ~10% unanswerable questions | No training yet — the **baseline**: an honest measurement of what both nursery students score on preschool, grade 1 and grade 2 before school (expected: low, with "yeah" and random facts graded as errors) | Exam tables per skill × variant; `runs/nursery/baseline.json` |
 | **0005 — school: day, sleep, exam** | The automatic loop: **day** — lessons with the local LLM teacher, experiences in the hippocampus; **sleep** — consolidation into the weights with replay, EWC and neuron renewal; **exam** — promotion, rollback or growth | The *"yeah"* reflex replaced by answers that follow the truth; *"I don't know"* only where the answer really is unknown; stable facts from the knowledge base; then reading, counting and simple reasoning — grade by grade, without forgetting the previous ones | **MVP priority:** `ood_hard` + `ood_combo` up by ≥ 20 pp versus the baseline; ≥ 85% on `id` per grade; forgetting ≤ 2 pp; growing vs control comparison |
 | **0006 — admin panel and chat** | Local Rails panel: teachers, live lessons, progress, the student's brain, versions with compare and rollback, library, chat | You can watch lessons live, talk to the student and correct it — a human becomes an extra teacher | Every function within 2 clicks; live view ≤ 2 s delay |
 | **0007 — offline distribution** | A package with the post-nursery student, curriculum, local teacher, learning tool and panel | The student keeps learning and growing at people's homes on a 16 GB Mac, fully offline; every copy becomes a separate child | Clean 16 GB Mac: install ≤ 30 min, 3 offline cycles, peak RAM ≤ 14 GB |
@@ -147,6 +148,17 @@ Inside the chat, plain text is a conversation the student remembers; commands pr
 One-shot, for scripts:
 ```bash
 uv run cerbeto chat --say "Hello!" --say "Are you happy?"
+```
+School exams (spec 0004) — build the frozen pools once, check that lessons never repeat an exam prompt, then examine a student (`--limit 20` for a quick look):
+```bash
+uv run cerbeto exam build && uv run cerbeto exam check-leak
+```
+```bash
+uv run cerbeto exam run --student growing
+```
+Smoke check: direct preschool lessons from the generators for 30 minutes (a separate student in `checkpoints/smoke/`), then the exams:
+```bash
+uv run cerbeto school smoke --stage preschool --minutes 30
 ```
 Smoke-train a fresh student for 30 minutes:
 ```bash

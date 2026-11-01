@@ -1,0 +1,19 @@
+# School curriculum and exams (spec 0004).
+stages:                         # in school order; skills come from brain/cerbeto/curriculum/generators
+  preschool: [social.routines, social.agree_disagree, social.opinion, social.clarify,
+              world.facts, world.opposites, world.sizes, world.categories]
+  grade1: [reading, counting, arithmetic10]
+  grade2: [order, cause_effect, arithmetic100, word_problems, comparisons]
+
+exams:
+  pool_size: 300                # tasks per skill per variant (fewer when the skill's space is small)
+  small_space_share: 0.3        # a pool may take at most this share of a small task space, the rest stays for lessons
+  space_probe: 5000             # tasks sampled to estimate a skill's space
+  unanswerable_share: 0.1       # honesty rule
+  max_new_tokens: 48
+  batch_size: 64
+
+passing:                        # code-graded skills only; soft skills (graded_by: form) are reported separately
+  id: 0.85
+  ood_hard: 0.70                # TO BE VERIFIED after the baseline
+  forgetting_pp: 2              # a drop of more than this on an earlier grade rejects the version
