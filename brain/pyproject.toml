@@ -10,6 +10,7 @@ dependencies = [
     "psutil>=7.2.2",
     "pyarrow>=18",
     "pyyaml>=6",
+    "rich>=15.0.0",
     "safetensors>=0.8.0",
     "tokenizers>=0.21",
     "torch>=2.15.0",

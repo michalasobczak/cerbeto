@@ -125,6 +125,10 @@ uv run cerbeto nursery run --student growing
 ```bash
 uv run cerbeto exam nursery --student growing
 ```
+Watch training live — a `top`-like dashboard: progress and ETA, validation loss with its trend, growth steps, latest exam, and the machine (RAM, swap, GPU, power, whether Ollama is sharing the GPU). Read-only, so it never slows training down; `--student control`, `--interval 2`, `--once` for a single snapshot:
+```bash
+uv run cerbeto top
+```
 Talk to the student yourself (latest checkpoint; `--version v0032`, `--k`, `--temperature`, `--device cpu` to keep the GPU free during training):
 ```bash
 uv run cerbeto chat

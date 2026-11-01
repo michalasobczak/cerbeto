@@ -50,6 +50,11 @@ def main() -> None:
     ch.add_argument("--device", help="mps / cpu (default: best available)")
     ch.add_argument("--say", action="append", help="one-shot: say this and print the reply (repeatable)")
 
+    tp = sub.add_parser("top", help="live dashboard of the students and the machine")
+    tp.add_argument("--student", action="append", choices=["growing", "control"], help="only this student")
+    tp.add_argument("--interval", type=float, default=5, help="seconds between refreshes")
+    tp.add_argument("--once", action="store_true", help="print one snapshot and exit")
+
     args = parser.parse_args()
     if args.group == "library" and args.cmd == "build":
         from cerbeto.library.shelves import build_all
@@ -79,6 +84,9 @@ def main() -> None:
     elif args.group == "chat":
         from cerbeto.talk import run as run_chat
         run_chat(args.student, args.version, args.device, args.k, args.temperature, args.say)
+    elif args.group == "top":
+        from cerbeto.top import run as run_top
+        run_top(args.student, args.interval, args.once)
     elif args.group == "tokenizer" and args.cmd == "train":
         from cerbeto.library.shelves import load_config
         from cerbeto.tokenizer import train
