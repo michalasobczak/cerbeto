@@ -1,6 +1,6 @@
 # 0003 — Nursery: language learning (stage 0) and baseline measurement
 
-Status: in progress (growing student training since 2026-10-31 21:55, attempt 2) · Depends on: 0001, 0002 · Unblocks: 0005
+Status: delivered for the growing student (2026-11-01) — still open: control student run, G4 baseline (waits for 0004 exam pools), G5 human review · Depends on: 0001, 0002 · Unblocks: 0005
 
 ## 1. TL;DR
 We teach the student to speak English on the stage 0 shelves (child-directed speech → simple stories), in parallel with a control student of fixed size 30M. Speech is kept as a **conversation with roles** (adult `<|human|>` ↔ child `<|student|>`), so turn-taking is learned from day one. Proof: the nursery exam (BLiMP + a conversation probe) and a recorded baseline measurement for all grades 1–3.
@@ -72,8 +72,8 @@ The students are trained **sequentially** (first the growing one, then the contr
 | # | Type | Condition | Verification | Blocks |
 |---|---|---|---|---|
 | G1 | Unit | Resuming gives the same next batch and the same loss (±1e-5) | `pytest tests/test_resume.py` | full run |
-| G2 | Integration | BLiMP ≥ 65% (growing student) | `cerbeto exam nursery` | 0005 |
-| G3 | Integration | Conversation probe ≥ 60% fitting replies | `cerbeto exam nursery --conversation` | 0005 |
+| G2 | Integration | BLiMP ≥ 65% (growing student) — **passed: 65.9%** | `cerbeto exam nursery` | 0005 |
+| G3 | Integration | Conversation probe ≥ 60% fitting replies — **passed: 80%, but the grading is too lenient (see §9); from now on a baseline measurement, not a blocking gate** | `cerbeto exam nursery --conversation` | — |
 | G6 | Unit | `s0_speech`: in CHILDES every child turn starts with `<|student|>`, every adult turn with `<|human|>`; the tokenizer keeps both as single tokens | `pytest tests/test_shelves.py` | full run |
 | G4 | Integration | Baseline measurement for grades 1–3 recorded for both students (runs on the saved post-nursery checkpoints once 0004 exam pools exist) | file `runs/nursery/baseline.json` | 0005 |
 | G5 | Manual | 20 random student utterances readable by a human | review | 0007 |
@@ -89,5 +89,14 @@ The students are trained **sequentially** (first the growing one, then the contr
 - **Rejected alternatives:** a single student without a control group (impossible to prove the benefit of growth).
 - **Technical debt:** the conversation probe is graded by an LLM (soft); the hard gates are BLiMP and the code-based exams in 0004 (including the code-graded social skills).
 - **Rejected alternatives (added):** story continuation as the nursery ability test — it does not show whether the student can hold a conversation.
+- **Results — growing student, attempt 2 (2026-10-31 21:55 → 2026-11-01 13:37, 15 h 42 min, M1 Pro, fp32):**
+  - 300M tokens, 36,622 optimizer steps; final version `checkpoints/growing/v0032`, 29,893,120 parameters.
+  - Growth: 60M deadline → `grow_model_dim` 256→384 + `grow_width` (14.0M); 120M deadline → `grow_depth` core.2 (15.8M); plateau at 145M → `grow_model_dim` 384→512 + `grow_width` (26.7M); plateau at 170M → `grow_depth` core.3 (29.9M). Every operator passed the Δloss ≤ 0.01 guard.
+  - Throughput: ~12.6k tokens/s at 6.9M, ~3.9k tokens/s at 29.9M; ~6–8 h lost to the 30M size, slightly more to another local Ollama model sharing the GPU for a while.
+  - Validation loss (32 batches per shelf): mean 9.07 → **2.248**; `s0_speech` **3.138**, `s0_stories` **1.358**. Stories improved steadily; speech stalled at ~3.30 between ~45M and ~240M tokens and moved again only during the final LR decay.
+  - **BLiMP 65.9%** (gate 65% — passed at the edge). Best: anaphor agreement / principle A (96–100%), wh-vs-that without a gap (97–99%). Worst — below chance, the model systematically prefers the wrong sentence: long-distance wh/that with a gap (9%), existential *there* + quantifiers (13%), NPI licensing (14–22%), coordinate-structure islands (22%). These constructions are nearly absent from child speech and TinyStories.
+  - **Conversation probe 80%** fitting (by category: greeting 0.8, thanks 0.4, goodbye 0.8, about self 0.8, offers 1.0, feelings 1.0, apology/help 0.8, world questions 0.8, agree/disagree 1.0, "I don't know" 0.6). Replies are short, toddler-like turns: "Hello!" → "hello, hello!", "How old are you?" → "I got two.", "What color is the sky?" → "blue.", "Do cows say moo?" → "moo.", "What did I eat for breakfast yesterday?" → "I don't know."; failures: echoing ("I made you a sandwich." → "I made you a sandwich."), loops, "no." to "What is your name?".
+  - **The probe overrates the student.** The teacher grades whether a reply is a fitting *turn*, not whether it is *true*: "Cats can fly, right?" → "yeah." got 4/5, "Is the sun cold?" → "yeah." got 3/5. The student has a strong "yeah/no" reflex; agree/disagree at 1.0 reflects that reflex, not knowledge. A strict human re-reading counts about half of the replies as both fitting and true. Decision: the conversation probe stays as a baseline measurement only; truthfulness of agree/disagree and honest "I don't know" are graded by code in 0004.
+  - Full results: `runs/nursery/growing/exam_v0032.json`; metrics: `runs/nursery/growing/metrics.jsonl`.
 - **Sources:** BabyLM Challenge; BLiMP (Warstadt et al., 2020).
-- **Open questions:** BLiMP threshold after the first measurement; if the real time exceeds 24 h — shorten the control student's nursery to the same number of tokens as the growing one, or go back to considering MLX.
+- **Open questions:** BLiMP threshold after the control student's measurement; if the real time exceeds 24 h — shorten the control student's nursery to the same number of tokens as the growing one, or go back to considering MLX.
