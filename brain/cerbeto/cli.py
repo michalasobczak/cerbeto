@@ -42,6 +42,14 @@ def main() -> None:
     en.add_argument("--conversation", action="store_true")
     en.add_argument("--device", default="cpu", help="cpu keeps the GPU free for training")
 
+    ch = sub.add_parser("chat", help="talk to a student in the terminal")
+    ch.add_argument("--student", default="growing")
+    ch.add_argument("--version", help="checkpoint version, e.g. v0032 (default: latest)")
+    ch.add_argument("--k", type=int, default=4, help="passes of the recurrent core")
+    ch.add_argument("--temperature", type=float, default=0.7)
+    ch.add_argument("--device", help="mps / cpu (default: best available)")
+    ch.add_argument("--say", action="append", help="one-shot: say this and print the reply (repeatable)")
+
     args = parser.parse_args()
     if args.group == "library" and args.cmd == "build":
         from cerbeto.library.shelves import build_all
@@ -68,6 +76,9 @@ def main() -> None:
         from cerbeto.exams.nursery import run as run_exam
         both = not (args.blimp or args.conversation)
         run_exam(args.student, args.version, args.blimp or both, args.conversation or both, args.device)
+    elif args.group == "chat":
+        from cerbeto.talk import run as run_chat
+        run_chat(args.student, args.version, args.device, args.k, args.temperature, args.say)
     elif args.group == "tokenizer" and args.cmd == "train":
         from cerbeto.library.shelves import load_config
         from cerbeto.tokenizer import train
