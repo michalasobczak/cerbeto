@@ -65,6 +65,25 @@ def load_student(student: str, version: str | None, device: str | None):
     return checkpoint.load(Path(ckpt_dir / version), dev), version, dev
 
 
+HISTORY_FILE = paths.REPO / "runs" / "chat_history"
+
+
+def _enable_line_editing() -> None:
+    """Cursor keys for editing (←/→) and for earlier lines (↑/↓), kept across sessions in runs/ (outside git)."""
+    try:
+        import atexit
+        import readline
+    except ImportError:  # e.g. Windows without pyreadline — plain input still works
+        return
+    HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        readline.read_history_file(HISTORY_FILE)
+    except (FileNotFoundError, OSError):
+        pass
+    readline.set_history_length(1000)
+    atexit.register(readline.write_history_file, HISTORY_FILE)
+
+
 def run(student: str, version: str | None, device: str | None, k: int, temperature: float,
         says: list[str] | None = None) -> None:
     model, version, dev = load_student(student, version, device)
@@ -74,7 +93,8 @@ def run(student: str, version: str | None, device: str | None, k: int, temperatu
         for say in says:
             print(f"you> {say}\nstudent> {talker.reply(say)}")
         return
-    print(f"Talking to {info}. /help for commands, /quit to leave.")
+    _enable_line_editing()
+    print(f"Talking to {info}. /help for commands, /quit to leave; ↑/↓ browse earlier lines.")
     while True:
         try:
             line = input("you> ").strip()

@@ -138,6 +138,7 @@ Inside the chat, plain text is a conversation the student remembers; commands pr
 | `/think The sky is green.` | "thinking longer": the most likely answer at K = 1, 2, 4, 8 |
 | `/k 8`, `/temp 0` | passes of the recurrent core; temperature (0 = always the most likely answer) |
 | `/reset`, `/info`, `/help`, `/quit` | forget the conversation, show the checkpoint, help, leave |
+| ←/→, ↑/↓ | edit the line; browse earlier lines (history kept in `runs/chat_history`) |
 
 One-shot, for scripts:
 ```bash
