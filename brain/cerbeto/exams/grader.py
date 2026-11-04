@@ -5,7 +5,8 @@ Rules:
 - "I don't know" is correct only on unanswerable tasks; on answerable ones it is an error (no hiding behind it);
 - on an unanswerable task anything other than "I don't know" is a made-up answer — always an error;
 - yes/no: the first yes- or no-word decides, but a "no" that restates the false statement ("No. A cloud is
-  green.") is wrong; numbers: the first number after the last "=", otherwise the last
+  green.") is wrong; restating the statement without yes/no ("The coal is black.") is not an answer — it may
+  be a mere echo of the question; numbers: the first number after the last "=", otherwise the last
   number in the reply (digits or words) — "3 + 4 = 7" and "Tom has 3, then 4 more, so 7" both give 7;
 - text: an accepted answer must appear as whole words (simple inflections count: roars, chirping, closed) and no
   competitor (`reject`) may appear — listing every option does not pass; a reason after "because" or "than" may
@@ -97,7 +98,7 @@ def grade(task: Task, reply: str) -> bool:
     if task.answer_type == "yesno":
         if task.answer == "no" and (stated := false_statement(task)) and contains(text, stated):
             return False                   # "No. A cloud is green." repeats the false statement as its correction
-        return yes_no(text) == task.answer
+        return yes_no(text) == task.answer   # an explicit yes or no: restating the statement may be a mere echo
     if task.answer_type == "number":
         return answer_number(reply) == int(task.answer)
     if task.answer_type == "text":

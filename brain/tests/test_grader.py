@@ -141,3 +141,9 @@ def test_a_no_that_repeats_the_false_statement_is_wrong():
     assert not grade(cloud, "<|think|> A cloud is white. <|/think|><|answer|> No. A cloud is green.")
     car = task("yesno", "no", question="Is a pear a vehicle?")
     assert grade(car, "No, a pear is a fruit.")
+
+
+def test_restating_the_statement_without_yes_or_no_is_not_an_answer():
+    coal = task("yesno", "yes", question="The coal is black. Is that right?")
+    assert not grade(coal, "The coal is black.")          # may be a mere echo of the question
+    assert grade(coal, "Yes, the coal is black.")

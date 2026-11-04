@@ -8,12 +8,11 @@ used only when code verifies it, otherwise the generator's reference solution is
 """
 import json
 import random
-from functools import lru_cache
 import re
 from collections.abc import Callable
 
 from cerbeto import paths
-from cerbeto.curriculum import Task, training_stream, world
+from cerbeto.curriculum import Task, knowledge_words, training_stream, world
 from cerbeto.curriculum.numbers import numbers_in
 from cerbeto.exams.grader import grade
 from cerbeto.exams.school import answer, exam_hashes
@@ -41,18 +40,6 @@ def teacher(name: str | None = None) -> Ask:
             f.write(json.dumps({"prompt": messages[-1]["content"]}) + "\n")
         return chat(messages, name, temperature=0.3, think=think)
     return ask
-
-
-@lru_cache(maxsize=1)
-def knowledge_words() -> frozenset[str]:
-    """Words of the knowledge base a question is about (things, animals, colours, sounds, categories, opposites):
-    a rephrasing must keep every one of them, or it may ask about something else."""
-    w = world()
-    words = set(w["colors"]) | set(w["color_words"]) | set(w["sounds"]) | set(w["sizes"]) | set(w["objects"])
-    words |= {s for v in w["sounds"].values() for s in v} | set(w["categories"])
-    words |= {m for v in w["categories"].values() for m in v} | {x for p in w["opposites"] for x in p}
-    words |= set(w["abilities"]) | {m for v in w["abilities"].values() for m in v} | set(w["places"])
-    return frozenset(x for x in words if x.isalpha() and len(x) > 2)
 
 
 def rephrase_ok(old: str, new: str) -> bool:

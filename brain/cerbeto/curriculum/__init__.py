@@ -149,3 +149,15 @@ def training_stream(seed: int = 0, stage: str | None = None, exclude: set[str] |
         task = generate(rng.choice(names), "train", rng.randrange(EXAM_SEED_BASE))
         if task.hash not in exclude:
             yield task
+
+
+@cache
+def knowledge_words() -> frozenset[str]:
+    """Words of the knowledge base a question is about (things, animals, colours, sounds, categories, opposites):
+    a rephrasing must keep every one of them; an answer that repeats all of them affirms the statement."""
+    w = world()
+    words = set(w["colors"]) | set(w["color_words"]) | set(w["sounds"]) | set(w["sizes"]) | set(w["objects"])
+    words |= {s for v in w["sounds"].values() for s in v} | set(w["categories"])
+    words |= {m for v in w["categories"].values() for m in v} | {x for p in w["opposites"] for x in p}
+    words |= set(w["abilities"]) | {m for v in w["abilities"].values() for m in v} | set(w["places"])
+    return frozenset(x for x in words if x.isalpha() and len(x) > 2)
