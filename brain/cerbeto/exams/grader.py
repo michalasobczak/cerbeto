@@ -4,7 +4,8 @@ Rules:
 - the graded text is what follows `<|answer|>` when the student wrote it, otherwise the whole reply;
 - "I don't know" is correct only on unanswerable tasks; on answerable ones it is an error (no hiding behind it);
 - on an unanswerable task anything other than "I don't know" is a made-up answer — always an error;
-- yes/no: the first yes- or no-word decides; numbers: the first number after the last "=", otherwise the last
+- yes/no: the first yes- or no-word decides, but a "no" that restates the false statement ("No. A cloud is
+  green.") is wrong; numbers: the first number after the last "=", otherwise the last
   number in the reply (digits or words) — "3 + 4 = 7" and "Tom has 3, then 4 more, so 7" both give 7;
 - text: an accepted answer must appear as whole words (simple inflections count: roars, chirping, closed) and no
   competitor (`reject`) may appear — listing every option does not pass; a reason after "because" or "than" may
@@ -66,6 +67,16 @@ def yes_no(text: str) -> str | None:
     return None
 
 
+TAGS = re.compile(r"\s*(right|is that (true|right))\s*$")
+
+
+def false_statement(task: Task) -> str | None:
+    """The statement a "no" question asks about ("A cloud is green. Right?" → "a cloud is green"), if it is one."""
+    q = normalize(task.question)
+    stated = TAGS.sub("", q)
+    return stated if stated and (stated != q or not task.question.rstrip().endswith("?")) else None
+
+
 def answer_number(reply: str) -> int | None:
     raw = extract(reply)
     if "=" in raw:
@@ -84,6 +95,8 @@ def grade(task: Task, reply: str) -> bool:
     if task.answer_type in ("number", "text") and len(text.split()) >= 3 and contains(normalize(task.question), text):
         return False                   # echoing a piece of the question
     if task.answer_type == "yesno":
+        if task.answer == "no" and (stated := false_statement(task)) and contains(text, stated):
+            return False                   # "No. A cloud is green." repeats the false statement as its correction
         return yes_no(text) == task.answer
     if task.answer_type == "number":
         return answer_number(reply) == int(task.answer)

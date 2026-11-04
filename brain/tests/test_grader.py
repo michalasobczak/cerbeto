@@ -131,3 +131,13 @@ def test_exam_pools_balance_yes_and_no(pools):
         yes = sum(t.answer_type == "yesno" and t.answer == "yes" for t in ts)
         no = sum(t.answer_type == "yesno" and t.answer == "no" for t in ts)
         assert abs(yes - no) <= 1, (key, yes, no)
+
+
+def test_a_no_that_repeats_the_false_statement_is_wrong():
+    cloud = task("yesno", "no", question="A cloud is green. Right?")
+    assert grade(cloud, "No. A cloud is white.")
+    assert grade(cloud, "No, it is white.")
+    assert not grade(cloud, "No. A cloud is green.")
+    assert not grade(cloud, "<|think|> A cloud is white. <|/think|><|answer|> No. A cloud is green.")
+    car = task("yesno", "no", question="Is a pear a vehicle?")
+    assert grade(car, "No, a pear is a fruit.")
