@@ -37,12 +37,16 @@ def weighted_loss(logits: torch.Tensor, labels: torch.Tensor, cap: float) -> tor
 
 
 def run_sleep(model, device, experiences: list[Experience], earlier: list[str], cfg: dict, ewc: EWC | None,
-              seed: int = 0, stop: Callable[[], bool] = lambda: False, log: Callable[[str], None] = print) -> dict:
+              seed: int = 0, stop: Callable[[], bool] = lambda: False, log: Callable[[str], None] = print,
+              memories: list[tuple[str, str, bool]] = ()) -> dict:
     tok = load_tokenizer()
     rng, nrng = random.Random(seed), np.random.default_rng(seed)
     shelves = [ShelfStream(s, "train", model.cfg.max_seq_len) for s in ("s0_speech", "s0_stories")]
     replay = training_stream(seed=20_000 + seed, stage=None, exclude=exam_hashes()) if earlier else None
     pairs = [(e.prompt, e.target) for e in experiences]
+    # earlier days of this stage: mistakes come back more often (×mistake_weight)
+    recall_w = [1.0 if right else cfg.get("mistake_weight", 2.0) for _, _, right in memories]
+    n_recall = round(cfg["batch"] * cfg.get("memory_share", 1.0)) if memories else 0
     steps_per_epoch = math.ceil(len(pairs) / cfg["batch"])
     total = steps_per_epoch * cfg["epochs"]
     opt = torch.optim.AdamW(model.parameters(), lr=cfg["lr"], betas=(0.9, 0.95), weight_decay=0.1)
@@ -57,9 +61,11 @@ def run_sleep(model, device, experiences: list[Experience], earlier: list[str], 
             for g in opt.param_groups:         # warm-up, then cosine to 10%
                 g["lr"] = cfg["lr"] * min(1.0, (step + 1) / cfg["warmup"]) * (0.1 + 0.45 * (1 + math.cos(math.pi * step / total)))
             batch = pairs[b:b + cfg["batch"]]
+            if n_recall:
+                batch = batch + [(p, t) for p, t, _ in rng.choices(memories, weights=recall_w, k=n_recall)]
             if replay:                         # as many lessons of earlier stages, with the reference solution
                 old = []
-                while len(old) < len(batch):
+                while len(old) < cfg["batch"]:
                     t = next(replay)
                     if t.stage in earlier:
                         old.append(lesson_text(t))

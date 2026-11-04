@@ -86,6 +86,9 @@ def main() -> None:
     tp.add_argument("--interval", type=float, default=5, help="seconds between refreshes")
     tp.add_argument("--once", action="store_true", help="print one snapshot and exit")
 
+    pn = sub.add_parser("panel", help="local web panel of the school: status, exams, lessons, log (read-only)")
+    pn.add_argument("--port", type=int, default=8765)
+
     args = parser.parse_args()
     if args.group == "library" and args.cmd == "build":
         from cerbeto.library.shelves import build_all
@@ -146,6 +149,9 @@ def main() -> None:
     elif args.group == "chat":
         from cerbeto.talk import run as run_chat
         run_chat(args.student, args.version, args.device, args.k, args.temperature, args.say)
+    elif args.group == "panel":
+        from cerbeto.panel import run as run_panel
+        run_panel(port=args.port)
     elif args.group == "top":
         from cerbeto.top import run as run_top
         run_top(args.student, args.interval, args.once)

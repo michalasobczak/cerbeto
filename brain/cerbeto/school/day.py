@@ -99,18 +99,19 @@ def run_day(model, device, student: str, day: int, stage: str, cfg: dict, ask: A
         stats["rephrased"] += sum(t is not g for t, g in zip(tasks, given))
         replies = answer(model, [t.prompt for t in tasks], cfg["k"], device)
         rows = []
-        for t, reply in zip(tasks, replies):
+        for t, g, reply in zip(tasks, given, replies):
             ok = grade(t, reply)
-            steps, origin = (" ".join(t.steps) or None), "code"
+            steps, origin, said = (" ".join(t.steps) or None), "code", {}
             if not ok and t.answer_type != "unknown" and not stop():
-                explained = tutor(t, ask, t.skill in think_skills)
+                explained = tutor(t, lambda m, th: said.setdefault("reply", ask(m, th)), t.skill in think_skills)
                 if explained:
                     steps, origin = explained[0], "teacher"
             stats["correct"] += ok
             stats["teacher_explained" if origin == "teacher" else "code_explained"] += not ok
             prompt, _ = lesson_text(t)
             rows.append(Experience(student, day, stage, t.skill, origin, t.hash, prompt, target(t, steps), reply,
-                                   ok, True))
+                                   ok, True, asked_as=None if t is g else g.question,
+                                   teacher_reply=said.get("reply")))
         hippo.add(rows)
         stats["lessons"] += len(rows)
         log(f"day {day} · {stage} · {stats['lessons']}/{cfg['lessons']} lessons · correct "

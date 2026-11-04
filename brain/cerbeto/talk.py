@@ -3,6 +3,7 @@
 The conversation is kept as context in the chat format (`<|human|> …` / `<|student|> …`), the same one
 the nursery speech shelf and the exams use. Slash commands probe single skills without the history.
 """
+import re
 from pathlib import Path
 
 import torch
@@ -31,6 +32,7 @@ class Talker:
         self.eos = self.tok.token_to_id("<|eos|>")
         self.stops = {self.tok.token_to_id(t) for t in ("<|eos|>", "<|human|>", "<|student|>")}
         self.history = ""
+        self.last_thought = ""          # what the student thought (<|think|> … <|/think|>) before its last reply
 
     @torch.no_grad()
     def _continue(self, text: str, k: int, temperature: float, max_new_tokens: int, stops: set[int]) -> str:
@@ -38,18 +40,22 @@ class Talker:
         idx = torch.tensor([ids], device=self.device)
         out = self.model.generate(idx, max_new_tokens, k=k, temperature=temperature, top_k=40)[0, len(ids):].tolist()
         cut = next((i for i, t in enumerate(out) if t in stops), len(out))
-        return self.tok.decode(out[:cut])
+        return self.tok.decode(out[:cut], skip_special_tokens=False)
 
     def reply(self, say: str, remember: bool = True, k: int | None = None, temperature: float | None = None) -> str:
         context = (self.history if remember else "") + f"<|human|> {say}\n<|student|>"
-        answer = self._continue(context, k or self.k, self.temperature if temperature is None else temperature,
-                                self.max_new_tokens, self.stops).split("\n")[0].strip()
+        raw = self._continue(context, k or self.k, self.temperature if temperature is None else temperature,
+                             self.max_new_tokens, self.stops)
+        thought = re.search(r"<\|think\|>(.*?)(?:<\|/think\|>|<\|answer\|>|$)", raw, re.S)
+        self.last_thought = thought[1].strip() if thought else ""
+        answer = raw.rsplit("<|answer|>", 1)[1] if "<|answer|>" in raw else re.sub(r"<\|think\|>.*?(<\|/think\|>|$)", "", raw, flags=re.S)
+        answer = re.sub(r"<\|[^|]*\|>", "", answer).split("\n")[0].strip()
         if remember:
             self.history = f"{context} {answer}\n"
         return answer
 
     def story(self, beginning: str, max_new_tokens: int = 150) -> str:
-        return self._continue(beginning, self.k, self.temperature, max_new_tokens, {self.eos}).strip()
+        return re.sub(r"<\|[^|]*\|>", "", self._continue(beginning, self.k, self.temperature, max_new_tokens, {self.eos})).strip()
 
     def ask(self, question: str, n: int) -> list[str]:
         return [self.reply(question, remember=False) for _ in range(n)]
@@ -84,6 +90,10 @@ def _enable_line_editing() -> None:
     atexit.register(readline.write_history_file, HISTORY_FILE)
 
 
+def _thought(talker: Talker) -> str:
+    return f"\033[2m  (thinks: {talker.last_thought})\033[0m\n" if talker.last_thought else ""
+
+
 def run(student: str, version: str | None, device: str | None, k: int, temperature: float,
         says: list[str] | None = None) -> None:
     model, version, dev = load_student(student, version, device)
@@ -91,7 +101,8 @@ def run(student: str, version: str | None, device: str | None, k: int, temperatu
     info = f"{student}/{version} · {model.num_params():,} parameters · {dev}"
     if says:  # one-shot: a scripted conversation, e.g. for scripts or quick checks
         for say in says:
-            print(f"you> {say}\nstudent> {talker.reply(say)}")
+            answer = talker.reply(say)
+            print(f"you> {say}\n{_thought(talker)}student> {answer}")
         return
     _enable_line_editing()
     print(f"Talking to {info}. /help for commands, /quit to leave; ↑/↓ browse earlier lines.")
@@ -104,7 +115,8 @@ def run(student: str, version: str | None, device: str | None, k: int, temperatu
         if not line:
             continue
         if not line.startswith("/"):
-            print(f"student> {talker.reply(line)}")
+            answer = talker.reply(line)
+            print(f"{_thought(talker)}student> {answer}")
             continue
         cmd, _, rest = line.partition(" ")
         rest = rest.strip()

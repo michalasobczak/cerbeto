@@ -170,6 +170,11 @@ on a copy of the nursery student in `checkpoints/school/`. Ctrl+C is safe at any
 uv run cerbeto school run
 uv run cerbeto school status
 ```
+Web panel of the school (status, progress with ETA, exams vs the nursery baseline, days, lessons browser with the
+teacher's explanations, log, machine) at http://127.0.0.1:8765 — read-only:
+```bash
+uv run cerbeto panel
+```
 Smoke-train a fresh student for 30 minutes:
 ```bash
 uv run cerbeto train --smoke --minutes 30

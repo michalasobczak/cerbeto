@@ -51,3 +51,25 @@ def test_rephrase_keeps_names_numbers_options_and_meaning():
     assert rephrase_ok("Was Sam tired or awake?", "Did Sam feel tired or awake?")
     assert not rephrase_ok("Is it big?", "Is it not big?")
     assert not rephrase_ok("Which is bigger, a cat or a dog?", "Which is bigger?")
+
+
+def test_sleep_recalls_earlier_days_of_the_stage(tmp_path, monkeypatch):
+    from cerbeto.memory.hippocampus import Experience
+    hippo = Hippocampus(tmp_path / "b.sqlite")
+    old = Experience("t", 1, "preschool", "world.facts", "code", "h", "<|human|> Sky?\n<|student|>",
+                     "<|answer|> blue<|eos|>", "red", False, True)
+    hippo.add([old])
+    assert hippo.memories("t", "preschool") == []          # not slept on yet
+    hippo.mark_slept([e.id for e in hippo.pending("t")])
+    mem = hippo.memories("t", "preschool")
+    assert mem == [("<|human|> Sky?\n<|student|>", "<|answer|> blue<|eos|>", False)]
+    seen = []
+    import cerbeto.school.sleep as sl
+    real = sl.encode_pairs
+    monkeypatch.setattr(sl, "encode_pairs", lambda pairs, *a, **k: (seen.append(list(pairs)), real(pairs, *a, **k))[1])
+    monkeypatch.setattr(sl, "ShelfStream", _FakeShelf)
+    new = [Experience("t", 2, "preschool", "world.sizes", "code", "h2", "<|human|> Big?\n<|student|>",
+                      "<|answer|> cow<|eos|>", "cow", True, True)]
+    run_sleep(Student(CFG, seed=0), "cpu", new, [], {**SLEEP, "memory_share": 1.0}, None, log=lambda m: None,
+              memories=mem)
+    assert any(p == mem[0][:2] for batch in seen for p in batch)

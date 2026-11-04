@@ -12,6 +12,8 @@ day:
 sleep:
   epochs: 3                # passes over the day's experiences
   batch: 32                # experiences per step (plus as many replayed lessons of earlier stages)
+  memory_share: 1.0        # per step, as many experiences of earlier days of the stage as of today
+  mistake_weight: 2        # an earlier mistake is recalled twice as often as an earlier right answer
   replay_windows: 4        # nursery shelf windows per step, so the student keeps its language
   lr: 2.0e-4
   warmup: 50

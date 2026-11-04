@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cerbeto School</title>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--fg:#1d2330;--mut:#6b7385;--line:#e3e6ec;--acc:#3b6fd8;--ok:#1f9d55;--bad:#d64545;--warn:#b7800f;--bar:#e9edf3}
+@media (prefers-color-scheme:dark){:root{--bg:#111419;--card:#1a1e26;--fg:#e6e9ef;--mut:#8f98aa;--line:#2a303b;--acc:#6f9cff;--ok:#3ccf7f;--bad:#ff6b6b;--warn:#f0b43c;--bar:#252b36}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:12.5px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;gap:10px;align-items:center;padding:7px 14px;border-bottom:1px solid var(--line);background:var(--card);flex:none}
+h1{font-size:14px;margin:0 6px 0 0}nav button{background:none;border:0;color:var(--mut);font:inherit;padding:4px 10px;border-radius:6px;cursor:pointer}
+nav button.on{background:var(--bar);color:var(--fg);font-weight:600}.pill{padding:1px 8px;border-radius:99px;font-size:11px;font-weight:600;color:#fff}
+main{flex:1;min-height:0;padding:10px 14px}section{height:100%}
+.card{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:9px 12px;overflow:hidden;min-height:0;display:flex;flex-direction:column}
+.card h2{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:0 0 6px;flex:none;display:flex;gap:8px;align-items:center}
+.fill{flex:1;min-height:0;overflow:hidden}
+#overview{display:grid;gap:10px;grid-template-columns:minmax(250px,22%) 1fr minmax(290px,26%);grid-template-rows:minmax(0,1fr) minmax(0,1fr)}
+#c-now{grid-area:1/1}#c-exam{grid-area:1/2/3/3}#c-stages{grid-area:1/3}#c-days{grid-area:2/1}#c-skills{grid-area:2/3}
+.big{font-size:18px;font-weight:650}.mut{color:var(--mut)}.bar{height:8px;background:var(--bar);border-radius:99px;overflow:hidden;margin:6px 0 3px}.bar>i{display:block;height:100%;background:var(--acc)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{text-align:left;padding:3px 5px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mut);font-weight:500;font-size:11px}td.n,th.n{text-align:right}.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin-top:6px}
+.stages{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.stage{padding:3px 9px;border-radius:7px;border:1px solid var(--line)}.stage.cur{border-color:var(--acc);font-weight:600}.stage.done{background:var(--ok);color:#fff;border-color:var(--ok)}
+pre{white-space:pre-wrap;word-break:break-word;margin:0;font:11.5px/1.45 ui-monospace,Menlo,monospace}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;flex:none;align-items:center}
+select,input,button.b{font:inherit;padding:3px 7px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}button.b{cursor:pointer}
+tr.row{cursor:pointer}tr.row:hover,tr.row.sel{background:var(--bar)}.tag{font-size:10.5px;padding:0 5px;border-radius:4px;background:var(--bar);color:var(--mut)}
+.fixed{table-layout:fixed}td.cut{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,34%);gap:10px;height:100%}
+.note{font-size:11.5px;color:var(--mut);margin:0 0 6px}svg{width:100%;height:70px;display:block}.hide{display:none!important}
+.legend span{margin-right:10px}
+@media (max-width:900px){body{overflow:auto}#overview{display:flex;flex-direction:column}.split{display:flex;flex-direction:column}.card{overflow:visible}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Cerbeto · school</h1><span id="pill" class="pill"></span>
+  <nav><button data-t="overview" class="on">Overview</button><button data-t="exams">Exams</button><button data-t="lessons">Lessons</button><button data-t="log">Log</button></nav>
+  <span class="mut" id="upd" style="margin-left:auto"></span>
+</header>
+<main>
+<section id="overview">
+  <div class="card" id="c-now"><h2>Now</h2><div class="fill" id="now"></div></div>
+  <div class="card" id="c-exam"><h2>Latest exam <button class="b" onclick="go('exams')">browse answers ›</button></h2><div class="fill" id="exam"></div></div>
+  <div class="card" id="c-stages"><h2>Stages and exam history</h2><div class="fill"><div id="stages" class="stages"></div><div id="scorechart"></div><div id="cycles"></div></div></div>
+  <div class="card" id="c-days"><h2>School days and machine</h2><div class="fill"><div id="days"></div><div id="machine"></div></div></div>
+  <div class="card" id="c-skills"><h2>Lessons today by skill</h2><div class="fill" id="skills"></div></div>
+</section>
+
+<section id="exams" class="hide"><div class="split">
+  <div class="card">
+    <div class="filters">
+      <select id="e-version"></select><select id="e-skill"><option value="">all skills</option></select>
+      <select id="e-variant"><option value="">all variants</option><option value="id">id — like the lessons</option><option value="ood_hard">ood_hard — harder, rare words</option><option value="ood_combo">ood_combo — two skills at once</option></select>
+      <select id="e-correct"><option value="">right and wrong</option><option value="1">right</option><option value="0">wrong</option></select>
+      <input id="e-q" placeholder="search…" size="12"><span class="mut" id="e-total"></span>
+      <span style="margin-left:auto"><button class="b" id="e-prev">‹</button> <button class="b" id="e-next">›</button></span>
+    </div>
+    <div class="fill"><table class="fixed"><colgroup><col style="width:15%"><col style="width:8%"><col style="width:40%"><col style="width:11%"><col style="width:23%"><col style="width:3%"></colgroup><thead><tr><th>skill</th><th>variant</th><th>question</th><th>expected</th><th>student answered</th><th></th></tr></thead><tbody id="e-rows"></tbody></table></div>
+  </div>
+  <div class="card"><h2>What this exam was</h2><div class="fill" id="e-about"></div></div>
+</div></section>
+
+<section id="lessons" class="hide"><div class="split">
+  <div class="card">
+    <div class="filters">
+      <select id="f-day"><option value="">all days</option></select>
+      <select id="f-skill"><option value="">all skills</option></select>
+      <select id="f-correct"><option value="">right and wrong</option><option value="1">student right</option><option value="0">student wrong</option></select>
+      <select id="f-origin"><option value="">any explanation</option><option value="teacher">teacher explained</option><option value="code">code / reference</option></select>
+      <select id="f-rephrased"><option value="">any question</option><option value="1">rephrased by teacher</option></select>
+      <input id="f-q" placeholder="search…" size="12"><span class="mut" id="l-total"></span>
+      <span style="margin-left:auto"><button class="b" id="prev">‹ newer</button> <button class="b" id="next">older ›</button></span>
+    </div>
+    <div class="fill"><table class="fixed"><colgroup><col style="width:6%"><col style="width:5%"><col style="width:15%"><col style="width:37%"><col style="width:26%"><col style="width:3%"><col style="width:8%"></colgroup><thead><tr><th>#</th><th>day</th><th>skill</th><th>question</th><th>student</th><th></th><th>explained</th></tr></thead><tbody id="l-rows"></tbody></table></div>
+  </div>
+  <div class="card"><h2>Lesson</h2><div class="fill" id="l-detail"><p class="mut">Click a lesson.</p></div></div>
+</div></section>
+
+<section id="log" class="hide"><div class="card" style="height:100%"><div class="fill" style="display:flex;flex-direction:column;justify-content:flex-end"><pre id="logtext"></pre></div></div></section>
+</main>
+<script>
+const $=s=>document.querySelector(s), esc=s=>String(s??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const pct=x=>x==null||isNaN(x)?"–":(100*x).toFixed(0)+"%", gb=b=>(b/2**30).toFixed(1)+" GB";
+const dur=s=>{s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?`${h}h ${m}m`:`${m}m ${s%60}s`};
+const say=t=>esc(t).replace(/&lt;\|think\|&gt;(.*?)(&lt;\|\/think\|&gt;|$)/s,'<span class="mut">💭 $1</span> ').replace(/&lt;\|[a-z\/]+\|&gt;/g,"").trim();
+const ask=t=>esc(t).replace(/&lt;\|human\|&gt;\s*/,"").replace(/\s*&lt;\|student\|&gt;\s*$/,"");
+const rowsFit=el=>Math.max(8,Math.floor((el.closest(".card").clientHeight-90)/22));
+let tab="overview", off=0, eoff=0, S=null;
+function go(t){tab=t;document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x.dataset.t===t));
+  ["overview","exams","lessons","log"].forEach(x=>$("#"+x).classList.toggle("hide",x!==t));refresh()}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.t));
+const cls=(v,t)=>v==null?"":v>=t?"ok":v>=t-0.15?"warn":"bad";
+
+async function refresh(){
+  if(tab==="lessons") return loadLessons(); if(tab==="exams") return loadExam();
+  const d=await (await fetch("/api/status")).json(); if(d.error){$("#upd").textContent=d.error;return} S=d;
+  $("#upd").textContent="updated "+d.now.slice(11);
+  const st=d.state, pill=$("#pill"); pill.textContent=!st?"not started":d.running?"running":"stopped"; pill.style.background=!st?"#888":d.running?"var(--ok)":"var(--bad)";
+  if(tab==="log"){$("#logtext").textContent=d.log.slice(-Math.floor(($("main").clientHeight-40)/17)).join("\n");return}
+  if(!st){$("#now").innerHTML="School not started — <code>uv run cerbeto school run</code>";return}
+  const R=d.rhythm, today=d.today||{lessons:0}; let prog=null,label="";
+  if(st.phase==="day"){const n=today.lessons||0;prog=n/R.day.lessons;label=`lesson ${n} / ${R.day.lessons}`+(d.eta_day_s!=null?` · ETA ${dur(d.eta_day_s)}`:"")}
+  else if(st.phase==="sleep"&&d.sleep){prog=d.sleep.step/d.sleep.steps;label=`sleep step ${d.sleep.step} / ${d.sleep.steps}`}
+  else if(st.phase==="exam"){label=`examining ${st.candidate}…`}
+  const acc=today.lessons?today.correct/today.lessons:null;
+  $("#now").innerHTML=`<div class="big">${esc(st.stage)} · day ${st.day}</div><div>${{day:"day — lessons with the teacher",sleep:"night — learning from the day",exam:"exam"}[st.phase]||st.phase}</div>
+   <div class="bar"><i style="width:${prog==null?100:(100*prog).toFixed(1)}%;${prog==null?"opacity:.3":""}"></i></div><div class="mut">${label}</div>
+   <div class="kv"><span class="mut">active version</span><b>${esc(st.active)}</b><span class="mut">best stage score</span><span>${pct(st.best)}</span>
+   <span class="mut">student right today</span><span>${pct(acc)} of ${today.lessons||0}</span><span class="mut">teacher explained</span><span>${today.teacher??0} · reference ${today.code??0}</span>
+   <span class="mut">without progress</span><span>${st.plateau} / ${R.exam.plateau_cycles} cycles</span><span class="mut">started from</span><span>${esc(st.from.split("/checkpoints/")[1]||st.from)}</span></div>`;
+  $("#stages").innerHTML=R.stages.map(s=>`<span class="stage ${st.passed.includes(s)?"done":s===st.stage?"cur":""}">${st.passed.includes(s)?"✓ ":""}${s}</span>`).join('<span class="mut">→</span>');
+  const cy=d.cycles, pts=cy.filter(c=>c.stage===st.stage);
+  if(pts.length){const w=600,h=70,xs=i=>pts.length<2?w/2:10+i*(w-20)/(pts.length-1),ys=v=>h-6-v*(h-12);
+    $("#scorechart").innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><line x1="0" x2="${w}" y1="${ys(.85)}" y2="${ys(.85)}" stroke="var(--line)" stroke-dasharray="4"/>
+    <polyline fill="none" stroke="var(--acc)" stroke-width="2" vector-effect="non-scaling-stroke" points="${pts.map((p,i)=>xs(i)+","+ys(p.scores[st.stage])).join(" ")}"/></svg>
+    <div class="mut legend"><span>stage score per exam</span><span>dashed = 85%</span></div>`} else $("#scorechart").innerHTML="";
+  $("#cycles").innerHTML=cy.length?`<table><tr><th>day</th><th>version</th><th class="n">score</th><th>decision</th></tr>`+cy.slice().reverse().slice(0,6).map(c=>
+    `<tr><td>${c.day}</td><td>${c.candidate}</td><td class="n">${pct(c.scores[c.stage])}</td><td class="${c.promoted?"ok":"bad"}">${c.promoted?"promoted":"rolled back"}</td></tr>`).join("")+"</table>":'<p class="mut">no exam yet</p>';
+  const P=d.passing, E=d.exam;
+  if(E){const cyc=cy.find(c=>c.candidate===E.version), nTasks=null;
+    let html=`<p class="note"><b>${E.version}</b> — exam after night ${cyc?.day??"?"}${cyc?`, ${cyc.minutes} min`:""}: every frozen exam task of ${Object.keys(E.stages).join(", ")} (never seen in lessons), answered greedily with K=${R.day.k}, graded by code.
+      Variants: <b>id</b> like the lessons · <b>ood_hard</b> harder, rare words · <b>ood_combo</b> two skills at once; ~10% have no answer ("I don't know" is the only right reply).
+      Score = mean of the three on code-graded skills. ${cyc?`Decision: <b class="${cyc.promoted?"ok":"bad"}">${cyc.promoted?"promoted":"rolled back — "+esc(cyc.why)}</b>.`:""}
+      Pass: every skill id ≥ ${pct(P.id)} and ood_hard ≥ ${pct(P.ood_hard)}.</p>`;
+    for(const [stage,e] of Object.entries(E.stages)){
+      html+=`<div style="margin:2px 0 4px"><b>${esc(stage)}</b> · score ${pct(E.scores[stage])} · ${e.passed?'<span class="ok">PASSED</span>':'<span class="mut">not passed</span>'} <span class="mut">· nursery baseline → now</span></div>
+      <table><tr><th>skill</th><th class="n">id</th><th class="n">ood_hard</th><th class="n">ood_combo</th></tr>`;
+      for(const [s,v] of Object.entries(e.skills)){const b=e.baseline[s]||{},soft=v.graded_by!=="code";
+        html+=`<tr><td>${esc(s)}${soft?' <span class="tag">soft</span>':""}</td>`+[["id",P.id],["ood_hard",P.ood_hard],["ood_combo",null]].map(([k,t])=>
+         `<td class="n"><span class="mut">${pct(b[k])} →</span> <b class="${t&&!soft?cls(v[k],t):""}">${pct(v[k])}</b></td>`).join("")+"</tr>"}
+      html+="</table>"} $("#exam").innerHTML=html}
+  else $("#exam").innerHTML='<p class="mut">no exam yet</p>';
+  $("#days").innerHTML=(d.days||[]).length?`<table><tr><th>day</th><th class="n">lessons</th><th class="n">right</th><th class="n">teacher</th></tr>`+
+    d.days.slice().reverse().slice(0,5).map(x=>`<tr><td>${x.day} <span class="mut">${x.stage}</span></td><td class="n">${x.lessons}</td><td class="n">${pct(x.correct/x.lessons)}</td><td class="n">${x.teacher}</td></tr>`).join("")+"</table>":"";
+  const m=d.machine;
+  $("#machine").innerHTML=`<div class="kv"><span class="mut">RAM / swap</span><span>${gb(m.ram_used)} / ${gb(m.ram_total)} · <span class="${m.swap_used>4*2**30?"warn":""}">swap ${gb(m.swap_used)}</span></span>
+   <span class="mut">GPU / CPU</span><span>${m.gpu_util??"–"}% · CPU ${m.cpu?.toFixed(0)}%</span><span class="mut">teacher</span><span>${(m.ollama||[]).map(o=>esc(o.name)).join(", ")||"not loaded"}</span></div>`;
+  const sk=await (await fetch("/api/skills?day="+st.day)).json();
+  $("#skills").innerHTML=sk.length?`<table><tr><th>skill</th><th class="n">lessons</th><th class="n">right</th><th class="n">teacher</th></tr>`+
+    sk.map(x=>`<tr><td>${x.skill}</td><td class="n">${x.lessons}</td><td class="n">${pct(x.correct/x.lessons)}</td><td class="n">${x.teacher}</td></tr>`).join("")+"</table>":'<p class="mut">no lessons yet today</p>';
+}
+
+// ── exams ──
+["version","skill","variant","correct"].forEach(k=>$("#e-"+k).onchange=()=>{eoff=0;loadExam()});
+$("#e-q").oninput=()=>{eoff=0;clearTimeout(window._e);window._e=setTimeout(loadExam,300)};
+$("#e-prev").onclick=()=>{eoff=Math.max(0,eoff-rowsFit($("#e-rows")));loadExam()};$("#e-next").onclick=()=>{eoff+=rowsFit($("#e-rows"));loadExam()};
+async function loadExam(){
+  const n=rowsFit($("#e-rows")), p=new URLSearchParams({offset:eoff,limit:n});
+  ["version","skill","variant","correct"].forEach(k=>{const v=$("#e-"+k).value;if(v)p.set(k,v)}); if($("#e-q").value)p.set("q",$("#e-q").value);
+  const d=await (await fetch("/api/exam?"+p)).json(); if(!d.versions?.length){$("#e-about").textContent="no exam yet";return}
+  const vs=$("#e-version"); if(vs.options.length!==d.versions.length){vs.length=0;d.versions.slice().reverse().forEach(v=>vs.add(new Option(v==="baseline"?"baseline (nursery student)":v,v)));vs.value=d.version}
+  const skills=[...new Set(Object.values(d.summary).flatMap(s=>Object.keys(s)))], ss=$("#e-skill"), cur=ss.value;
+  if(ss.options.length-1!==skills.length){ss.length=1;skills.forEach(s=>ss.add(new Option(s,s)));ss.value=cur}
+  $("#e-total").textContent=`${d.total} of ${d.tasks} tasks · ${d.total?eoff+1:0}–${Math.min(eoff+n,d.total)}`;
+  $("#e-rows").innerHTML=d.rows.map(r=>`<tr><td class="cut">${esc(r.skill)}</td><td><span class="tag">${r.variant}</span></td><td class="cut" title="${esc(r.prompt)}">${esc(r.prompt)}</td>
+    <td class="cut">${esc(r.answer)}</td><td class="cut" title="${esc(r.reply)}">${say(r.reply)}</td><td class="${r.correct?"ok":"bad"}">${r.correct?"✓":"✗"}</td></tr>`).join("");
+  const c=d.cycle; let html=`<p>${d.version==="baseline"?"The nursery student <b>growing/v0032</b> before any school lesson — the zero point.":
+    `<b>${d.version}</b> — the student after night ${c?.day}. ${c?`Decision: <b class="${c.promoted?"ok":"bad"}">${c.promoted?"promoted":"rolled back — "+esc(c.why)}</b>, exam took ${c.minutes} min.`:""}`}</p>
+    <p class="note">Frozen, hashed exam pools (spec 0004), disjoint from every lesson. Each task: a question, the truth from the generator, the student's greedy answer, graded by code.</p>
+    <table><tr><th>skill</th><th class="n">id</th><th class="n">ood_hard</th><th class="n">ood_combo</th></tr>`;
+  for(const [stage,sk] of Object.entries(d.summary)){html+=`<tr><td colspan="4"><b>${stage}</b></td></tr>`;
+    for(const [s,v] of Object.entries(sk)) html+=`<tr><td>${esc(s)}</td>`+["id","ood_hard","ood_combo"].map(k=>v[k]?`<td class="n" title="${v[k][0]} tasks, ${v[k][2]} without an answer">${pct(v[k][1]/v[k][0])} <span class="mut">/${v[k][0]}</span></td>`:"<td></td>").join("")+"</tr>"}
+  $("#e-about").innerHTML=html+`</table><p class="note">Hover a number: tasks in the pool and how many have no answer. Small pools (e.g. /10) are noisy.</p>`;
+}
+
+// ── lessons ──
+const F=["day","skill","correct","origin","rephrased"];
+F.forEach(k=>$("#f-"+k).onchange=()=>{off=0;loadLessons()}); $("#f-q").oninput=()=>{off=0;clearTimeout(window._t);window._t=setTimeout(loadLessons,300)};
+$("#prev").onclick=()=>{off=Math.max(0,off-rowsFit($("#l-rows")));loadLessons()}; $("#next").onclick=()=>{off+=rowsFit($("#l-rows"));loadLessons()};
+let L=[];
+async function loadLessons(){
+  const n=rowsFit($("#l-rows")), p=new URLSearchParams({offset:off,limit:n}); F.forEach(k=>{const v=$("#f-"+k).value;if(v)p.set(k,v)}); if($("#f-q").value)p.set("q",$("#f-q").value);
+  const d=await (await fetch("/api/lessons?"+p)).json(); if(d.error){$("#l-total").textContent=d.error;return}
+  for(const [k,list] of [["day",d.filters?.days||[]],["skill",d.filters?.skills||[]]]){const sel=$("#f-"+k),cur=sel.value;
+    if(sel.options.length-1!==list.length){sel.length=1;list.forEach(v=>sel.add(new Option(k==="day"?"day "+v:v,v)));sel.value=cur}}
+  $("#l-total").textContent=`${d.total} lessons · ${d.total?off+1:0}–${Math.min(off+n,d.total)}`; L=d.rows;
+  $("#l-rows").innerHTML=d.rows.map((r,i)=>`<tr class="row" data-i="${i}"><td class="mut">${r.id}</td><td>${r.day}</td><td>${esc(r.skill)}</td><td class="cut">${ask(r.prompt)}${r.asked_as?' <span class="tag">rephrased</span>':""}</td>
+    <td class="cut">${say(r.student_reply)}</td><td class="${r.correct?"ok":"bad"}">${r.correct?"✓":"✗"}</td><td>${r.correct?'<span class="mut">—</span>':r.origin}</td></tr>`).join("");
+  document.querySelectorAll("tr.row").forEach(tr=>tr.onclick=()=>{document.querySelectorAll("tr.row").forEach(x=>x.classList.toggle("sel",x===tr));showLesson(L[+tr.dataset.i])});
+}
+function showLesson(r){$("#l-detail").innerHTML=`<div class="kv">
+  <span class="mut">lesson</span><span>#${r.id} · day ${r.day} · ${esc(r.stage)} · ${esc(r.skill)}</span>
+  <span class="mut">question</span><pre>${ask(r.prompt)}</pre>${r.asked_as?`<span class="mut">generator asked</span><pre>${esc(r.asked_as)}</pre>`:""}
+  <span class="mut">student said</span><pre>${say(r.student_reply)}</pre><span class="mut">graded</span><b class="${r.correct?"ok":"bad"}">${r.correct?"right":"wrong"}</b>
+  ${r.teacher_reply?`<span class="mut">teacher replied</span><pre>${esc(r.teacher_reply)}</pre><span class="mut"></span><span class="${r.origin==="teacher"?"ok":"bad"}">${r.origin==="teacher"?"verified by code — used":"rejected by code — reference used"}</span>`:""}
+  <span class="mut">learns at night</span><pre>${say(r.target)}</pre><span class="mut">status</span><span>${r.slept?"slept on":"waiting for the night"} · ${esc(r.created)}</span></div>`}
+
+refresh(); setInterval(()=>{if(tab==="overview"||tab==="log")refresh()},5000);
+window.onresize=()=>{if(tab!=="overview")refresh()};
+</script>
+</body>
+</html>

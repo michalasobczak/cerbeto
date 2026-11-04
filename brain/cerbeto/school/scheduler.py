@@ -136,10 +136,12 @@ class School:
             if st["phase"] == "sleep":
                 experiences = hippo.pending(STUDENT)
                 earlier = st["passed"]
-                self.log(f"── sleep · {len(experiences)} experiences · replay of {earlier or 'nursery only'}")
+                memories = hippo.memories(STUDENT, stage)
+                self.log(f"── sleep · {len(experiences)} experiences · {len(memories)} memories of earlier days · "
+                         f"replay of {earlier or 'nursery only'}")
                 try:
                     stats = run_sleep(model, self.device, experiences, earlier, self.cfg["sleep"], self.ewc(model),
-                                      seed=st["day"], stop=self.stop, log=self.log)
+                                      seed=st["day"], stop=self.stop, log=self.log, memories=memories)
                 except Interrupted:
                     self.log("sleep interrupted — no new version, the student stays on " + st["active"])
                     break
