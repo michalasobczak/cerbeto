@@ -45,6 +45,7 @@ What has actually been delivered. Intent of changes: `specs/`. Proof: tests.
 - Sleep keeps the weights with the best result on a stage validation set (checked at the start and every 35 steps; disjoint from the exam, excluded from lessons) — early stopping against overfitting to lesson forms — [0005].
 - Homeroom teacher rephrases 60% of lessons, now also yes/no statements and categories, kept only if every knowledge-base word survives — [0005].
 - School restarted from `growing/v0032` under the new rules; the first run is archived as `school-attempt1` (checkpoints, runs, hippocampus rows) — [0005].
+- README: Related work — what is new in Cerbeto and the closest systems (CurLL, LittleLearner, BabyLM interaction, LMs Need Sleep, WSCL, Growing to Looping, Huginn).
 - `cerbeto chat` shows the student's thinking (`<|think|>`) above its answer.
 
 ### Fixed

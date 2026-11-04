@@ -180,6 +180,28 @@ Smoke-train a fresh student for 30 minutes:
 uv run cerbeto train --smoke --minutes 30
 ```
 
+## Related work
+
+None of Cerbeto's building blocks is new; the combination seems to be. A short literature check (November 2026,
+not a systematic review; several 2026 items are preprints known from their abstracts) found each axis studied
+separately:
+
+| Work | Shared with Cerbeto | Different |
+|---|---|---|
+| [CurLL](https://arxiv.org/abs/2510.13008) (BabyLM 2025) | developmental stages (~a year of childhood each), skill graph, continual learning, forgetting and transfer, a 135M model | 23.4B tokens of pre-generated LLM data; no teacher in the loop, no day/night, no exam gates, no growth |
+| [LittleLearner](https://arxiv.org/abs/2608.13545) (2026) | a model trained from scratch on school (K–5) material only | 0.6–5B parameters, 88B tokens of plain pretraining; studies the knowledge boundary, not the learning process |
+| [BabyLM interaction track](https://aclanthology.org/2025.babylm-main.28/), [ContingentChat](https://aclanthology.org/2025.babylm-main.25/) (2025) | a small student learns from a large LLM teacher in rounds | no code verification of explanations, no sleep, no growth, mostly one stage |
+| [Language Models Need Sleep](https://arxiv.org/abs/2606.03979) (2026) | sleep as memory consolidation in language models | large pretrained models, dreaming through RL; no curriculum or exams |
+| [Wake-Sleep Consolidated Learning](https://arxiv.org/abs/2401.08623) (NeurIPS 2024) | wake/sleep, short-term memory replayed at night | vision classification |
+| [From Growing to Looping](https://arxiv.org/abs/2602.16490) (2026) | network growth together with a looped (recurrent) block | large-scale pretraining, no school curriculum or teacher |
+| [Huginn / recurrent depth](https://arxiv.org/abs/2502.05171) (2025), [retrofitted recurrence](https://arxiv.org/abs/2511.07384) | prelude → recurrent core → coda, "think longer" with the same weights | 3.5B parameters and 800B tokens; no curriculum, no growth |
+| [Toddler-level model](https://aclanthology.org/2025.sigdial-1.30.pdf) (SIGDIAL 2025), [BabyLM curricula](https://aclanthology.org/2025.babylm-main.36.pdf) | a small model speaking like a young child, staged child-directed data | pretraining only, no school with a teacher |
+
+What we did not find elsewhere: one small model, grown from scratch, going to school in a day → sleep → exam loop
+with an LLM teacher whose explanations are verified by code, with promotion and rollback of versions — on a laptop,
+offline. Closest architecture: Huginn (recurrent depth); unlike it, Cerbeto also thinks in text (`<|think|>`) and
+grows during learning. Its blocks are those of Llama/Qwen (RoPE, SwiGLU, RMSNorm).
+
 ## License
 Cerbeto — its concept, specifications and code — © 2026 Michał Sobczak.
 
