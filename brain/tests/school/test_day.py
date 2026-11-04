@@ -1,0 +1,53 @@
+"""Spec 0005 G3: an end-to-end lesson with a mock teacher records verified experiences in the hippocampus,
+and a sleep on them changes the student; the teacher never sees an exam prompt (N1)."""
+import torch
+
+from cerbeto.memory.hippocampus import Hippocampus
+from cerbeto.model.student import Student, StudentConfig
+from cerbeto.school.day import rephrase_ok, run_day
+from cerbeto.school.sleep import run_sleep
+
+CFG = StudentConfig(vocab_size=8192, d_model=64, n_heads=4, head_dim=16, mlp_hidden=128,
+                    n_prelude=1, n_core=1, n_coda=1, max_seq_len=128)
+DAY = {"lessons": 12, "batch": 6, "rephrase_share": 0.5, "k": 1}
+SLEEP = {"epochs": 1, "batch": 6, "replay_windows": 1, "lr": 1e-3, "warmup": 1, "surprise_cap": 3, "ewc_lambda": 0}
+
+
+def test_g3_lesson_end_to_end_with_a_mock_teacher(tmp_path, monkeypatch):
+    seen = []
+
+    def ask(messages, think=False):
+        seen.append(messages[-1]["content"])
+        return "Steps: I think so.\nAnswer: maybe"      # never verifiable → code explanations are used
+
+    monkeypatch.setattr("cerbeto.school.day.exam_hashes", lambda: set())
+    model = Student(CFG, seed=0)
+    hippo = Hippocampus(tmp_path / "brain.sqlite")
+    stats = run_day(model, "cpu", "t", 1, "preschool", DAY, ask, hippo=hippo, log=lambda m: None)
+    assert stats["lessons"] == 12
+    exp = hippo.pending("t")
+    assert len(exp) == 12 and all(e.verified and e.target.endswith("<|eos|>") for e in exp)
+    assert all(e.origin == "code" for e in exp)          # the mock teacher was never trusted
+    assert seen                                          # but it was asked (rephrasing / tutoring)
+
+    before = {n: p.clone() for n, p in model.named_parameters()}
+    monkeypatch.setattr("cerbeto.school.sleep.ShelfStream", _FakeShelf)
+    run_sleep(model, "cpu", exp, [], SLEEP, None, log=lambda m: None)
+    assert any(not torch.equal(before[n], p) for n, p in model.named_parameters())
+
+
+class _FakeShelf:
+    def __init__(self, *a, **k):
+        pass
+
+    def batch(self, n, rng, device):
+        return torch.randint(0, 8192, (n, 33))
+
+
+def test_rephrase_keeps_names_numbers_options_and_meaning():
+    assert rephrase_ok("Tom has 3 apples. How many apples?", "Tom has 3 apples. Can you tell me how many?")
+    assert not rephrase_ok("Tom has 3 apples. How many apples?", "Tom has 4 apples. How many?")
+    assert not rephrase_ok("Was Sam tired or awake?", "How did Sam feel?")
+    assert rephrase_ok("Was Sam tired or awake?", "Did Sam feel tired or awake?")
+    assert not rephrase_ok("Is it big?", "Is it not big?")
+    assert not rephrase_ok("Which is bigger, a cat or a dog?", "Which is bigger?")

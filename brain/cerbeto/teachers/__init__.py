@@ -13,11 +13,11 @@ def teacher_config(name: str | None = None) -> dict:
 
 
 def chat(messages: list[dict], teacher: str | None = None, temperature: float = 0.2, timeout: int = 300,
-         json_output: bool = False) -> str:
+         json_output: bool = False, think: bool = False) -> str:
     t = teacher_config(teacher)
     if t["provider"] != "ollama":
         raise NotImplementedError(f"provider {t['provider']} arrives with spec 0005")
-    body = {"model": t["model"], "messages": messages, "stream": False, "think": False,
+    body = {"model": t["model"], "messages": messages, "stream": False, "think": think,
             "options": {"temperature": temperature}}
     if json_output:
         body["format"] = "json"

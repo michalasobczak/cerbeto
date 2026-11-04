@@ -60,6 +60,18 @@ def main() -> None:
     sm.add_argument("--lr", type=float, default=3e-4)
     sm.add_argument("--device")
     sm.add_argument("--no-exam", action="store_true", help="skip the exams afterwards")
+    sr = sc_sub.add_parser("run", help="day → sleep → exam cycles with the LLM teacher (spec 0005); Ctrl+C is safe")
+    sr.add_argument("--cycles", type=int, help="stop after N cycles (default: until grade 2 is passed)")
+    sr.add_argument("--teacher", help="name from config/teachers.yaml (default: the default teacher)")
+    sr.add_argument("--device")
+    sc_sub.add_parser("status", help="school state and the last cycles")
+
+    te = sub.add_parser("teacher", help="LLM teachers (spec 0005)")
+    te_sub = te.add_subparsers(dest="cmd", required=True)
+    tx = te_sub.add_parser("exam", help="admission exam: solve and explain tasks of every stage")
+    tx.add_argument("--teacher", help="name from config/teachers.yaml (default: the default teacher)")
+    tx.add_argument("--per-skill", type=int, default=50)
+    tx.add_argument("--seed", type=int, default=0)
 
     ch = sub.add_parser("chat", help="talk to a student in the terminal")
     ch.add_argument("--student", default="growing")
@@ -122,6 +134,15 @@ def main() -> None:
         if not args.no_exam:
             from cerbeto.exams.school import run as run_school_exam
             run_school_exam("smoke", r["path"].rsplit("/", 1)[1], args.device)
+    elif args.group == "school" and args.cmd == "run":
+        from cerbeto.school.scheduler import School
+        School(args.teacher, args.device).run(args.cycles)
+    elif args.group == "school" and args.cmd == "status":
+        from cerbeto.school.scheduler import status
+        status()
+    elif args.group == "teacher" and args.cmd == "exam":
+        from cerbeto.teachers.exam import run as run_teacher_exam
+        sys.exit(0 if run_teacher_exam(args.teacher, args.per_skill, args.seed)["summary"]["passed"] else 1)
     elif args.group == "chat":
         from cerbeto.talk import run as run_chat
         run_chat(args.student, args.version, args.device, args.k, args.temperature, args.say)

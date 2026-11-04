@@ -47,6 +47,14 @@ CASES = [
                                 "What color is the sky?", "yellow blue"]],
     *[(CHOICE, r, True) for r in ["elephant", "An elephant.", "an elephant is bigger", "The elephant!"]],
     *[(CHOICE, r, False) for r in ["cat", "a cat or an elephant", "cat elephant", "a cat", "elephants are big cat"]],
+    # inflections of the accepted word, and a reason that names the other option
+    *[(task("text", "roar", ["roar"], ["moo"], question="What sound does a lion make?"), r, True)
+      for r in ["roars", "It roars.", "roaring"]],
+    *[(task("text", "closed", ["closed", "shut", "close"], question="What is the opposite of open?"), r, True)
+      for r in ["close", "closing", "It is closed."]],
+    *[(task("text", "Emma", ["Emma"], ["Sam"], question="Who is the fastest?"), r, ok) for r, ok in [
+        ("Emma is the fastest because she is faster than Sam.", True), ("Emma is faster than Sam.", True),
+        ("Sam is faster than Emma.", False), ("Emma and Sam", False), ("Sam because Emma", False)]],
     # phrases
     *[(THANKS, r, True) for r in ["Thank you!", "thanks", "Thanks a lot.", "oh thank you", "THANK YOU"]],
     *[(THANKS, r, False) for r in ["you", "hello", "yes", "", "I don't know."]],

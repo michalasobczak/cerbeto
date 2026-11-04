@@ -1,6 +1,6 @@
 # 0005 — School: day, sleep, exam, growth
 
-Status: planned · Depends on: 0002, 0003, 0004 · Unblocks: 0006, 0007
+Status: in progress (2026-11-04) — teacher exam, day, hippocampus, sleep, exam gates, versions and `cerbeto school run` delivered; growth controller (blocked by the 30M limit), neuron renewal, self-correction format, brain API and the control student open · Depends on: 0002, 0003, 0004 · Unblocks: 0006, 0007
 
 ## 1. TL;DR
 An automatic learning loop: **day** (lessons with a large LLM teacher, experiences recorded in the hippocampus) → **sleep** (consolidation into the weights with replay and synaptic consolidation) → **exam** (gates) → version promotion / rollback / growth. Proof: after N cycles the student's result on the grade's `ood` exams rises, and forgetting stays within 2 pp.
@@ -37,7 +37,7 @@ This is the core of the MVP priority: a measurable improvement in reasoning on n
 | `brain/cerbeto/versions/` (version registry, promotion, rollback, comparison) | system | to create |
 | `brain/cerbeto/api/` (FastAPI — brain API for the admin panel) | system | to create |
 | `config/teachers.yaml`, `config/rhythm.yaml`, `config/prompts/*.md` | data | to create |
-| Ollama 0.40 + **default teacher `nemotron-3.5-bolt:e4b`** (9B, Gemma 4 family, nvfp4, MLX runner, 7.2 GB) | external system | exists — admission after the teacher exam |
+| Ollama 0.40 + **default teacher `gemma4:e4b-mlx`** (MLX runner, 9.5 GB) | external system | exists — admitted 2026-11-04 (teacher exam: 97.5% correct, 94.8% consistent; admitted by owner decision) |
 | Fallback teacher `qwen3.8:27b-mlx` (18 GB) | external system | exists |
 | `data/brain.sqlite` (hippocampus, lessons, metrics, versions) | data | to create |
 
@@ -51,8 +51,8 @@ This is the core of the MVP priority: a measurable improvement in reasoning on n
 - The curriculum itself raises the difficulty within a grade when lesson accuracy is > 80% at a given level, and lowers it at < 40%.
 - Teacher limits are enforced strictly; after exceeding them the teacher is suspended until the next day.
 - The teacher and student training share the same GPU, so **by default the rhythm is sequential** (day, then sleep) on any hardware; on 32 GB parallelism is allowed only as an option.
-- **Default teacher:** `nemotron-3.5-bolt:e4b`. Probe on M1 Pro (2026-10-31): 5/5 correct (word problem, order of events, relations, addition up to 100, explanation of a mistake), ~36 tok/s, ~36 tokens per explanation → ~1–2 s per lesson, several tens of thousands of lessons per day. The same model fits within the 16 GB profile.
-- Fallback `qwen3.8:27b-mlx`: estimated ~10–12 tok/s on M1 Pro (memory bandwidth limit) — used if nemotron fails the teacher exam or as a second voice for consensus.
+- **Default teacher:** `gemma4:e4b-mlx`. Teacher exam (2026-11-04, 240 tasks, 15 per skill, few-shot prompt): 97.5% correct answers, 94.8% consistent explanations — just under the 98% / 95% thresholds; **admitted by the owner's decision**, because the remaining errors are mostly ambiguous curriculum items ("A car is a toy?" — toy cars exist), one counting slip (12 vs 13) and explanations that state the order of events without the word before/after. `nemotron-3.5-bolt:e4b` (the earlier choice) was not admitted: 96.1% / 84.6% on 800 tasks with a short prompt, 84% / 79% with the few-shot prompt (it answers "no" to unanswerable questions). Both teachers think (`think`) only on counting, order and comparisons: counting long lists without thinking is ~50%, with thinking ~90%, at ~7 s instead of ~1–2 s per task.
+- Fallback `qwen3.8:27b-mlx`: estimated ~10–12 tok/s on M1 Pro (memory bandwidth limit) — used as a second voice for consensus or if the default teacher regresses.
 
 **Resilience:** no teacher (Ollama off) → day paused, sleep and exams work; interrupted sleep → no version is created, the student stays on the previous one.
 
@@ -85,4 +85,4 @@ This is the core of the MVP priority: a measurable improvement in reasoning on n
 - **Rejected alternatives:** external API as the default teacher (costs, no offline — remains an option); LLM as the judge of correctness for verifiable tasks.
 - **Technical debt:** a single lesson queue (no multiple teachers in parallel) in the first version.
 - **Sources:** Complementary Learning Systems (McClelland et al., 1995); STaR (Zelikman et al., 2022); EWC; continual backprop (Dohare et al., 2024).
-- **Open questions:** **parameter limit in school** — the hard limit is 30M (0002, `config/student.yaml`) and the growing student already has 29.9M after the nursery, so the growth controller has no room: every school growth would be rejected. Proposed: raise the limit to ~50–60M and, on a plateau, prune first and grow second; decide after the 0004 smoke check shows whether 30M saturates (needs a G5-style memory measurement for the 16 GB profile). Teacher: none regarding the choice of teacher — `nemotron-3.5-bolt:e4b` is the default on 32 GB and 16 GB, provided it passes the teacher exam (a 5/5 probe is not an exam).
+- **Open questions:** **parameter limit in school** — the hard limit is 30M (0002, `config/student.yaml`) and the growing student already has 29.9M after the nursery, so the growth controller has no room: every school growth would be rejected. Proposed: raise the limit to ~50–60M and, on a plateau, prune first and grow second; decide after the 0004 smoke check shows whether 30M saturates (needs a G5-style memory measurement for the 16 GB profile). Teacher: whether `gemma4:e4b-mlx` (9.5 GB) fits the 16 GB profile next to student training — to measure.

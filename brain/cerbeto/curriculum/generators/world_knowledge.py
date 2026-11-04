@@ -27,7 +27,7 @@ def facts(rng: random.Random, variant: str, difficulty: int) -> dict:
                     "answer": thing, "answer_type": "text", "accept": [thing],
                     "reject": [o for o in options if o != thing], "reply": f"{_the(thing).capitalize()} is {accept[0]}."}
         q = rng.choice([f"What color is {_the(thing)}?", f"What color is {_the(thing)} usually?",
-                        f"Tell me the color of {_the(thing)}.", f"Do you know what color {_the(thing)} is?",
+                        f"Tell me the color of {_the(thing)}.",
                         f"{_the(thing).capitalize()} is what color?", f"Which color is {_the(thing)}?"])
         if variant == "ood_combo":
             name = rng.choice(w["names"])
@@ -41,9 +41,9 @@ def facts(rng: random.Random, variant: str, difficulty: int) -> dict:
         pool = sorted(rare) if variant == "ood_hard" else [x for x in sorted(w["sounds"]) if x not in rare]
         animal = rng.choice(pool)
         accept = w["sounds"][animal]
-        reject = [s[0] for x, s in w["sounds"].items() if x != animal]
-        if variant == "ood_combo":      # reverse: which animal makes this sound
-            options = [animal, rng.choice([x for x in pool if x != animal])]
+        reject = [s[0] for x, s in w["sounds"].items() if x != animal and s[0] not in accept]
+        if variant == "ood_combo":      # reverse: which animal makes this sound (the other one never makes it)
+            options = [animal, rng.choice([x for x in pool if x != animal and accept[0] not in w["sounds"][x]])]
             rng.shuffle(options)
             return {"question": f"Which animal says {accept[0]}, {a(options[0])} or {a(options[1])}?",
                     "answer": animal, "answer_type": "text", "accept": [animal],
@@ -66,23 +66,31 @@ def facts(rng: random.Random, variant: str, difficulty: int) -> dict:
             "reply": f"I {verb} with my {accept[0]}."}
 
 
+def opposites_of(word: str) -> list[str]:
+    """All opposites of a word in knowledge-base order: [word, opposite, *alternatives] gives word → opposite and
+    the alternatives, opposite → word."""
+    out: list[str] = []
+    for p in world()["opposites"]:
+        found = list(p[1:]) if p[0] == word else [p[0]] if p[1] == word else []
+        out += [x for x in found if x not in out]
+    return out
+
+
 @skill("world.opposites", STAGE, personal)
 def opposites(rng: random.Random, variant: str, difficulty: int) -> dict:
     w = world()
     rare = [tuple(p) for p in w["opposites_rare"]]
     pairs = [tuple(p) for p in w["opposites"]]
     pool = rare if variant == "ood_hard" else [p for p in pairs if p not in rare]
-    pair = rng.choice(pool)
-    i = rng.randrange(2)
-    word = pair[i]
-    accept = [pair[1 - i]] + (list(pair[2:]) if i == 0 else [])
+    word = rng.choice(sorted({p[i] for p in pool for i in (0, 1)}))
+    accept = opposites_of(word)     # every opposite the knowledge base knows ("short" → tall, long)
     reject: list[str] = []          # the asked word may be repeated in a full answer ("the opposite of big is small")
     if variant == "ood_combo":      # the opposite of the opposite
         return {"question": f"What is the opposite of the opposite of {word}?", "answer": word, "answer_type": "text",
                 "accept": [word], "reject": accept, "reply": f"{word.capitalize()}.",
                 "steps": [f"The opposite of {word} is {accept[0]}.", f"The opposite of {accept[0]} is {word}."]}
     q = rng.choice([f"What is the opposite of {word}?", f"What is the opposite of {word}? It is ...",
-                    f"Tell me the opposite of {word}.", f"Do you know the opposite of {word}?"])
+                    f"Tell me the opposite of {word}."])
     return {"question": q, "answer": accept[0], "answer_type": "text", "accept": accept, "reject": reject,
             "reply": f"The opposite of {word} is {accept[0]}."}
 

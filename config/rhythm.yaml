@@ -1,0 +1,24 @@
+# School rhythm (spec 0005): day → sleep → exam, repeated until grade 2 is passed.
+student: growing           # the school starts from this nursery student …
+start_version: v0032       # … at this version (a copy; the nursery checkpoints are never changed)
+stages: [preschool, grade1, grade2]   # school order: a stage starts after the previous one is passed
+
+day:
+  lessons: 1500            # lessons per day
+  batch: 64                # the student answers this many lessons at once
+  rephrase_share: 0.3      # share of lessons the homeroom teacher rephrases in its own words
+  k: 4                     # passes of the recurrent core when the student answers
+
+sleep:
+  epochs: 3                # passes over the day's experiences
+  batch: 32                # experiences per step (plus as many replayed lessons of earlier stages)
+  replay_windows: 4        # nursery shelf windows per step, so the student keeps its language
+  lr: 2.0e-4
+  warmup: 50
+  surprise_cap: 3          # a surprising experience (high loss) weighs up to ×3
+  ewc_lambda: 50           # synaptic consolidation of the nursery language (and of every passed stage)
+  ewc_batches: 20
+
+exam:
+  min_gain_pp: 1           # improvement of the current stage that counts as progress
+  plateau_cycles: 3        # cycles without progress before growth is asked for

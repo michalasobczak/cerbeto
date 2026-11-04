@@ -1,13 +1,21 @@
 # Teachers (spec 0005 extends this). Local Ollama by default — offline, no API costs.
-default: nemotron
+default: gemma4
 teachers:
   nemotron:
     provider: ollama
     base_url: http://localhost:11434
     model: nemotron-3.5-bolt:e4b
     roles: [homeroom, tutor, assistant_examiner]
+    # skills where the teacher thinks before answering: counting long lists without it is ~50%, with it ~90%
+    think_skills: [counting, order, comparisons]
   qwen27b:
     provider: ollama
     base_url: http://localhost:11434
     model: qwen3.8:27b-mlx
     roles: [assistant_examiner]
+  gemma4:
+    provider: ollama
+    base_url: http://localhost:11434
+    model: gemma4:e4b-mlx
+    roles: [homeroom, tutor, assistant_examiner]
+    think_skills: [counting, order, comparisons]

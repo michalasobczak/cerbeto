@@ -193,3 +193,18 @@ def test_unanswerable_tasks_are_marked_and_answered_honestly():
 
 def test_training_difficulty_never_reaches_ood():
     assert all(generate(s.name, "train", i).difficulty <= 5 for s in skills() for i in range(50))
+
+
+def test_knowledge_base_statements_are_never_false_for_a_true_sound():
+    w = world()
+    for i in range(2000):
+        t = generate("social.agree_disagree", "train", i)
+        m = re.match(r"An? (\w+) says ([\w -]+?)\.", t.question)
+        if m and t.answer_type == "yesno":
+            assert (m[2] in w["sounds"][m[1]]) == (t.answer == "yes"), t.question
+
+
+def test_opposites_accept_every_opposite_of_the_word():
+    tasks = [generate("world.opposites", "train", i) for i in range(500)]
+    short = [t for t in tasks if t.question.startswith("What is the opposite of short")]
+    assert short and all({"tall", "long"} <= set(t.accept) for t in short)

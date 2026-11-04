@@ -6,8 +6,10 @@ Rules:
 - on an unanswerable task anything other than "I don't know" is a made-up answer — always an error;
 - yes/no: the first yes- or no-word decides; numbers: the first number after the last "=", otherwise the last
   number in the reply (digits or words) — "3 + 4 = 7" and "Tom has 3, then 4 more, so 7" both give 7;
-- text: an accepted answer must appear as whole words and no competitor (`reject`) may appear — listing every
-  option does not pass; phrase: an accepted phrase must appear; form (soft skills): a stance and a reason;
+- text: an accepted answer must appear as whole words (simple inflections count: roars, chirping, closed) and no
+  competitor (`reject`) may appear — listing every option does not pass; a reason after "because" or "than" may
+  name the other options ("Emma is the fastest because she is faster than Sam");
+  phrase: an accepted phrase must appear; form (soft skills): a stance and a reason;
 - number / text: echoing three or more words of the question back is not an answer.
 """
 import re
@@ -41,6 +43,13 @@ def normalize(text: str) -> str:
 def contains(text: str, phrase: str) -> bool:
     phrase = normalize(phrase)
     return bool(phrase) and re.search(rf"(?<![a-z0-9']){re.escape(phrase)}(?![a-z0-9'])", text) is not None
+
+
+def contains_form(text: str, word: str) -> bool:
+    """`contains`, also for simple inflections of the last word: roar → roars, chirp → chirping, close → closed."""
+    phrase = normalize(word)
+    stem = re.escape(phrase[:-1]) + "e?" if phrase.endswith("e") else re.escape(phrase)
+    return bool(phrase) and re.search(rf"(?<![a-z0-9']){stem}(?:s|es|ing|ed|d)?(?![a-z0-9'])", text) is not None
 
 
 def is_idk(reply: str) -> bool:
@@ -80,7 +89,8 @@ def grade(task: Task, reply: str) -> bool:
         return answer_number(reply) == int(task.answer)
     if task.answer_type == "text":
         accepted = task.accept or [task.answer]
-        return any(contains(text, x) for x in accepted) and not any(contains(text, x) for x in task.reject)
+        claim = re.split(r"\b(?:because|than)\b", text, maxsplit=1)[0]   # a reason may name the other options
+        return any(contains_form(claim, x) for x in accepted) and not any(contains(claim, x) for x in task.reject)
     if task.answer_type == "phrase":
         return any(contains(text, x) for x in (task.accept or [task.answer]))
     if task.answer_type == "form":     # an opinion with a reason: a stance and "because …" with some content

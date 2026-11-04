@@ -51,7 +51,7 @@ def _statements(rng: random.Random, variant: str) -> tuple[str, bool, str]:
         animals = [x for x in sorted(w["sounds"]) if x not in w["sounds_rare"]]
         animal = rng.choice(animals)
         right = w["sounds"][animal][0]
-        wrong = w["sounds"][rng.choice([x for x in animals if x != animal])][0]
+        wrong = rng.choice([w["sounds"][x][0] for x in animals if w["sounds"][x][0] not in w["sounds"][animal]])
         truth = rng.random() < 0.5
         return f"{a(animal).capitalize()} says {right if truth else wrong}.", truth, \
             f"{a(animal).capitalize()} says {right}."

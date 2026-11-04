@@ -33,10 +33,14 @@ def lesson_text(task: Task) -> tuple[str, str]:
 
 
 def encode_lessons(tasks: list[Task], tok, device, max_len: int = 512) -> tuple[torch.Tensor, torch.Tensor]:
+    return encode_pairs([lesson_text(t) for t in tasks], tok, device, max_len)
+
+
+def encode_pairs(pairs: list[tuple[str, str]], tok, device, max_len: int = 512) -> tuple[torch.Tensor, torch.Tensor]:
+    """(prompt, target) pairs → inputs and labels; only the target (the student's turn) is learned."""
     eos, pad = tok.token_to_id("<|eos|>"), tok.token_to_id("<|pad|>")
     rows, labels = [], []
-    for t in tasks:
-        prompt, target = lesson_text(t)
+    for prompt, target in pairs:
         p, a = [eos] + tok.encode(prompt).ids, tok.encode(target).ids
         ids = (p + a)[:max_len + 1]
         lab = ([IGNORE] * len(p) + a)[:max_len + 1]

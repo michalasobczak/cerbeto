@@ -23,7 +23,7 @@ The project uses **[Rondo](https://workwithrondo.com)** as its reference enginee
 - Curriculum direction: preschool starts with **social skills** — conversation, politeness, agreeing/disagreeing, opinions and an honest "I don't know".
 - Admin panel code: not written yet.
 - Reference hardware: MacBook Pro M1 Pro, 32 GB — PyTorch uses the GPU via MPS (fp32/fp16, no bf16).
-- Default teacher: `nemotron-3.5-bolt:e4b` in local Ollama (probe: 5/5 correct, ~36 tok/s).
+- Default teacher: `gemma4:e4b-mlx` in local Ollama, admitted after the teacher exam (`cerbeto teacher exam`: 97.5% correct answers, 94.8% consistent explanations).
 
 ## What the student can do after the nursery
 **Nursery exam** (`cerbeto exam nursery`, `checkpoints/growing/v0032`, 29.9M parameters, 2026-11-01):
@@ -159,6 +159,16 @@ uv run cerbeto exam run --student growing
 Smoke check: direct preschool lessons from the generators for 30 minutes (a separate student in `checkpoints/smoke/`), then the exams:
 ```bash
 uv run cerbeto school smoke --stage preschool --minutes 30
+```
+Teacher admission exam (solves and explains tasks of every stage, graded by code):
+```bash
+uv run cerbeto teacher exam --per-skill 50
+```
+School (spec 0005): day with the LLM teacher → sleep → exam → promotion or rollback, preschool → grade 1 → grade 2,
+on a copy of the nursery student in `checkpoints/school/`. Ctrl+C is safe at any moment; the same command resumes:
+```bash
+uv run cerbeto school run
+uv run cerbeto school status
 ```
 Smoke-train a fresh student for 30 minutes:
 ```bash
