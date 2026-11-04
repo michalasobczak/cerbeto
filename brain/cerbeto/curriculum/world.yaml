@@ -99,15 +99,15 @@ sizes:             # rough size rank of animals and things, for "which is bigger
 sizes_rare: [ant, whale, bear]
 
 categories:
-  animal: [dog, cat, cow, horse, bird, fish, duck, pig, sheep, lion, elephant, frog, bear, mouse, rabbit, monkey, whale, bee, snake, owl]
-  fruit: [apple, banana, orange, grape, pear, strawberry, cherry, lemon, peach, plum]
-  vehicle: [car, bus, train, bike, boat, plane, truck]
+  animal: [dog, cat, cow, horse, bird, fish, duck, pig, sheep, lion, elephant, frog, bear, mouse, rabbit, monkey, whale, bee, snake, owl, penguin, zebra, camel, octopus]
+  fruit: [apple, banana, orange, grape, pear, strawberry, cherry, lemon, peach, plum, kiwi, mango, melon]
+  vehicle: [car, bus, train, bike, boat, plane, truck, tractor, helicopter, scooter]
   toy: [ball, doll, kite, teddy bear, yo-yo, puzzle]
   clothes: [shirt, hat, sock, shoe, coat, dress, scarf]
-categories_rare:
-  animal: [whale, bee, snake, owl]
-  fruit: [plum, peach, cherry]
-  vehicle: [boat, plane]
+categories_rare:     # only in ood_hard exams; enough of them that "yes" and "no" can be balanced
+  animal: [whale, bee, snake, owl, penguin, zebra, camel, octopus]
+  fruit: [plum, peach, cherry, kiwi, mango, melon]
+  vehicle: [boat, plane, tractor, helicopter, scooter]
 
 abilities:         # can X? (both directions are statements for agree/disagree)
   fly: [bird, duck, bee, owl, plane]

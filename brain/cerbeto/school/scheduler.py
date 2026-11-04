@@ -25,6 +25,7 @@ from cerbeto.model.consolidation import EWC
 from cerbeto.model.student import pick_device
 from cerbeto.school.day import run_day, teacher
 from cerbeto.school.sleep import Interrupted, estimate_ewc, run_sleep
+from cerbeto.school.validation import score, validation_set
 
 CKPT = paths.REPO / "checkpoints" / "school"
 RUN = paths.REPO / "runs" / "school"
@@ -141,7 +142,9 @@ class School:
                          f"replay of {earlier or 'nursery only'}")
                 try:
                     stats = run_sleep(model, self.device, experiences, earlier, self.cfg["sleep"], self.ewc(model),
-                                      seed=st["day"], stop=self.stop, log=self.log, memories=memories)
+                                      seed=st["day"], stop=self.stop, log=self.log, memories=memories,
+                                      validate=lambda: score(model, validation_set(stage), self.cfg["day"]["k"],
+                                                             self.device))
                 except Interrupted:
                     self.log("sleep interrupted — no new version, the student stays on " + st["active"])
                     break

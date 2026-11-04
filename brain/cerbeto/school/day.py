@@ -8,6 +8,7 @@ used only when code verifies it, otherwise the generator's reference solution is
 """
 import json
 import random
+from functools import lru_cache
 import re
 from collections.abc import Callable
 
@@ -18,6 +19,7 @@ from cerbeto.exams.grader import grade
 from cerbeto.exams.school import answer, exam_hashes
 from cerbeto.memory.hippocampus import Experience, Hippocampus
 from cerbeto.school.smoke import lesson_text
+from cerbeto.school.validation import validation_hashes
 from cerbeto.teachers import chat, teacher_config
 from cerbeto.teachers.exam import SYSTEM as TUTOR, consistent, parse
 
@@ -26,7 +28,7 @@ Ask = Callable[[list[dict], bool], str]          # (messages, think) -> reply
 REPHRASE = """Rewrite the question below in different simple words, the way a kind teacher talks to a young child.
 Keep every name, every number, every option and the meaning exactly. Do not answer it. Reply with the new question
 only."""
-NO_REPHRASE = {"social.agree_disagree", "world.categories", "social.routines", "social.clarify"}   # truth may flip
+NO_REPHRASE = {"social.clarify"}   # a rephrasing may name the thing meant, and then "which one?" is no longer right
 NEGATION = re.compile(r"\b(not|no|never)\b|n't", re.I)
 
 
@@ -41,8 +43,20 @@ def teacher(name: str | None = None) -> Ask:
     return ask
 
 
+@lru_cache(maxsize=1)
+def knowledge_words() -> frozenset[str]:
+    """Words of the knowledge base a question is about (things, animals, colours, sounds, categories, opposites):
+    a rephrasing must keep every one of them, or it may ask about something else."""
+    w = world()
+    words = set(w["colors"]) | set(w["color_words"]) | set(w["sounds"]) | set(w["sizes"]) | set(w["objects"])
+    words |= {s for v in w["sounds"].values() for s in v} | set(w["categories"])
+    words |= {m for v in w["categories"].values() for m in v} | {x for p in w["opposites"] for x in p}
+    words |= set(w["abilities"]) | {m for v in w["abilities"].values() for m in v} | set(w["places"])
+    return frozenset(x for x in words if x.isalpha() and len(x) > 2)
+
+
 def rephrase_ok(old: str, new: str) -> bool:
-    """A rephrased question keeps names, numbers and options, and adds no negation."""
+    """A rephrased question keeps names, numbers, options and knowledge-base words, and adds no negation."""
     if not new or len(new) > 3 * len(old) + 40 or "\n" in new.strip():
         return False
     if sorted(numbers_in(new.lower())) != sorted(numbers_in(old.lower())):
@@ -54,6 +68,10 @@ def rephrase_ok(old: str, new: str) -> bool:
     if " or " in old and not all(o.strip(" ?.,").split()[-1] in new.lower()
                                   for o in old.lower().rsplit(",", 1)[-1].split(" or ") if o.strip(" ?.,")):
         return False
+    low = new.lower()
+    for word in set(re.findall(r"[a-z]+", old.lower())) & knowledge_words():
+        if not re.search(rf"\b{word}(s|es)?\b", low):
+            return False
     return not NEGATION.search(new) or bool(NEGATION.search(old))
 
 
@@ -86,7 +104,7 @@ def run_day(model, device, student: str, day: int, stage: str, cfg: dict, ask: A
             stop: Callable[[], bool] = lambda: False, log: Callable[[str], None] = print,
             hippo: Hippocampus | None = None) -> dict:
     hippo = hippo or Hippocampus()
-    exam = exam_hashes()
+    exam = exam_hashes() | validation_hashes([stage])      # lessons never show an exam or validation prompt
     think_skills = set(teacher_config(teacher_name).get("think_skills", []))
     rng = random.Random(f"day/{student}/{day}")
     lessons = training_stream(seed=10_000 + day, stage=stage, exclude=exam)

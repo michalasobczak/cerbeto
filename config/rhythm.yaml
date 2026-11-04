@@ -6,11 +6,12 @@ stages: [preschool, grade1, grade2]   # school order: a stage starts after the p
 day:
   lessons: 1500            # lessons per day
   batch: 64                # the student answers this many lessons at once
-  rephrase_share: 0.3      # share of lessons the homeroom teacher rephrases in its own words
+  rephrase_share: 0.6      # share of lessons the homeroom teacher rephrases in its own words (more surface diversity)
   k: 4                     # passes of the recurrent core when the student answers
 
 sleep:
-  epochs: 3                # passes over the day's experiences
+  epochs: 3                # passes over the day's experiences (at most: early stopping keeps the best step)
+  validate_every: 35       # steps between checks on the stage's validation set
   batch: 32                # experiences per step (plus as many replayed lessons of earlier stages)
   memory_share: 1.0        # per step, as many experiences of earlier days of the stage as of today
   mistake_weight: 2        # an earlier mistake is recalled twice as often as an earlier right answer

@@ -6,6 +6,7 @@ import random
 
 from cerbeto.curriculum import CATEGORY, a, plural, skill, world
 from cerbeto.curriculum.generators.common import personal
+from cerbeto.curriculum.generators.world_knowledge import CONFUSABLE
 
 STAGE = "preschool"
 
@@ -63,7 +64,7 @@ def _statements(rng: random.Random, variant: str) -> tuple[str, bool, str]:
         if truth:
             member = rng.choice([m for m in cats[cat] if m not in rare])
             return f"{a(member).capitalize()} is {CATEGORY[cat]}.", True, f"{a(member).capitalize()} is {CATEGORY[cat]}."
-        other = rng.choice([c for c in sorted(cats) if c != cat])
+        other = rng.choice([c for c in sorted(cats) if c != cat and c not in CONFUSABLE.get(cat, ())])
         member = rng.choice([m for m in cats[other] if m not in set(w["categories_rare"].get(other, []))])
         return f"{a(member).capitalize()} is {CATEGORY[cat]}.", False, f"{a(member).capitalize()} is {CATEGORY[other]}."
     ability = rng.choice(sorted(w["abilities"]))

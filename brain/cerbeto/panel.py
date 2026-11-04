@@ -120,8 +120,13 @@ def lessons(q: dict) -> dict:
     if q.get("correct") in ("0", "1"):
         where.append("correct=?")
         args.append(int(q["correct"]))
+    helped = {"homeroom": "asked_as IS NOT NULL", "tutor": "origin = 'teacher'",
+              "tutor_rejected": "correct = 0 AND origin = 'code' AND teacher_reply IS NOT NULL",
+              "nobody": "correct = 1 AND asked_as IS NULL"}
     if q.get("rephrased") == "1" and "asked_as" in cols:
-        where.append("asked_as IS NOT NULL")
+        where.append(helped["homeroom"])
+    if q.get("helped") in helped and ("asked_as" in cols or q["helped"] == "tutor"):
+        where.append(helped[q["helped"]])
     if q.get("q"):
         where.append("(prompt LIKE ? OR student_reply LIKE ? OR target LIKE ?)")
         args += [f"%{q['q']}%"] * 3

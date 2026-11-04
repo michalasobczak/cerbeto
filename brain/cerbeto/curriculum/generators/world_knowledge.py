@@ -121,6 +121,9 @@ def sizes(rng: random.Random, variant: str, difficulty: int) -> dict:
                      f"{a(pick).capitalize()} is {'bigger' if big else 'smaller'}."}
 
 
+CONFUSABLE = {"toy": {"vehicle", "animal"}}   # toy cars and toy animals exist: "A car is a toy?" has no clear answer
+
+
 @skill("world.categories", STAGE, personal)
 def categories(rng: random.Random, variant: str, difficulty: int) -> dict:
     w = world()
@@ -132,7 +135,7 @@ def categories(rng: random.Random, variant: str, difficulty: int) -> dict:
         pool = sorted(rare) if variant == "ood_hard" else [m for m in cats[cat] if m not in rare]
         member, real = rng.choice(pool), cat
     else:
-        real = rng.choice([c for c in sorted(cats) if c != cat])
+        real = rng.choice([c for c in sorted(cats) if c != cat and c not in CONFUSABLE.get(cat, ())])
         member = rng.choice(cats[real])
     if variant == "ood_combo":      # name the member by its sound or colour, then ask about the category
         sounds = w["sounds"]

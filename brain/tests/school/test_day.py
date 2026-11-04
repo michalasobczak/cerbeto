@@ -73,3 +73,24 @@ def test_sleep_recalls_earlier_days_of_the_stage(tmp_path, monkeypatch):
     run_sleep(Student(CFG, seed=0), "cpu", new, [], {**SLEEP, "memory_share": 1.0}, None, log=lambda m: None,
               memories=mem)
     assert any(p == mem[0][:2] for batch in seen for p in batch)
+
+
+def test_rephrase_keeps_knowledge_base_words():
+    assert rephrase_ok("A duck says moo. Right?", "Does a duck say moo?")
+    assert not rephrase_ok("A duck says moo. Right?", "Does a cow say moo?")
+    assert rephrase_ok("Is a pear a fruit?", "Would you say pears are fruit?")
+    assert not rephrase_ok("What color is the sky?", "What color is it?")
+
+
+def test_sleep_keeps_the_weights_with_the_best_validation(monkeypatch):
+    from cerbeto.memory.hippocampus import Experience
+    monkeypatch.setattr("cerbeto.school.sleep.ShelfStream", _FakeShelf)
+    model = Student(CFG, seed=0)
+    start = {n: p.clone() for n, p in model.state_dict().items()}
+    exp = [Experience("t", 1, "preschool", "world.facts", "code", f"h{i}", "<|human|> Sky?\n<|student|>",
+                      "<|answer|> blue<|eos|>", "red", False, True) for i in range(12)]
+    scores = iter([0.9] + [0.5] * 10)            # the night only gets worse on validation
+    out = run_sleep(model, "cpu", exp, [], {**SLEEP, "epochs": 2, "validate_every": 1}, None, log=lambda m: None,
+                    validate=lambda: next(scores))
+    assert out["kept_step"] == 0
+    assert all(torch.equal(start[n], p) for n, p in model.state_dict().items())

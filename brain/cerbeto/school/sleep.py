@@ -38,7 +38,7 @@ def weighted_loss(logits: torch.Tensor, labels: torch.Tensor, cap: float) -> tor
 
 def run_sleep(model, device, experiences: list[Experience], earlier: list[str], cfg: dict, ewc: EWC | None,
               seed: int = 0, stop: Callable[[], bool] = lambda: False, log: Callable[[str], None] = print,
-              memories: list[tuple[str, str, bool]] = ()) -> dict:
+              memories: list[tuple[str, str, bool]] = (), validate: Callable[[], float] | None = None) -> dict:
     tok = load_tokenizer()
     rng, nrng = random.Random(seed), np.random.default_rng(seed)
     shelves = [ShelfStream(s, "train", model.cfg.max_seq_len) for s in ("s0_speech", "s0_stories")]
@@ -50,9 +50,24 @@ def run_sleep(model, device, experiences: list[Experience], earlier: list[str], 
     steps_per_epoch = math.ceil(len(pairs) / cfg["batch"])
     total = steps_per_epoch * cfg["epochs"]
     opt = torch.optim.AdamW(model.parameters(), lr=cfg["lr"], betas=(0.9, 0.95), weight_decay=0.1)
-    model.train()
+    every = cfg.get("validate_every", 35)
+    val, best = [], None
+
+    def check() -> None:                       # early stopping: remember the weights with the best validation
+        nonlocal best
+        model.eval()
+        v = validate()
+        model.train()
+        val.append((step, v))
+        if best is None or v > best[1]:
+            best = (step, v, {n: p.detach().clone() for n, p in model.state_dict().items()})
+        log(f"sleep · step {step}/{total} · validation {100 * v:.1f}% (best {100 * best[1]:.1f}% at step {best[0]})")
+
     losses = []
     step = 0
+    if validate:
+        check()
+    model.train()
     for epoch in range(cfg["epochs"]):
         rng.shuffle(pairs)
         for b in range(0, len(pairs), cfg["batch"]):
@@ -88,8 +103,15 @@ def run_sleep(model, device, experiences: list[Experience], earlier: list[str], 
                 recent = losses[-25:]
                 log(f"sleep · step {step}/{total} · lesson loss {sum(a for a, _ in recent) / len(recent):.3f} · "
                     f"language loss {sum(c for _, c in recent) / len(recent):.3f}")
+            if validate and (step % every == 0 or step == total):
+                check()
     model.eval()
-    return {"steps": step, "experiences": len(experiences),
+    kept = step
+    if best is not None and best[0] != step:
+        model.load_state_dict(best[2])
+        kept = best[0]
+        log(f"sleep · keeping the weights of step {kept} (validation {100 * best[1]:.1f}%)")
+    return {"steps": step, "kept_step": kept, "validation": val, "experiences": len(experiences),
             "lesson_loss": sum(a for a, _ in losses[-25:]) / max(1, len(losses[-25:])),
             "language_loss": sum(c for _, c in losses[-25:]) / max(1, len(losses[-25:]))}
 

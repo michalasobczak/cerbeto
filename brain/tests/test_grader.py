@@ -123,3 +123,11 @@ def test_g4_training_stream_never_yields_an_exam_prompt(pools):
     root, _ = pools
     r = school.check_leak(20_000, root)
     assert r["collisions_in_training_stream"] == 0
+
+
+def test_exam_pools_balance_yes_and_no(pools):
+    _, p = pools
+    for key, ts in p.items():
+        yes = sum(t.answer_type == "yesno" and t.answer == "yes" for t in ts)
+        no = sum(t.answer_type == "yesno" and t.answer == "no" for t in ts)
+        assert abs(yes - no) <= 1, (key, yes, no)

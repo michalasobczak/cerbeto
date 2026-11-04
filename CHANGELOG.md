@@ -42,8 +42,12 @@ What has actually been delivered. Intent of changes: `specs/`. Proof: tests.
 - `cerbeto panel`: local read-only web panel of the school — phase progress with ETA, stages, exam per skill vs the nursery baseline, exam history, days, skills, lessons browser (filters, search, the student's thinking, what it learns at night, the teacher's raw explanation and the original question when rephrased), log, machine; the hippocampus now also stores the teacher's raw reply and the original question — [0005].
 - Sleep replays earlier days of the current stage (as many as today's experiences per step, earlier mistakes ×2), so a new night does not wash out what earlier nights taught — night 2 without it lost clarify and categories `ood` and was rolled back — [0005].
 - Panel: one screen without scrolling; Exams tab — every exam task of any version or the nursery baseline with the expected and the given answer, filters, pool sizes; the overview explains what the latest exam was and its decision — [0005].
+- Sleep keeps the weights with the best result on a stage validation set (checked at the start and every 35 steps; disjoint from the exam, excluded from lessons) — early stopping against overfitting to lesson forms — [0005].
+- Homeroom teacher rephrases 60% of lessons, now also yes/no statements and categories, kept only if every knowledge-base word survives — [0005].
+- School restarted from `growing/v0032` under the new rules; the first run is archived as `school-attempt1` (checkpoints, runs, hippocampus rows) — [0005].
 - `cerbeto chat` shows the student's thinking (`<|think|>`) above its answer.
 
 ### Fixed
 - Curriculum knowledge base found wrong by the teacher exam: leaves can be yellow, red or brown; cats hiss and purr; birds chirp and sing; the sky can be grey; short has two opposites (tall, long); open ↔ close; no false statement uses a sound the animal really makes; ambiguous "Do you know …?" and "Can you do it now?" questions removed — exam set rebuilt (`d47409634843b5c83b42c61c`) — [0004].
+- Exam pools balance "yes" and "no" in every pool (a pool had 226 "no" and 18 "yes"); more rare category members; no "Is a car a toy?" statements (toy cars exist) — exam set rebuilt (`c907cac02b624b535c7eb4f2`) — [0004].
 - Grader: simple inflections of the accepted word count (roars, chirping, closed); a reason after "because"/"than" may name the other options — [0004].

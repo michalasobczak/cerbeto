@@ -60,6 +60,7 @@ def build(root: Path = EXAMS) -> dict:
                         raise RuntimeError(f"cannot fill {name}.{variant}: task space too small")
                     seen.add(t.hash)
                     tasks.append(t)
+                tasks = balance_yes_no(tasks, ex["unanswerable_share"])
                 out = root / stage / f"{name}.{variant}.jsonl"
                 out.parent.mkdir(parents=True, exist_ok=True)
                 text = "".join(json.dumps(t.to_dict()) + "\n" for t in tasks)
@@ -74,6 +75,23 @@ def build(root: Path = EXAMS) -> dict:
     manifest["tasks"] = sum(p["tasks"] for p in manifest["pools"].values())
     (root / "manifest.json").write_text(json.dumps(manifest, indent=2))
     return manifest
+
+
+def balance_yes_no(tasks: list[Task], unanswerable_share: float) -> list[Task]:
+    """Half "yes", half "no" (±1) among yes/no tasks, so always giving the same word scores ~50%; the larger side
+    is cut and the unanswerable tasks are trimmed to keep their share."""
+    yes = [t for t in tasks if t.answer_type == "yesno" and t.answer == "yes"]
+    no = [t for t in tasks if t.answer_type == "yesno" and t.answer == "no"]
+    if not yes and not no or abs(len(yes) - len(no)) <= 1:
+        return tasks
+    keep = min(len(yes), len(no)) + 1
+    drop = {t.hash for t in (yes if len(yes) > len(no) else no)[keep:]}
+    kept = [t for t in tasks if t.hash not in drop]
+    answerable = sum(t.answer_type != "unknown" for t in kept)
+    n_unknown = round(answerable * unanswerable_share / (1 - unanswerable_share))
+    unknown = [t.hash for t in kept if t.answer_type == "unknown"]
+    drop = set(unknown[n_unknown:])
+    return [t for t in kept if t.hash not in drop]
 
 
 def exam_hashes(root: Path = EXAMS) -> set[str]:

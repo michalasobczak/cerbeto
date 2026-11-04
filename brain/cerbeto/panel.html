@@ -69,12 +69,11 @@ tr.row{cursor:pointer}tr.row:hover,tr.row.sel{background:var(--bar)}.tag{font-si
       <select id="f-day"><option value="">all days</option></select>
       <select id="f-skill"><option value="">all skills</option></select>
       <select id="f-correct"><option value="">right and wrong</option><option value="1">student right</option><option value="0">student wrong</option></select>
-      <select id="f-origin"><option value="">any explanation</option><option value="teacher">teacher explained</option><option value="code">code / reference</option></select>
-      <select id="f-rephrased"><option value="">any question</option><option value="1">rephrased by teacher</option></select>
+      <select id="f-helped"><option value="">who helped: anyone</option><option value="homeroom">teacher rephrased the question (before)</option><option value="tutor">tutor explained a mistake (after)</option><option value="tutor_rejected">tutor explained, code rejected it</option><option value="nobody">nobody — student right alone</option></select>
       <input id="f-q" placeholder="search…" size="12"><span class="mut" id="l-total"></span>
       <span style="margin-left:auto"><button class="b" id="prev">‹ newer</button> <button class="b" id="next">older ›</button></span>
     </div>
-    <div class="fill"><table class="fixed"><colgroup><col style="width:6%"><col style="width:5%"><col style="width:15%"><col style="width:37%"><col style="width:26%"><col style="width:3%"><col style="width:8%"></colgroup><thead><tr><th>#</th><th>day</th><th>skill</th><th>question</th><th>student</th><th></th><th>explained</th></tr></thead><tbody id="l-rows"></tbody></table></div>
+    <div class="fill"><table class="fixed"><colgroup><col style="width:6%"><col style="width:5%"><col style="width:15%"><col style="width:37%"><col style="width:26%"><col style="width:3%"><col style="width:8%"></colgroup><thead><tr><th>#</th><th>day</th><th>skill</th><th>question</th><th>student</th><th></th><th>tutor</th></tr></thead><tbody id="l-rows"></tbody></table></div>
   </div>
   <div class="card"><h2>Lesson</h2><div class="fill" id="l-detail"><p class="mut">Click a lesson.</p></div></div>
 </div></section>
@@ -85,7 +84,7 @@ tr.row{cursor:pointer}tr.row:hover,tr.row.sel{background:var(--bar)}.tag{font-si
 const $=s=>document.querySelector(s), esc=s=>String(s??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 const pct=x=>x==null||isNaN(x)?"–":(100*x).toFixed(0)+"%", gb=b=>(b/2**30).toFixed(1)+" GB";
 const dur=s=>{s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?`${h}h ${m}m`:`${m}m ${s%60}s`};
-const say=t=>esc(t).replace(/&lt;\|think\|&gt;(.*?)(&lt;\|\/think\|&gt;|$)/s,'<span class="mut">💭 $1</span> ').replace(/&lt;\|[a-z\/]+\|&gt;/g,"").trim();
+const say=t=>esc(t).replace(/&lt;\|think\|&gt;(.*?)(&lt;\|\/think\|&gt;|$)/s,'<span class="mut">thinks: $1</span> → ').replace(/&lt;\|[a-z\/]+\|&gt;/g,"").trim();
 const ask=t=>esc(t).replace(/&lt;\|human\|&gt;\s*/,"").replace(/\s*&lt;\|student\|&gt;\s*$/,"");
 const rowsFit=el=>Math.max(8,Math.floor((el.closest(".card").clientHeight-90)/22));
 let tab="overview", off=0, eoff=0, S=null;
@@ -109,7 +108,7 @@ async function refresh(){
   $("#now").innerHTML=`<div class="big">${esc(st.stage)} · day ${st.day}</div><div>${{day:"day — lessons with the teacher",sleep:"night — learning from the day",exam:"exam"}[st.phase]||st.phase}</div>
    <div class="bar"><i style="width:${prog==null?100:(100*prog).toFixed(1)}%;${prog==null?"opacity:.3":""}"></i></div><div class="mut">${label}</div>
    <div class="kv"><span class="mut">active version</span><b>${esc(st.active)}</b><span class="mut">best stage score</span><span>${pct(st.best)}</span>
-   <span class="mut">student right today</span><span>${pct(acc)} of ${today.lessons||0}</span><span class="mut">teacher explained</span><span>${today.teacher??0} · reference ${today.code??0}</span>
+   <span class="mut">student right today</span><span>${pct(acc)} of ${today.lessons||0}</span><span class="mut">tutor explained</span><span>${today.teacher??0} mistakes · reference ${today.code??0}</span>
    <span class="mut">without progress</span><span>${st.plateau} / ${R.exam.plateau_cycles} cycles</span><span class="mut">started from</span><span>${esc(st.from.split("/checkpoints/")[1]||st.from)}</span></div>`;
   $("#stages").innerHTML=R.stages.map(s=>`<span class="stage ${st.passed.includes(s)?"done":s===st.stage?"cur":""}">${st.passed.includes(s)?"✓ ":""}${s}</span>`).join('<span class="mut">→</span>');
   const cy=d.cycles, pts=cy.filter(c=>c.stage===st.stage);
@@ -133,13 +132,13 @@ async function refresh(){
          `<td class="n"><span class="mut">${pct(b[k])} →</span> <b class="${t&&!soft?cls(v[k],t):""}">${pct(v[k])}</b></td>`).join("")+"</tr>"}
       html+="</table>"} $("#exam").innerHTML=html}
   else $("#exam").innerHTML='<p class="mut">no exam yet</p>';
-  $("#days").innerHTML=(d.days||[]).length?`<table><tr><th>day</th><th class="n">lessons</th><th class="n">right</th><th class="n">teacher</th></tr>`+
+  $("#days").innerHTML=(d.days||[]).length?`<table><tr><th>day</th><th class="n">lessons</th><th class="n">right</th><th class="n">tutor</th></tr>`+
     d.days.slice().reverse().slice(0,5).map(x=>`<tr><td>${x.day} <span class="mut">${x.stage}</span></td><td class="n">${x.lessons}</td><td class="n">${pct(x.correct/x.lessons)}</td><td class="n">${x.teacher}</td></tr>`).join("")+"</table>":"";
   const m=d.machine;
   $("#machine").innerHTML=`<div class="kv"><span class="mut">RAM / swap</span><span>${gb(m.ram_used)} / ${gb(m.ram_total)} · <span class="${m.swap_used>4*2**30?"warn":""}">swap ${gb(m.swap_used)}</span></span>
    <span class="mut">GPU / CPU</span><span>${m.gpu_util??"–"}% · CPU ${m.cpu?.toFixed(0)}%</span><span class="mut">teacher</span><span>${(m.ollama||[]).map(o=>esc(o.name)).join(", ")||"not loaded"}</span></div>`;
   const sk=await (await fetch("/api/skills?day="+st.day)).json();
-  $("#skills").innerHTML=sk.length?`<table><tr><th>skill</th><th class="n">lessons</th><th class="n">right</th><th class="n">teacher</th></tr>`+
+  $("#skills").innerHTML=sk.length?`<table><tr><th>skill</th><th class="n">lessons</th><th class="n">right</th><th class="n">tutor</th></tr>`+
     sk.map(x=>`<tr><td>${x.skill}</td><td class="n">${x.lessons}</td><td class="n">${pct(x.correct/x.lessons)}</td><td class="n">${x.teacher}</td></tr>`).join("")+"</table>":'<p class="mut">no lessons yet today</p>';
 }
 
@@ -167,7 +166,7 @@ async function loadExam(){
 }
 
 // ── lessons ──
-const F=["day","skill","correct","origin","rephrased"];
+const F=["day","skill","correct","helped"];
 F.forEach(k=>$("#f-"+k).onchange=()=>{off=0;loadLessons()}); $("#f-q").oninput=()=>{off=0;clearTimeout(window._t);window._t=setTimeout(loadLessons,300)};
 $("#prev").onclick=()=>{off=Math.max(0,off-rowsFit($("#l-rows")));loadLessons()}; $("#next").onclick=()=>{off+=rowsFit($("#l-rows"));loadLessons()};
 let L=[];
@@ -177,15 +176,15 @@ async function loadLessons(){
   for(const [k,list] of [["day",d.filters?.days||[]],["skill",d.filters?.skills||[]]]){const sel=$("#f-"+k),cur=sel.value;
     if(sel.options.length-1!==list.length){sel.length=1;list.forEach(v=>sel.add(new Option(k==="day"?"day "+v:v,v)));sel.value=cur}}
   $("#l-total").textContent=`${d.total} lessons · ${d.total?off+1:0}–${Math.min(off+n,d.total)}`; L=d.rows;
-  $("#l-rows").innerHTML=d.rows.map((r,i)=>`<tr class="row" data-i="${i}"><td class="mut">${r.id}</td><td>${r.day}</td><td>${esc(r.skill)}</td><td class="cut">${ask(r.prompt)}${r.asked_as?' <span class="tag">rephrased</span>':""}</td>
-    <td class="cut">${say(r.student_reply)}</td><td class="${r.correct?"ok":"bad"}">${r.correct?"✓":"✗"}</td><td>${r.correct?'<span class="mut">—</span>':r.origin}</td></tr>`).join("");
+  $("#l-rows").innerHTML=d.rows.map((r,i)=>`<tr class="row" data-i="${i}"><td class="mut">${r.id}</td><td>${r.day}</td><td class="cut">${esc(r.skill)}</td><td class="cut">${ask(r.prompt)}${r.asked_as?' <span class="tag">homeroom</span>':""}</td>
+    <td class="cut">${say(r.student_reply)}</td><td class="${r.correct?"ok":"bad"}">${r.correct?"✓":"✗"}</td><td>${r.correct?'<span class="mut">—</span>':r.origin==="teacher"?"gemma":"reference"}</td></tr>`).join("");
   document.querySelectorAll("tr.row").forEach(tr=>tr.onclick=()=>{document.querySelectorAll("tr.row").forEach(x=>x.classList.toggle("sel",x===tr));showLesson(L[+tr.dataset.i])});
 }
 function showLesson(r){$("#l-detail").innerHTML=`<div class="kv">
   <span class="mut">lesson</span><span>#${r.id} · day ${r.day} · ${esc(r.stage)} · ${esc(r.skill)}</span>
-  <span class="mut">question</span><pre>${ask(r.prompt)}</pre>${r.asked_as?`<span class="mut">generator asked</span><pre>${esc(r.asked_as)}</pre>`:""}
+  <span class="mut">question</span><pre>${ask(r.prompt)}</pre>${r.asked_as?`<span class="mut">homeroom rephrased from</span><pre>${esc(r.asked_as)}</pre>`:""}
   <span class="mut">student said</span><pre>${say(r.student_reply)}</pre><span class="mut">graded</span><b class="${r.correct?"ok":"bad"}">${r.correct?"right":"wrong"}</b>
-  ${r.teacher_reply?`<span class="mut">teacher replied</span><pre>${esc(r.teacher_reply)}</pre><span class="mut"></span><span class="${r.origin==="teacher"?"ok":"bad"}">${r.origin==="teacher"?"verified by code — used":"rejected by code — reference used"}</span>`:""}
+  ${r.teacher_reply?`<span class="mut">tutor (gemma) explained</span><pre>${esc(r.teacher_reply)}</pre><span class="mut"></span><span class="${r.origin==="teacher"?"ok":"bad"}">${r.origin==="teacher"?"verified by code — used":"rejected by code — reference used"}</span>`:""}
   <span class="mut">learns at night</span><pre>${say(r.target)}</pre><span class="mut">status</span><span>${r.slept?"slept on":"waiting for the night"} · ${esc(r.created)}</span></div>`}
 
 refresh(); setInterval(()=>{if(tab==="overview"||tab==="log")refresh()},5000);
