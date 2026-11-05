@@ -1,6 +1,6 @@
 # 0005 — School: day, sleep, exam, growth
 
-Status: in progress (2026-11-04) — teacher exam, day, hippocampus, sleep, exam gates, versions and `cerbeto school run` delivered; growth controller (blocked by the 30M limit), neuron renewal, self-correction format, brain API and the control student open · Depends on: 0002, 0003, 0004 · Unblocks: 0006, 0007
+Status: in progress (2026-11-05) — teacher exam, day, hippocampus, sleep, exam gates, versions, `cerbeto school run` and `cerbeto school grow` delivered; the school runs (preschool, second run); open: automatic growth controller, neuron renewal, self-correction format, brain API, control student · Depends on: 0002, 0003, 0004 · Unblocks: 0006, 0007
 
 ## 1. TL;DR
 An automatic learning loop: **day** (lessons with a large LLM teacher, experiences recorded in the hippocampus) → **sleep** (consolidation into the weights with replay and synaptic consolidation) → **exam** (gates) → version promotion / rollback / growth. Proof: after N cycles the student's result on the grade's `ood` exams rises, and forgetting stays within 2 pp.

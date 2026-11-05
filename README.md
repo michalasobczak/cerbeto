@@ -2,28 +2,58 @@
 
 *Cerbeto* (Esperanto: *cerbo* "brain" + *-et-* diminutive) — "little brain".
 
-A small neural network of our own (8 → 30M parameters, starting from random weights) that learns English and reasoning "like a child at school": nursery → preschool → grade 1 → grade 2. It is taught by a large local LLM teacher, follows a day (lessons) / sleep (consolidation) / exam rhythm, and grows while it learns.
+A small neural network of our own (6.9M → 34.6M parameters so far, limit 40M, starting from random weights) that learns English and reasoning "like a child at school": nursery → preschool → grade 1 → grade 2. It is taught by a large local LLM teacher, follows a day (lessons) / sleep (consolidation) / exam rhythm, and grows while it learns.
 
 ## Methodology
 The project uses **[Rondo](https://workwithrondo.com)** as its reference engineering and project methodology — **CDD (Context-Driven Development)**:
 - this README describes the "here and now" state: domain, functional architecture, critical path;
 - `specs/` holds the intent of every change, each written in Rondo's nine-section structure (TL;DR, Abstract, Objective, Artefact Inventory, Functional Domain Changes, Critical Path, Control Gates, Expected Outcome, Additional Information);
-- `CHANGELOG.md` records what was actually delivered;
+- `CHANGELOG.md` records what was actually delivered, by date; the README's current state is derived from it;
 - tests are the proof, derived from each specification's control gates;
 - [MANIFESTO.md](MANIFESTO.md) is the engineering manifesto — implementation principles applied to every specification.
 
-## Current state (2026-11-01)
-- Specifications 0001–0007 written; **0001** (school library and tokenizer) and **0002** (student architecture and growth) delivered — 0001 G5 (human review of shelf samples) pending.
-- **0003** nursery delivered for the growing student: 300M tokens in 15 h 42 min on the M1 Pro, grown 6.9M → 29.9M, validation loss 9.07 → 2.25. BLiMP 65.9% (gate 65%), conversation probe 80% (gate 60%, grading too lenient). It takes short, toddler-like conversational turns ("How old are you?" → "I got two.") but answers "yeah" even to false statements — learning truth and honest "I don't know" is the job of school (0004–0005). Still open: the control student run and the school baseline (preschool, grade 1, grade 2).
-- **0004** curriculum and exams delivered: 16 skills across preschool, grade 1 and grade 2, 10,830 frozen exam tasks graded by code. Baseline after the nursery: no stage passed (5–40%), with a "yeah" and "I don't know" reflex. A first preschool smoke run (direct lessons, no teacher) is trained; its exam is pending. Open: the 30M limit leaves no room for growth in school (0005).
-- School library downloaded offline into `data/library/` (outside git): BabyLM-2026-Strict, TinyStories V2, Simple English Wikipedia, FineWeb-Edu (1 shard) — about 4.8 GB.
-- Shelves built (`data/shelves/`): stage 0 has 628M training tokens (speech 84M, stories 544M); stages 1–3: books 37M, world 0.8M, edu 4.4M.
-- Own BPE tokenizer: 8192 tokens, 1.24 tokens/word on TinyStories.
-- Student: 6.9M parameters at start, can grow to 30M without changing its behaviour; 30 min of training from scratch already writes simple coherent stories (validation loss 9.08 → 1.75). Training precision fp32; a 30M student trains within ~3 GB.
-- Curriculum direction: preschool starts with **social skills** — conversation, politeness, agreeing/disagreeing, opinions and an honest "I don't know".
-- Admin panel code: not written yet.
-- Reference hardware: MacBook Pro M1 Pro, 32 GB — PyTorch uses the GPU via MPS (fp32/fp16, no bf16).
-- Default teacher: `gemma4:e4b-mlx` in local Ollama, admitted after the teacher exam (`cerbeto teacher exam`: 97.5% correct answers, 94.8% consistent explanations).
+## Current state (2026-11-05)
+Derived from [CHANGELOG.md](CHANGELOG.md) (what was delivered, by date) and the status line of each specification.
+
+**Where we are:** the student is **in preschool** (school stage 1 of 3) and has not passed it yet.
+- **Nursery done:** the growing student finished it (300M tokens, 6.9M → 29.9M parameters, BLiMP 65.9%).
+- **School running:** the automatic school (day with the LLM teacher → sleep → exam) runs on a laptop, offline. The preschool score went from ~22% after the nursery to **60.5%** by day 7, then stayed flat for days 9–16.
+- **Cause of the plateau:** lessons were 97% right, and the missing points were knowledge and question forms that lessons never gave.
+- **Response (2026-11-05):**
+  - harder days: weak skills come up more often, lessons mix two skills, and new reading lessons tell the rare facts;
+  - a passing rule fitted to moving between grades: mastery of what was taught in every skill, transfer on average, no skill without transfer;
+  - the first growth in school: `v0016`, 34.6M parameters, limit raised to 40M.
+- **Next:** the first days with the new lessons show whether preschool moves toward passing; then grade 1 and grade 2.
+
+**Specifications**
+
+| Spec | Status |
+|---|---|
+| [0001](specs/0001-library-and-tokenizer.md) library and tokenizer | delivered; G5 (human review of shelf samples) pending |
+| [0002](specs/0002-student-architecture-and-growth.md) student architecture and growth | delivered |
+| [0003](specs/0003-nursery-stage-0-pretraining.md) nursery | delivered for the growing student; control student run open |
+| [0004](specs/0004-curriculum-and-exams.md) curriculum and exams | delivered; passing rule changed 2026-11-05; G5 (human review of tasks) pending |
+| [0005](specs/0005-school-day-sleep-exam.md) school: day, sleep, exam | **in progress**: the school runs (preschool, second run, day 17); open: neuron renewal, self-correction format, brain API, control student |
+| [0006](specs/0006-rails-admin-panel-and-chat.md) admin panel and chat (Rails) | planned (a read-only school panel `cerbeto panel` exists in the brain) |
+| [0007](specs/0007-offline-distribution.md) offline distribution | planned |
+
+**Hypotheses**
+
+| Hypothesis | State | Evidence |
+|---|---|---|
+| A small model trained from scratch on child-level text learns grammar and short conversation | upheld | BLiMP 65.9%, conversation probe ([0003](specs/0003-nursery-stage-0-pretraining.md)) |
+| Growth during the nursery keeps behaviour and saves compute | upheld for function preservation (Δ loss ≈ 0 at every growth); saving vs a fixed student: open (control student not run) | growth logs; [0002](specs/0002-student-architecture-and-growth.md) |
+| A small local LLM can be a reliable teacher when code verifies it | upheld | teacher exam: `gemma4:e4b-mlx` 97.5% correct, 94.8% consistent; unverified explanations are never used |
+| Day → sleep → exam raises school skills without forgetting the nursery | partly upheld: preschool 22% → 60.5%, nursery language kept (EWC + replay); stage not passed yet | `runs/school/cycles.jsonl`, [0005](specs/0005-school-day-sleep-exam.md) §9 |
+| Lessons in the training forms transfer to new forms and unseen items by themselves | refuted for this student | `id` high, `ood_hard` 10–57% on several skills; plateau days 9–16 |
+| More parameters help the school plateau | open: tested since 2026-11-05 together with harder lessons (causes not separated) | [0005](specs/0005-school-day-sleep-exam.md) §9 |
+| More passes of the recurrent core at answer time help | not seen in school: validation 75.1 / 76.5 / 75.3 / 73.9% at K = 2 / 4 / 6 / 8 | [0005](specs/0005-school-day-sleep-exam.md) §9 |
+
+**Setup**
+- **Data:** library offline in `data/library/` (BabyLM-2026-Strict, TinyStories V2, Simple English Wikipedia, FineWeb-Edu shard, ~4.8 GB). Shelves in `data/shelves/`, stage 0 with 628M tokens.
+- **Tokenizer:** own BPE, 8192 tokens.
+- **Teacher:** default `gemma4:e4b-mlx` in local Ollama.
+- **Hardware:** MacBook Pro M1 Pro, 32 GB (MPS, fp32).
 
 ## What the student can do after the nursery
 **Nursery exam** (`cerbeto exam nursery`, `checkpoints/growing/v0032`, 29.9M parameters, 2026-11-01):
@@ -57,7 +87,6 @@ Observed outside the formal exam, in conversation with the same checkpoint. In s
 | Phase | What happens | Expected effect on the student | How we will know |
 |---|---|---|---|
 | **0003 — control student** | The same 300M-token nursery for a fixed 30M student, no growth (~25 h, run separately) | Nothing new for the student itself — a reference point for the project's thesis | Its BLiMP and validation loss next to the growing student's; later the same school results |
-| **0004 — curriculum and exams** | Task generators whose answers are known to the code: preschool social skills (agree/disagree by truth, honest "I don't know", opinions with a reason), a mini knowledge base (colours, animals, body parts, opposites, categories), then reading comprehension and counting (grade 1), order of events, cause–effect, numbers to 100 and one-step word problems (grade 2); frozen exam pools in three variants (`id`, `ood_hard`, `ood_combo`), ~10% unanswerable questions | No training yet — the **baseline**: an honest measurement of what both nursery students score on preschool, grade 1 and grade 2 before school (expected: low, with "yeah" and random facts graded as errors) | Exam tables per skill × variant; `runs/nursery/baseline.json` |
 | **0005 — school: day, sleep, exam** | The automatic loop: **day** — lessons with the local LLM teacher, experiences in the hippocampus; **sleep** — consolidation into the weights with replay, EWC and neuron renewal; **exam** — promotion, rollback or growth | The *"yeah"* reflex replaced by answers that follow the truth; *"I don't know"* only where the answer really is unknown; stable facts from the knowledge base; then reading, counting and simple reasoning — grade by grade, without forgetting the previous ones | **MVP priority:** `ood_hard` + `ood_combo` up by ≥ 20 pp versus the baseline; ≥ 85% on `id` per grade; forgetting ≤ 2 pp; growing vs control comparison |
 | **0006 — admin panel and chat** | Local Rails panel: teachers, live lessons, progress, the student's brain, versions with compare and rollback, library, chat | You can watch lessons live, talk to the student and correct it — a human becomes an extra teacher | Every function within 2 clicks; live view ≤ 2 s delay |
 | **0007 — offline distribution** | A package with the post-nursery student, curriculum, local teacher, learning tool and panel | The student keeps learning and growing at people's homes on a 16 GB Mac, fully offline; every copy becomes a separate child | Clean 16 GB Mac: install ≤ 30 min, 3 offline cycles, peak RAM ≤ 14 GB |
