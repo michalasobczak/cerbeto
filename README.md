@@ -22,7 +22,8 @@ Derived from [CHANGELOG.md](CHANGELOG.md) (what was delivered, by date) and the 
 - **Response (2026-11-05):**
   - harder days: weak skills come up more often, lessons mix two skills, and new reading lessons tell the rare facts;
   - a passing rule fitted to moving between grades: mastery of what was taught in every skill, transfer on average, no skill without transfer;
-  - the first growth in school: `v0016`, 34.6M parameters, limit raised to 40M.
+  - the first growth in school: `v0016`, 34.6M parameters, limit raised to 40M;
+  - yes/no lessons now think "claim → fact → decision": the student knew the facts but answered "No. A dog says woof.", which held agree/disagree and categories below 85%.
 - **Next:** the first days with the new lessons show whether preschool moves toward passing; then grade 1 and grade 2.
 
 **Specifications**

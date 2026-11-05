@@ -103,3 +103,15 @@ def test_unchanged_night_is_no_promotion(tmp_path, monkeypatch):
     record = json.loads((tmp_path / "cycles.jsonl").read_text())
     assert record["candidate"] is None and record["promoted"] is False
     assert "76.5%" in school.log_file.read_text()
+
+
+def test_yes_no_lessons_compare_before_deciding():
+    """The student had learned "No. <the true fact>": every preschool yes/no lesson now thinks claim → fact → answer."""
+    from cerbeto.curriculum import skills as all_skills
+    for s in all_skills("preschool", lessons=True):
+        for seed in range(60):
+            t = generate(s.name, "train", seed, unanswerable=False)
+            if t.answer_type != "yesno":
+                continue
+            assert t.steps and t.steps[0].startswith("The question says:"), (s.name, t.prompt)
+            assert t.steps[-1].endswith(f"the answer is {t.answer}."), (s.name, t.steps)

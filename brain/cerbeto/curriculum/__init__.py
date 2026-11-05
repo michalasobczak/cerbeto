@@ -84,6 +84,14 @@ def plural(noun: str) -> str:
     return irregular.get(noun, noun + "s")
 
 
+def check_steps(said: str, fact: str, truth: bool) -> list[str]:
+    """Thinking for a yes/no about a statement: repeat the claim, state the fact, then decide — so "yes" or "no"
+    comes from comparing the two, not before the fact (the student had learned "No. <the true fact>")."""
+    said = said.strip().rstrip(".?!")
+    return [f"The question says: {said[0].lower() + said[1:]}.", fact,
+            f"So that is {'right' if truth else 'wrong'}, and the answer is {'yes' if truth else 'no'}."]
+
+
 # ── registry ─────────────────────────────────────────────────────────────────────────────────────────
 
 @dataclass(frozen=True)

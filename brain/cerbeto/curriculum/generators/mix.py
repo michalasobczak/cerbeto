@@ -8,7 +8,7 @@ in world.yaml) are never used: they stay the exam's test of knowledge the lesson
 """
 import random
 
-from cerbeto.curriculum import a, skill, world
+from cerbeto.curriculum import a, check_steps, skill, world
 from cerbeto.curriculum.generators.common import personal
 from cerbeto.curriculum.generators.world_knowledge import CONFUSABLE, opposites_of
 
@@ -63,7 +63,7 @@ def opposite_statement(rng: random.Random, variant: str, difficulty: int) -> dic
     reply = "Yes, that's right." if truth else f"No. The opposite of {word} is {right[0]}."
     return {"question": f"The opposite of {word} is {stated}.{rng.choice(TAGS)}", "answer": "yes" if truth else "no",
             "answer_type": "yesno", "reply": reply,
-            "steps": [f"The opposite of {word} is {right[0]}. So the answer is {'yes' if truth else 'no'}."]}
+            "steps": check_steps(f"the opposite of {word} is {stated}", f"The opposite of {word} is {right[0]}.", truth)}
 
 
 @skill("mix.sound_size", STAGE, personal, lesson_only=True)
@@ -159,7 +159,8 @@ def read_facts(rng: random.Random, variant: str, difficulty: int) -> dict:
     truth = asked == cat
     return {"context": f"{_cap(a(member))} is {CATEGORY[cat]}.", "question": f"Is {a(member)} {CATEGORY[asked]}?",
             "answer": "yes" if truth else "no", "answer_type": "yesno",
-            "reply": f"Yes, {a(member)} is {CATEGORY[cat]}." if truth else f"No, {a(member)} is {CATEGORY[cat]}."}
+            "reply": f"Yes, {a(member)} is {CATEGORY[cat]}." if truth else f"No, {a(member)} is {CATEGORY[cat]}.",
+            "steps": check_steps(f"{a(member)} is {CATEGORY[asked]}", f"{_cap(a(member))} is {CATEGORY[cat]}.", truth)}
 
 
 # ── forms the exam holds out, practised in a neighbouring form ────────────────────────────────────────────────
@@ -189,7 +190,7 @@ def not_statement(rng: random.Random, variant: str, difficulty: int) -> dict:
     reply = f"Yes, that's right. {the} {thing} is {right[0]}." if truth else f"No. {the} {thing} is {right[0]}."
     return {"question": f"{the} {thing} is not {color}.{rng.choice(TAGS)}", "answer": "yes" if truth else "no",
             "answer_type": "yesno", "reply": reply,
-            "steps": [f"{the} {thing} is {right[0]}. So the answer is {'yes' if truth else 'no'}."]}
+            "steps": check_steps(f"{the} {thing} is not {color}", f"{the} {thing} is {right[0]}.", truth)}
 
 
 @skill("mix.which_category", STAGE, personal, lesson_only=True)

@@ -9,6 +9,10 @@ What has actually been delivered, by date (newest first). Intent of changes: `sp
 - Reading lessons `read.facts` (rare facts told in a text, then asked about) and three more lesson-only mixes practising forms next to the exam's held-out ones (`mix.say_back`, `mix.not_statement`, `mix.which_category`); per-skill lesson weight overrides — [0005].
 - `cerbeto school grow --mlp N --heads N`: function-preserving growth of the active school version into a new active version; parameter limit raised 30M → 40M; `v0015` grown into `v0016` (29.9M → 34.6M, +384 MLP neurons per block, Δ loss 0.0) — [0005].
 
+### Fixed
+- Yes/no lessons think claim → fact → decision ("The question says: … So that is wrong, and the answer is no."); categories had no thinking, agree/disagree thinking never compared the fact with the claim — the student answered "No. A dog says woof." — [0005].
+- Lesson weights of a grown version come from the last promoted version's exam (they came from the nursery exam) — [0005].
+
 ### Changed
 - README current state rebuilt from this changelog: where the student is, status of every specification, hypotheses upheld / refuted / open; this changelog reorganised by date (Rondo).
 - Passing a grade: every skill `id` ≥ 85%, the stage's mean `ood_hard` ≥ 70% and every skill `ood_hard` ≥ 50% (before: `ood_hard` ≥ 70% in every skill) — [0004].

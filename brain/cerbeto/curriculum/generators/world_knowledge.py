@@ -1,7 +1,7 @@
 """Preschool — questions about the world from the mini knowledge base: facts, opposites, sizes, categories."""
 import random
 
-from cerbeto.curriculum import CATEGORY, a, skill, world
+from cerbeto.curriculum import CATEGORY, a, check_steps, skill, world
 from cerbeto.curriculum.generators.common import personal
 
 STAGE = "preschool"
@@ -144,4 +144,6 @@ def categories(rng: random.Random, variant: str, difficulty: int) -> dict:
     else:
         question = rng.choice([f"Is {a(member)} {CATEGORY[cat]}?", f"{a(member).capitalize()} is {CATEGORY[cat]}. Right?"])
     reply = f"Yes, {a(member)} is {CATEGORY[cat]}." if truth else f"No, {a(member)} is {CATEGORY[real]}."
-    return {"question": question, "answer": "yes" if truth else "no", "answer_type": "yesno", "reply": reply}
+    return {"question": question, "answer": "yes" if truth else "no", "answer_type": "yesno", "reply": reply,
+            "steps": check_steps(f"{a(member)} is {CATEGORY[cat]}", f"{a(member).capitalize()} is {CATEGORY[real]}.",
+                                 truth)}

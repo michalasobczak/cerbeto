@@ -4,7 +4,7 @@
 """
 import random
 
-from cerbeto.curriculum import CATEGORY, a, plural, skill, world
+from cerbeto.curriculum import CATEGORY, a, check_steps, plural, skill, world
 from cerbeto.curriculum.generators.common import personal
 from cerbeto.curriculum.generators.world_knowledge import CONFUSABLE
 
@@ -94,7 +94,7 @@ def agree_disagree(rng: random.Random, variant: str, difficulty: int) -> dict:
     reply = "Yes, that's right." if truth else f"No. {corrected}"
     return {"context": context, "question": f"{statement}{tag}".strip(), "answer": "yes" if truth else "no",
             "answer_type": "yesno", "reply": reply,
-            "steps": [f"{corrected} So the answer is {'yes' if truth else 'no'}."]}
+            "steps": check_steps(statement, corrected, truth)}
 
 
 @skill("social.opinion", STAGE, personal, graded_by="form")

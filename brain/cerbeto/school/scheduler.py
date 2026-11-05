@@ -198,11 +198,22 @@ class School:
         self.save_state()
         return cand
 
-    def weights(self, stage: str) -> dict[str, float]:
-        """Lesson weights of the day from the active version's last exam (the nursery exam on day 1)."""
+    def last_exam(self) -> Path:
+        """The exam of the active version; for a grown version (not examined yet) the last promoted version's;
+        on day 1 the nursery student's."""
         f = RUN / "exams" / f"{self.state['active']}.json"
-        if not f.exists():
-            f = BASELINE / f"{self.cfg['start_version']}.json"
+        if f.exists():
+            return f
+        cycles = RUN / "cycles.jsonl"
+        promoted = [r["candidate"] for r in map(json.loads, cycles.read_text().splitlines()) if r["promoted"]] \
+            if cycles.exists() else []
+        if promoted and (RUN / "exams" / f"{promoted[-1]}.json").exists():
+            return RUN / "exams" / f"{promoted[-1]}.json"
+        return BASELINE / f"{self.cfg['start_version']}.json"
+
+    def weights(self, stage: str) -> dict[str, float]:
+        """Lesson weights of the day from the last exam of the active line (the nursery exam on day 1)."""
+        f = self.last_exam()
         results = json.loads(f.read_text())["results"].get(stage) if f.exists() else None
         w = lesson_weights(results, self.cfg["day"])
         self.log("lesson weights · " + " · ".join(f"{k} {v:.2f}" for k, v in sorted(w.items()) if k.split(".")[0]
