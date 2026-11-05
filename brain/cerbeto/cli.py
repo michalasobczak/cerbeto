@@ -65,6 +65,10 @@ def main() -> None:
     sr.add_argument("--teacher", help="name from config/teachers.yaml (default: the default teacher)")
     sr.add_argument("--device")
     sc_sub.add_parser("status", help="school state and the last cycles")
+    sg = sc_sub.add_parser("grow", help="grow the active school version (function-preserving) into a new version")
+    sg.add_argument("--mlp", type=int, default=0, help="MLP neurons added to every block")
+    sg.add_argument("--heads", type=int, default=0, help="attention heads added to every block")
+    sg.add_argument("--reason", default="", help="why, for the growth log")
 
     te = sub.add_parser("teacher", help="LLM teachers (spec 0005)")
     te_sub = te.add_subparsers(dest="cmd", required=True)
@@ -143,6 +147,9 @@ def main() -> None:
     elif args.group == "school" and args.cmd == "status":
         from cerbeto.school.scheduler import status
         status()
+    elif args.group == "school" and args.cmd == "grow":
+        from cerbeto.school.scheduler import School
+        School(device="cpu").grow(args.mlp, args.heads, args.reason)
     elif args.group == "teacher" and args.cmd == "exam":
         from cerbeto.teachers.exam import run as run_teacher_exam
         sys.exit(0 if run_teacher_exam(args.teacher, args.per_skill, args.seed)["summary"]["passed"] else 1)

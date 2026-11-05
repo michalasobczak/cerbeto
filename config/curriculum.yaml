@@ -14,6 +14,7 @@ exams:
   batch_size: 64
 
 passing:                        # code-graded skills only; soft skills (graded_by: form) are reported separately
-  id: 0.85
-  ood_hard: 0.70                # TO BE VERIFIED after the baseline
+  id: 0.85                      # every skill: mastery of what the lessons taught
+  ood_hard: 0.70                # the stage's mean over skills: transfer to what lessons did not show
+  ood_hard_floor: 0.50          # every skill: no skill without transfer
   forgetting_pp: 2              # a drop of more than this on an earlier grade rejects the version

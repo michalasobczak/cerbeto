@@ -27,7 +27,7 @@ Ask = Callable[[list[dict], bool], str]          # (messages, think) -> reply
 REPHRASE = """Rewrite the question below in different simple words, the way a kind teacher talks to a young child.
 Keep every name, every number, every option and the meaning exactly. Do not answer it. Reply with the new question
 only."""
-NO_REPHRASE = {"social.clarify"}   # a rephrasing may name the thing meant, and then "which one?" is no longer right
+NO_REPHRASE = {"social.clarify", "mix.clarify_kind"}   # a rephrasing may name the thing meant, and then "which one?" is no longer right
 NEGATION = re.compile(r"\b(not|no|never)\b|n't", re.I)
 
 
@@ -87,14 +87,32 @@ def target(task: Task, steps: str | None) -> str:
     return lesson_text(task)[1]
 
 
+def lesson_weights(results: dict | None, cfg: dict) -> dict[str, float]:
+    """How often each skill comes up in a day: weaker skills on the last exam more often (`focus`), and the
+    lesson-only mixes of skills at `mix_weight` each; `weights` in the config overrides single skills. `results` is
+    one stage of an exam result, or None."""
+    from cerbeto.curriculum import skills
+    out = {}
+    for s in skills(None, lessons=True):
+        if s.lesson_only:
+            out[s.name] = cfg.get("mix_weight", 0.0)
+        elif results and s.name in results and results[s.name]["id"].get("graded_by", "code") == "code":
+            r = results[s.name]
+            score = sum(r[v]["accuracy"] for v in ("id", "ood_hard", "ood_combo")) / 3
+            out[s.name] = 1 + cfg.get("focus", 0.0) * (1 - score)
+        else:
+            out[s.name] = 1.0
+    return out | cfg.get("weights", {})
+
+
 def run_day(model, device, student: str, day: int, stage: str, cfg: dict, ask: Ask, teacher_name: str | None = None,
             stop: Callable[[], bool] = lambda: False, log: Callable[[str], None] = print,
-            hippo: Hippocampus | None = None) -> dict:
+            hippo: Hippocampus | None = None, weights: dict[str, float] | None = None) -> dict:
     hippo = hippo or Hippocampus()
     exam = exam_hashes() | validation_hashes([stage])      # lessons never show an exam or validation prompt
     think_skills = set(teacher_config(teacher_name).get("think_skills", []))
     rng = random.Random(f"day/{student}/{day}")
-    lessons = training_stream(seed=10_000 + day, stage=stage, exclude=exam)
+    lessons = training_stream(seed=10_000 + day, stage=stage, exclude=exam, weights=weights, lessons=bool(weights))
     done = hippo.count(student, day)              # resume a day interrupted half-way
     stats = {"lessons": done, "correct": 0, "rephrased": 0, "teacher_explained": 0, "code_explained": 0}
     while stats["lessons"] < cfg["lessons"] and not stop():

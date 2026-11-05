@@ -23,12 +23,13 @@ from cerbeto.memory.hippocampus import Hippocampus
 from cerbeto.model import checkpoint
 from cerbeto.model.consolidation import EWC
 from cerbeto.model.student import pick_device
-from cerbeto.school.day import run_day, teacher
+from cerbeto.school.day import lesson_weights, run_day, teacher
 from cerbeto.school.sleep import Interrupted, estimate_ewc, run_sleep
 from cerbeto.school.validation import score, validation_set
 
 CKPT = paths.REPO / "checkpoints" / "school"
 RUN = paths.REPO / "runs" / "school"
+BASELINE = paths.REPO / "runs" / "exams" / "growing"     # the nursery student's exam: weights of day 1
 STATE = RUN / "state.json"
 STUDENT = "school"
 
@@ -128,7 +129,7 @@ class School:
             if st["phase"] == "day":
                 self.log(f"── day {st['day']} · {stage} · active {st['active']}")
                 stats = run_day(model, self.device, STUDENT, st["day"], stage, self.cfg["day"], self.ask,
-                                self.teacher_name, self.stop, self.log)
+                                self.teacher_name, self.stop, self.log, weights=self.weights(stage))
                 if self.stop():
                     break
                 self.log(f"day {st['day']} done: {stats}")
@@ -148,11 +149,16 @@ class School:
                 except Interrupted:
                     self.log("sleep interrupted — no new version, the student stays on " + st["active"])
                     break
+                hippo.mark_slept([e.id for e in experiences])
+                if stats["kept_step"] == 0:      # the best moment of the night was before it: nothing to examine
+                    self.unchanged(stats)
+                    model = self.load(st["active"])
+                    done_cycles += 1
+                    continue
                 n = len(list(CKPT.glob("v*")))
                 cand = f"v{n:04d}"
                 checkpoint.save(model, CKPT / cand, parent=CKPT / st["active"],
                                 meta={"school": {"day": st["day"], "stage": stage, "sleep": stats}})
-                hippo.mark_slept([e.id for e in experiences])
                 st.update(phase="exam", candidate=cand)
                 self.save_state()
             if st["phase"] == "exam":
@@ -162,6 +168,67 @@ class School:
                 done_cycles += 1
         self.save_state()
         self.log("school stopped" if not st["done"] else "school finished: all stages passed")
+
+    def grow(self, extra_mlp: int = 0, extra_heads: int = 0, reason: str = "") -> str:
+        """Grow the active version into a new one with the same behaviour (|Δ loss| guard, parameter limit), and
+        make it active. Only while no candidate waits for its exam (phase `day`, or `sleep` before the night ran);
+        the next night trains the new neurons."""
+        from cerbeto.model import growth
+        from cerbeto.train.loop import student_yaml
+        from cerbeto.train.data import ShelfStream
+        import numpy as np
+        st = self.state
+        if st is None or st["phase"] == "exam" or st.get("candidate"):
+            raise SystemExit("grow only when no candidate waits for its exam; stop the school first")
+        sy = student_yaml()
+        model = self.load(st["active"])
+        probe = ShelfStream("s0_speech", "valid", model.cfg.max_seq_len).batch(8, np.random.default_rng(1), self.device)
+        new = growth.apply(model, "grow_width", probe, k=sy["recurrence"]["k_eval"], max_params=sy["max_params"],
+                           max_delta_loss=sy["growth"]["max_delta_loss"], log_path=RUN / "growth_log.jsonl",
+                           reason=reason, extra_mlp=extra_mlp, extra_heads=extra_heads, std=sy["growth"]["new_weight_std"])
+        cand = f"v{len(list(CKPT.glob('v*'))):04d}"
+        checkpoint.save(new, CKPT / cand, parent=CKPT / st["active"],
+                        meta={"school": {"day": st["day"], "stage": st["stage"], "grown": {
+                            "extra_mlp": extra_mlp, "extra_heads": extra_heads, "reason": reason}}})
+        (RUN / "ewc.safetensors").unlink(missing_ok=True)      # importance is re-estimated for the new shape
+        self.log(f"GROWN {st['active']} → {cand} · {model.num_params():,} → {new.num_params():,} parameters · "
+                 f"+{extra_mlp} MLP neurons, +{extra_heads} heads per block · {reason}")
+        st["active"] = cand
+        (CKPT / "LATEST").write_text(cand)
+        self.save_state()
+        return cand
+
+    def weights(self, stage: str) -> dict[str, float]:
+        """Lesson weights of the day from the active version's last exam (the nursery exam on day 1)."""
+        f = RUN / "exams" / f"{self.state['active']}.json"
+        if not f.exists():
+            f = BASELINE / f"{self.cfg['start_version']}.json"
+        results = json.loads(f.read_text())["results"].get(stage) if f.exists() else None
+        w = lesson_weights(results, self.cfg["day"])
+        self.log("lesson weights · " + " · ".join(f"{k} {v:.2f}" for k, v in sorted(w.items()) if k.split(".")[0]
+                                                  in {s.split(".")[0] for s in (results or {})} | {"mix"}))
+        return w
+
+    def progress(self, gained: bool) -> None:
+        st = self.state
+        st["plateau"] = 0 if gained else st["plateau"] + 1
+        if st["plateau"] >= self.cfg["exam"]["plateau_cycles"]:
+            self.log(f"no progress for {st['plateau']} cycles — growth wanted (`cerbeto school grow`, spec 0005)")
+            st["plateau"] = 0
+
+    def unchanged(self, stats: dict) -> None:
+        """A night whose best moment was its start: the weights are those of the active version — no new version,
+        no exam, no promotion; it counts as a cycle without progress."""
+        st = self.state
+        self.log(f"night changed nothing (validation best before sleep, {100 * max(v for _, v in stats['validation']):.1f}%) — "
+                 f"no new version, the student stays on {st['active']}")
+        with (RUN / "cycles.jsonl").open("a") as f:
+            f.write(json.dumps({"day": st["day"], "candidate": None, "stage": st["stage"], "scores": {},
+                                "promoted": False, "why": "night changed nothing", "minutes": 0,
+                                "time": time.strftime("%Y-%m-%dT%H:%M:%S")}) + "\n")
+        self.progress(False)
+        st.update(phase="day", candidate=None, day=st["day"] + 1)
+        self.save_state()
 
     def examine(self, model) -> None:
         st, cfg = self.state, self.cfg
@@ -189,11 +256,7 @@ class School:
             self.log(f"PROMOTED {st['active']} · {summary} · gain {100 * gain:+.1f} pp")
         else:
             self.log(f"ROLLBACK to {st['active']} · {summary} · {why}")
-        st["plateau"] = 0 if ok and gain * 100 >= cfg["exam"]["min_gain_pp"] else st["plateau"] + 1
-        if st["plateau"] >= cfg["exam"]["plateau_cycles"]:
-            self.log(f"no progress for {st['plateau']} cycles — growth wanted, but the student is at the parameter "
-                     f"limit (open question in spec 0005)")
-            st["plateau"] = 0
+        self.progress(ok and gain * 100 >= cfg["exam"]["min_gain_pp"])
         if ok and out["results"][stage]["_passed"]:
             st["reference"][stage] = scores[stage]
             st["passed"].append(stage)

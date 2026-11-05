@@ -111,19 +111,19 @@ async function refresh(){
    <span class="mut">student right today</span><span>${pct(acc)} of ${today.lessons||0}</span><span class="mut">tutor explained</span><span>${today.teacher??0} mistakes · reference ${today.code??0}</span>
    <span class="mut">without progress</span><span>${st.plateau} / ${R.exam.plateau_cycles} cycles</span><span class="mut">started from</span><span>${esc(st.from.split("/checkpoints/")[1]||st.from)}</span></div>`;
   $("#stages").innerHTML=R.stages.map(s=>`<span class="stage ${st.passed.includes(s)?"done":s===st.stage?"cur":""}">${st.passed.includes(s)?"✓ ":""}${s}</span>`).join('<span class="mut">→</span>');
-  const cy=d.cycles, pts=cy.filter(c=>c.stage===st.stage);
+  const cy=d.cycles, pts=cy.filter(c=>c.stage===st.stage&&c.candidate);
   if(pts.length){const w=600,h=70,xs=i=>pts.length<2?w/2:10+i*(w-20)/(pts.length-1),ys=v=>h-6-v*(h-12);
     $("#scorechart").innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><line x1="0" x2="${w}" y1="${ys(.85)}" y2="${ys(.85)}" stroke="var(--line)" stroke-dasharray="4"/>
     <polyline fill="none" stroke="var(--acc)" stroke-width="2" vector-effect="non-scaling-stroke" points="${pts.map((p,i)=>xs(i)+","+ys(p.scores[st.stage])).join(" ")}"/></svg>
     <div class="mut legend"><span>stage score per exam</span><span>dashed = 85%</span></div>`} else $("#scorechart").innerHTML="";
   $("#cycles").innerHTML=cy.length?`<table><tr><th>day</th><th>version</th><th class="n">score</th><th>decision</th></tr>`+cy.slice().reverse().slice(0,6).map(c=>
-    `<tr><td>${c.day}</td><td>${c.candidate}</td><td class="n">${pct(c.scores[c.stage])}</td><td class="${c.promoted?"ok":"bad"}">${c.promoted?"promoted":"rolled back"}</td></tr>`).join("")+"</table>":'<p class="mut">no exam yet</p>';
+    `<tr><td>${c.day}</td><td>${c.candidate||"—"}</td><td class="n">${c.candidate?pct(c.scores[c.stage]):""}</td><td class="${c.promoted?"ok":c.candidate?"bad":"mut"}">${c.promoted?"promoted":c.candidate?"rolled back":"night changed nothing"}</td></tr>`).join("")+"</table>":'<p class="mut">no exam yet</p>';
   const P=d.passing, E=d.exam;
   if(E){const cyc=cy.find(c=>c.candidate===E.version), nTasks=null;
     let html=`<p class="note"><b>${E.version}</b> — exam after night ${cyc?.day??"?"}${cyc?`, ${cyc.minutes} min`:""}: every frozen exam task of ${Object.keys(E.stages).join(", ")} (never seen in lessons), answered greedily with K=${R.day.k}, graded by code.
       Variants: <b>id</b> like the lessons · <b>ood_hard</b> harder, rare words · <b>ood_combo</b> two skills at once; ~10% have no answer ("I don't know" is the only right reply).
       Score = mean of the three on code-graded skills. ${cyc?`Decision: <b class="${cyc.promoted?"ok":"bad"}">${cyc.promoted?"promoted":"rolled back — "+esc(cyc.why)}</b>.`:""}
-      Pass: every skill id ≥ ${pct(P.id)} and ood_hard ≥ ${pct(P.ood_hard)}.</p>`;
+      Pass: every skill id ≥ ${pct(P.id)}, mean ood_hard ≥ ${pct(P.ood_hard)}, every skill ood_hard ≥ ${pct(P.ood_hard_floor)}.</p>`;
     for(const [stage,e] of Object.entries(E.stages)){
       html+=`<div style="margin:2px 0 4px"><b>${esc(stage)}</b> · score ${pct(E.scores[stage])} · ${e.passed?'<span class="ok">PASSED</span>':'<span class="mut">not passed</span>'} <span class="mut">· nursery baseline → now</span></div>
       <table><tr><th>skill</th><th class="n">id</th><th class="n">ood_hard</th><th class="n">ood_combo</th></tr>`;

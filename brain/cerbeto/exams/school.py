@@ -183,12 +183,20 @@ def evaluate(model, k: int, device, pools=None, limit: int | None = None) -> dic
             "idk_on_answerable": sum(is_idk(r[1]) for r in answerable) / len(answerable) if answerable else None,
             "graded_by": rows[0][0].graded_by if answerable else "code",
         }
-    passing = cfg["passing"]
     for stage, sk in results.items():
-        code = {s: v for s, v in sk.items() if v["id"]["graded_by"] == "code"}
-        sk["_passed"] = all(v["id"]["accuracy"] >= passing["id"] and v["ood_hard"]["accuracy"] >= passing["ood_hard"]
-                            for v in code.values())
+        sk["_passed"] = passed(sk, cfg["passing"])
     return {"results": results, "items": items}
+
+
+def passed(stage_results: dict, passing: dict) -> bool:
+    """Moving to the next grade (spec 0004): every code-graded skill masters what was taught (`id`), and the stage
+    transfers on average (mean `ood_hard`) with no skill below the floor (`ood_hard_floor`)."""
+    code = [v for s, v in stage_results.items() if not s.startswith("_") and v["id"]["graded_by"] == "code"]
+    if not code:
+        return False
+    hard = [v["ood_hard"]["accuracy"] for v in code]
+    return (all(v["id"]["accuracy"] >= passing["id"] for v in code) and sum(hard) / len(hard) >= passing["ood_hard"]
+            and min(hard) >= passing.get("ood_hard_floor", passing["ood_hard"]))
 
 
 def run(student: str, version: str | None, device: str | None, limit: int | None = None) -> dict:

@@ -8,6 +8,10 @@ day:
   batch: 64                # the student answers this many lessons at once
   rephrase_share: 0.6      # share of lessons the homeroom teacher rephrases in its own words (more surface diversity)
   k: 4                     # passes of the recurrent core when the student answers
+  focus: 2.0               # a skill's weight in the day is 1 + focus × (1 − its score on the last exam)
+  mix_weight: 0.6          # weight of each lesson-only mix of two skills (never an exam form)
+  weights:                 # overrides for single skills
+    read.facts: 1.5        # facts about rare items told in a text — the only place lessons give them
 
 sleep:
   epochs: 3                # passes over the day's experiences (at most: early stopping keeps the best step)

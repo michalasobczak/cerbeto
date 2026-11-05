@@ -93,14 +93,15 @@ class Skill:
     make: object          # (rng, variant, difficulty) -> Task fields (dict)
     unanswerable: object  # (rng, variant, difficulty) -> Task fields (dict)
     graded_by: str = "code"
+    lesson_only: bool = False   # a mix of skills taught in lessons; never in exams or validation
 
 
 SKILLS: dict[str, Skill] = {}
 
 
-def skill(name: str, stage: str, unanswerable, graded_by: str = "code"):
+def skill(name: str, stage: str, unanswerable, graded_by: str = "code", lesson_only: bool = False):
     def register(fn):
-        SKILLS[name] = Skill(name, stage, fn, unanswerable, graded_by)
+        SKILLS[name] = Skill(name, stage, fn, unanswerable, graded_by, lesson_only)
         return fn
     return register
 
@@ -110,9 +111,10 @@ def stages() -> list[str]:
     return list(dict.fromkeys(s.stage for s in SKILLS.values()))
 
 
-def skills(stage: str | None = None) -> list[Skill]:
+def skills(stage: str | None = None, lessons: bool = False) -> list[Skill]:
+    """Skills of a stage (all stages for None). `lessons=True` adds the lesson-only mixes of skills."""
     from cerbeto.curriculum import generators  # noqa: F401
-    return [s for s in SKILLS.values() if stage is None or s.stage == stage]
+    return [s for s in SKILLS.values() if (stage is None or s.stage == stage) and (lessons or not s.lesson_only)]
 
 
 def generate(skill_name: str, variant: str, seed: int, difficulty: int | None = None,
@@ -140,13 +142,18 @@ def generate(skill_name: str, variant: str, seed: int, difficulty: int | None = 
                 graded_by="code" if unanswerable else sk.graded_by, **fields)
 
 
-def training_stream(seed: int = 0, stage: str | None = None, exclude: set[str] | None = None):
-    """Endless lessons: random skills of the stage(s), training seeds only, never an exam prompt (gate G4)."""
+def training_stream(seed: int = 0, stage: str | None = None, exclude: set[str] | None = None,
+                    weights: dict[str, float] | None = None, lessons: bool = False):
+    """Endless lessons: random skills of the stage(s), training seeds only, never an exam prompt (gate G4).
+
+    `weights` (skill → weight, default 1) makes some skills more frequent; `lessons=True` adds the mixes of skills."""
     rng = random.Random(seed)
-    names = [s.name for s in skills(stage)]
+    names = [s.name for s in skills(stage, lessons)]
+    w = [max(0.0, (weights or {}).get(n, 1.0)) for n in names]
     exclude = exclude or set()
     while True:
-        task = generate(rng.choice(names), "train", rng.randrange(EXAM_SEED_BASE))
+        name = rng.choices(names, w)[0] if weights else rng.choice(names)   # unweighted: the same stream as before
+        task = generate(name, "train", rng.randrange(EXAM_SEED_BASE))
         if task.hash not in exclude:
             yield task
 

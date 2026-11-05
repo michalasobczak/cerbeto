@@ -57,7 +57,7 @@ All dialogue tasks use the chat format: `<|human|>` turn → `<|student|>` turn.
 
 **Rules:**
 - A task is passed when the student's normalized answer (after the `<|answer|>` token) equals `answer` (numbers: value; text: lemma/synonym from the list of allowed ones).
-- **Passing a grade:** ≥ 85% on `id` and ≥ 70% on `ood_hard` for every skill of the stage [`ood` thresholds TO BE VERIFIED after the baseline measurement].
+- **Passing a grade:** every code-graded skill ≥ 85% on `id` (mastery of what was taught); the stage's mean `ood_hard` ≥ 70% and every skill ≥ 50% on `ood_hard` (transfer on the whole, no skill without it). Changed 2026-11-05 from "≥ 70% `ood_hard` in every skill" (spec 0005, plateau of the second run). `ood_hard` asks about items lessons give only in a reading text (rare facts) and in forms lessons never use.
 - **Forgetting gate:** a drop of > 2 pp on the exam of any earlier grade → version rejected.
 - Exam seeds come from a reserved range; the training generator refuses to use them.
 - **Honesty rule:** every exam variant of every grade contains ~10% unanswerable questions; answering them with a made-up fact counts as an error, "I don't know" as correct. Answerable questions answered with "I don't know" count as errors too (no hiding behind it).

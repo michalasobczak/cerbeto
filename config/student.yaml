@@ -16,7 +16,7 @@ recurrence:
   k_train_min: 1           # K sampled uniformly per training step
   k_train_max: 6
   k_eval: 4                # fixed K for validation and exams
-max_params: 30000000       # hard limit — growth beyond it is rejected
+max_params: 40000000       # hard limit — growth beyond it is rejected (raised from 30M for school, 2026-11-05, spec 0005)
 growth:
   max_delta_loss: 0.01     # function-preservation check on a probe batch
   new_weight_std: 0.01     # init of the "reader" side of new neurons (writer side is zero)
