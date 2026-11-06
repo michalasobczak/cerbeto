@@ -11,6 +11,7 @@ phrasings, graded by the teacher), the nursery conversation probe and the presch
     python -m cerbeto.train.final_test eval control
 """
 import argparse
+import contextlib
 import json
 import math
 import random
@@ -44,6 +45,19 @@ CFG = {"seq_len": 512, "windows": 8, "pairs": 8, "pair_every": 3, "lr": 3e-4, "w
        "weight_decay": 0.1, "k_min": 1, "k_max": 6, "k_eval": 4, "save_minutes": 30, "max_story_tokens": 400}
 # passes of the core per arm: the deep arm has no loop (its core is unrolled), so K = 1 in training and evaluation
 ARM_K = {"deep": {"k_min": 1, "k_max": 1, "k_eval": 1}}
+
+
+def bf16_context(device, wanted: bool):
+    """Mixed precision: forward and backward in bfloat16, weights and the optimizer stay fp32 (the checkpoint does
+    not change). Only where the GPU computes bf16 natively (M6 yes, M1 no: it would emulate and be slower)."""
+    if not wanted or str(device) == "cpu":
+        return contextlib.nullcontext, False
+    try:
+        a = torch.ones(8, 8, device=device, dtype=torch.bfloat16)
+        (a @ a).sum().item()
+    except (RuntimeError, TypeError):
+        return contextlib.nullcontext, False
+    return (lambda: torch.autocast(device_type=str(device).split(":")[0], dtype=torch.bfloat16)), True
 
 
 def ks(arm: str) -> dict:
@@ -144,7 +158,7 @@ def lr_at(step: int, total: int) -> float:
     return CFG["lr"] * warm * (CFG["min_lr"] + (1 - CFG["min_lr"]) * cos)
 
 
-def train(arm: str, tokens: float, seed: int = 0) -> None:
+def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
     device = pick_device()
     run = RUN / arm
     run.mkdir(parents=True, exist_ok=True)
@@ -161,6 +175,8 @@ def train(arm: str, tokens: float, seed: int = 0) -> None:
     # 32 GB Mac into swap, which costs far more than the ~30% recomputation
     model.checkpointing = arm != "control"
     total_steps = int(state["target_tokens"] / (CFG["windows"] * CFG["seq_len"]))   # ~tokens per step, both kinds
+    amp, bf16 = bf16_context(device, bf16)
+    state["precision"] = "bf16" if bf16 else "fp32"
     tok = load_tokenizer()
     shelves = {s: ShelfStream(s, "train", CFG["seq_len"]) for s in SHELF_MIX}
     valid = {s: ShelfStream(s, "valid", CFG["seq_len"]).fixed_batches(8, 8, device, seed=1)
@@ -170,7 +186,7 @@ def train(arm: str, tokens: float, seed: int = 0) -> None:
     stop = {"now": False}
     signal.signal(signal.SIGINT, lambda *_: stop.update(now=True))
     log = (run / "log.jsonl").open("a")
-    print(f"{arm}: {model.num_params():,} parameters · step {state['step']}/{total_steps} · {device}", flush=True)
+    print(f"{arm}: {model.num_params():,} parameters · step {state['step']}/{total_steps} · {device} · {state['precision']}", flush=True)
     model.train()
     saved, t0, t0_tokens, recent = time.time(), time.time(), state["tokens"], []
     kk = ks(arm)
@@ -181,13 +197,15 @@ def train(arm: str, tokens: float, seed: int = 0) -> None:
         k = int(rng.integers(kk["k_min"], kk["k_max"] + 1))
         if step % CFG["pair_every"] == CFG["pair_every"] - 1:
             x, y = encode_pairs(pairs.batch(CFG["pairs"]), tok, device, max_len=CFG["seq_len"])
-            logits = model(x, k)
+            with amp():
+                logits = model(x, k)
             loss = F.cross_entropy(logits.float().transpose(1, 2), y, ignore_index=IGNORE)
             kind, n = "pairs", x.numel()
         else:
             name = rng.choice(list(SHELF_MIX), p=list(SHELF_MIX.values()))
             w = shelves[name].batch(CFG["windows"], rng, device)
-            loss = model.loss(w[:, :-1], w[:, 1:], k)
+            with amp():
+                loss = model.loss(w[:, :-1], w[:, 1:], k)
             kind, n = "shelf", w[:, :-1].numel()
         opt.zero_grad(set_to_none=True)
         loss.backward()
@@ -307,8 +325,9 @@ def main() -> None:
     p.add_argument("what", choices=["train", "eval"])
     p.add_argument("arm", help="control | grown | deep (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
+    p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     a = p.parse_args()
-    train(a.arm, a.tokens) if a.what == "train" else evaluate(a.arm)
+    train(a.arm, a.tokens, bf16=not a.fp32) if a.what == "train" else evaluate(a.arm)
 
 
 if __name__ == "__main__":

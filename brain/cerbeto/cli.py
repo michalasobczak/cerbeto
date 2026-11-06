@@ -96,6 +96,7 @@ def main() -> None:
 
     pn = sub.add_parser("panel", help="local web panel of the school: status, exams, lessons, log (read-only)")
     pn.add_argument("--port", type=int, default=8765)
+    pn.add_argument("--host", default="127.0.0.1", help="0.0.0.0 to reach the panel from the local network")
 
     args = parser.parse_args()
     if args.group == "library" and args.cmd == "build":
@@ -172,7 +173,7 @@ def main() -> None:
         run_chat(args.student, args.version, args.device, args.k, args.temperature, args.say)
     elif args.group == "panel":
         from cerbeto.panel import run as run_panel
-        run_panel(port=args.port)
+        run_panel(host=args.host, port=args.port)
     elif args.group == "top":
         from cerbeto.top import run as run_top
         run_top(args.student, args.interval, args.once)

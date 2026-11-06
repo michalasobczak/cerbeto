@@ -7,7 +7,8 @@ import pytest
 from cerbeto import paths
 from cerbeto.tokenizer import SPECIAL_TOKENS, load
 
-pytestmark = pytest.mark.skipif(not paths.TOKENIZER_FILE.exists(), reason="tokenizer not trained yet")
+pytestmark = [pytest.mark.skipif(not paths.TOKENIZER_FILE.exists(), reason="tokenizer not trained yet"),
+              pytest.mark.skipif(not paths.SHELVES.exists(), reason="no shelves on this machine (dev copy)")]
 
 
 def _paragraphs(n: int) -> list[str]:

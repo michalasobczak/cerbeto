@@ -23,6 +23,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
   - first growth in school: `v0016`, 34.6M, limit raised to 40M;
   - yes/no lessons think "claim → fact → decision" (the student knew the facts but answered "No. A dog says woof.").
 - **Night bench (2026-11-06):** the night after day 17 replayed in 13 variants (learning rate, replay, consolidation, growth, thinking formats, core passes). None beyond chance (±3 pp from the seed alone); every night trades agree/disagree and categories for clarify, and the small validation set kept the start in most nights. Now a night keeps its end unless clearly worse, the exam decides, and earlier days are replayed once per prompt. Day 18 under these rules: **60.5% → 68.5%** (`v0017`) — rare opposites 25 → 85%, clarify 10 → 52%, agree/disagree 67 → 57% while its yes/no thinking changes.
+- **Growth experiments (2026-11-06):** growth experiment C started with a wide 99M student, no better than `v0017`; now a deep **283M** student (24 blocks, no loop) trains on a new Mac mini M6 in bf16, result expected 2026-11-07.
 - **Next:** school continues from day 18; then grade 1 and grade 2.
 
 **Specifications**
@@ -36,7 +37,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 | [0005](specs/0005-school-day-sleep-exam.md) school: day, sleep, exam | **in progress** (preschool, second run, day 18); open: neuron renewal, self-correction format, brain API |
 | [0006](specs/0006-rails-admin-panel-and-chat.md) admin panel and chat (Rails) | on hold: `cerbeto panel` and `cerbeto chat` are enough for now |
 | [0007](specs/0007-offline-distribution.md) offline distribution | someday, maybe — not planned |
-| [0008](specs/0008-growth-experiment-100m.md) growth experiment (deep 283M, more data) | **in progress**: deep arm training |
+| [0008](specs/0008-growth-experiment-100m.md) growth experiment (deep 283M, more data) | **in progress**: wide 99M dropped, deep 283M training on the M6, bf16 |
 
 **Hypotheses**
 
@@ -47,12 +48,12 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 | A small local LLM is a reliable teacher when code verifies it | upheld | teacher exam: `gemma4:e4b-mlx` 97.5% correct, 94.8% consistent; unverified explanations never used |
 | Day → sleep → exam raises school skills without forgetting the nursery | partly upheld: preschool 22% → 68.5%, nursery language kept; stage not passed | `runs/school/cycles.jsonl`, [0005](specs/0005-school-day-sleep-exam.md) §9 |
 | Lessons in the training forms transfer to new forms and unseen items by themselves | refuted for this student | `id` high, `ood_hard` 10–57% on several skills; plateau days 9–16 |
-| More parameters help the school plateau | open: on the bench the grown `v0016` behaves like `v0015` (new neurons unused); growth experiment (C) running | [0005](specs/0005-school-day-sleep-exam.md) §9 |
+| More parameters help the school plateau | open: on the bench the grown `v0016` behaves like `v0015` (new neurons unused); growth experiment (C): wide 99M no better than `v0017` after 1,000 steps, dropped; deep 283M running | [0005](specs/0005-school-day-sleep-exam.md) §9 |
 | The settings of a school night decide its result | refuted on the bench: 13 variants, all within ±3 pp of a different seed | [0005](specs/0005-school-day-sleep-exam.md) §9, `runs/bench/` |
 | Consolidation (EWC) holds what was learned | refuted as built: the nursery Fisher is almost zero; EWC on earlier lessons does not stop the trade between skills | [0005](specs/0005-school-day-sleep-exam.md) §9 |
 | More passes of the recurrent core at answer time help | not seen in school: validation 75.1 / 76.5 / 75.3 / 73.9% at K = 2 / 4 / 6 / 8 | [0005](specs/0005-school-day-sleep-exam.md) §9 |
 
-**Setup:** own BPE tokenizer (8192 tokens); teacher `gemma4:e4b-mlx` in local Ollama; MacBook Pro M1 Pro, 32 GB (MPS, fp32); library offline in `data/library/` (~4.8 GB), shelves in `data/shelves/`.
+**Setup:** own BPE tokenizer (8192 tokens); teacher `gemma4:e4b-mlx` in local Ollama; nursery and school on a MacBook Pro M1 Pro, 32 GB (MPS, fp32); since 2026-11-06 the main machine is a Mac mini M6, 16 GB (MPS, bf16), the MacBook only develops code; library offline in `data/library/` (~4.8 GB), shelves in `data/shelves/`.
 
 **Datasets** (built by the librarian of [0001](specs/0001-library-and-tokenizer.md))
 
@@ -71,7 +72,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 |---|---|---|---|
 | A. Nursery (2026-10-31 → 11-01) | 300M | `s0_speech` 142.5M (1.7 passes), `s0_stories` 157.5M (0.29 passes) | BLiMP 65.9% |
 | B. Preschool, school days 1–20 (2026-11-04 → 11-06) | 10.7M | today's lessons 2.4M, earlier days' lessons 2.5M, `s0_speech` 2.9M, `s0_stories` 2.9M | exam 22% → 68.5% (`v0017`) |
-| C. Growth experiment (running since 2026-11-06) | target 80M | shelf windows two of three steps, request → reply pairs every third | pending |
+| C. Growth experiment (running since 2026-11-06) | wide 99M: 4.8M (dropped); deep 283M: target 80M | shelf windows two of three steps, request → reply pairs every third | 99M no better than `v0017`; 283M pending |
 
 Days 1–20 are estimated after the fact (hippocampus experiences × 141 night steps); from day 21 each night counts its tokens. Inputs only, padding excluded; lessons learn the student's turn only.
 
@@ -136,18 +137,28 @@ Examples from the exam of `v0017` (prompts never seen in lessons); "thinks" is i
 
 Details: `runs/school/exams/v0017.json`, [specs/0005](specs/0005-school-day-sleep-exam.md) §9.
 
-## C. Growth experiment — a 100M student and more training data
-**Spec:** [0008](specs/0008-growth-experiment-100m.md). **Status:** running since 2026-11-06 (`python -m cerbeto.train.final_test`, panel tab *Final test*, `runs/final/`, `checkpoints/final/`). Outside the school; its 40M limit stays.
+## C. Growth experiment — from 100M to a deep 283M student
+**Spec:** [0008](specs/0008-growth-experiment-100m.md). **Status:** running since 2026-11-06 (`python -m cerbeto.train.final_test train deep`, panel tab *Final test*, `runs/final/deep/`, `checkpoints/final/deep/`). Outside the school; its 40M limit stays.
 
 **Question:** preschool sits at ~68% and no night setting moves it. Is the student short of **capacity** or of **data** (300M tokens, mostly stories, plus 10.7M in school)? Do request → reply pairs make it usable in a talk?
 
-**Setup**
-- **Deep arm (like Qwen2.5-0.5B):** `v0017` grown function-preservingly to **282.6M** — width 512 → 896, heads 16 → 28, MLP 1792 → 3072; the recurrent core unrolled (4 blocks × K = 4 → 16 separate blocks) plus 4 new blocks: **24 blocks, no loop (K = 1)**. After growth it answers exactly like `v0017`. Replaced the first, wide 99M arm (8 blocks), stopped at 4.8M tokens: at this size deep-and-thin beats wide (MobileLLM, SmolLM).
-- **Same-size arm:** `v0017` at 34.6M on the same stream, to separate the effect of size from the effect of data.
-- **Stream, 80M tokens per arm:** two of three steps are shelf windows (stories 40%, speech 30%, books 18%, edu 9%, Wikipedia 3%; every token learned); every third step is request → reply pairs (story on request 55%, preschool lessons 40% — never an exam prompt, who the student is 5%; student's turn learned).
-- **Measured for `v0017` and both arms:** validation loss per shelf, stories on request (held-out phrasings, graded by the teacher), nursery conversation probe, preschool exam.
+**From 100M to 300M:** the experiment started with `v0017` grown to a **wide 99M** student (width 896, still 8 blocks with the recurrent core). At learning rate 1e-3 it forgot within ~600 steps (speech validation loss 3.17 → 3.48); at 3e-4 it was stable but no better than `v0017` (step 1,000: speech 3.22, stories 1.47 vs 3.17 / 1.38). We stopped it at 4.8M tokens and changed the architecture: at this size deep-and-thin beats wide (MobileLLM, SmolLM; Qwen2.5-0.5B has 24 blocks at width 896), so the core is unrolled into separate blocks and the student grows to **~300M**. The planned same-size control arm was dropped: only the target size runs.
 
-**Why 80M tokens:** a deliberate budget, ~50 h for the deep arm on this Mac (~450 tokens/s; ~7 GB GPU memory, fits a 16 GB Mac). A quick check whether 99M + request → reply data works at all, not training to the end. One pass over the library (670M) would take ~7 days and makes sense only if the 18 h result is promising. A longer run can continue from the current step (the learning-rate schedule extends).
+**Architecture: change from `v0017`**
+
+| | `v0017` (preschool) | first: wide 99M (dropped) | **now: deep 283M** |
+|---|---|---|---|
+| parameters | 34.6M | 99.1M | **282.6M** |
+| width (d) | 512 | 896 | **896** |
+| heads | 16 × 32 | 28 × 32 | **28 × 32** |
+| MLP | 1,792 | 3,072 | **3,072** |
+| blocks: prelude + core + coda | 2 + 4 + 2 = 8 | 2 + 4 + 2 = 8 | **2 + 20 + 2 = 24** |
+| core passes (K) | 1–6 in training, 4 at answer time | 1–6 / 4 | **none: K = 1** |
+| effective depth | 20 at K = 4 | 20 | **24** |
+
+The recurrent core is unrolled: its 4 blocks × K = 4 become 16 separate blocks with their own weights, plus 4 new blocks. After growth the student answers exactly like `v0017`. Vocabulary 8,192, context 512, embedding tied to the output. Activation checkpointing on.
+
+**Stream, 80M tokens:** two of three steps are shelf windows (stories 40%, speech 30%, books 18%, edu 9%, Wikipedia 3%; every token learned); every third step is request → reply pairs (story on request 55%, preschool lessons 40% — never an exam prompt, who the student is 5%; student's turn learned). Learning rate 3e-4, warm-up 300 steps, cosine to 10%.
 
 **What 80M shows from each shelf:**
 
@@ -159,13 +170,34 @@ Details: `runs/school/exams/v0017.json`, [specs/0005](specs/0005-school-day-slee
 | education (`s3_edu`) | 4.4M | ~5M | 1.1× |
 | Wikipedia (`s2_world`) | 0.8M | ~1.6M | 2× |
 
-The rest are request → reply pairs. Seeing all 670M once needs a ~10× longer run (~7 days).
+The rest are request → reply pairs. Seeing all 670M once needs a ~10× longer run.
+
+**New hardware: Mac mini M6, 16 GB, bf16**
+- Started on the MacBook (M1 Pro, fp32, ~810 tokens/s); moved at step 2,963 to a **Mac mini M6** (16 GB), now the main machine: data, checkpoints, runs, training and the panel live there (`scripts/deploy-m6.sh` copies the code). Training resumes from the last save (weights, optimizer, step).
+- **bf16 mixed precision** (from step 3,171): forward and backward in bfloat16, weights and the optimizer stay fp32 — the checkpoint is not converted. The M1 has no native bf16; the M6 does. `--fp32` turns it off.
+
+| Machine | Precision | Tokens/s | 80M tokens |
+|---|---|---|---|
+| MacBook Pro M1 Pro, 32 GB | fp32 | ~810 | ~27 h |
+| Mac mini M6, 16 GB | fp32 | ~950 | ~23 h |
+| **Mac mini M6, 16 GB** | **bf16** | **~1,390** | **~16 h** |
+
+16 GB is tight for 283M with AdamW (~4.5 GB of weights, gradients and optimizer state plus activations): ~1.4 GB of swap, stable.
+
+**So far (validation loss, lower is better):**
+
+| Step (tokens) | speech | stories |
+|---|---|---|
+| `v0017` | 3.17 | 1.38 |
+| 1,000 (3.5M) | 3.23 | 1.50 |
+| 2,000 (7.0M) | 3.23 | 1.50 |
+| 3,000 (10.4M) | 3.20 | 1.51 |
 
 **Reading the result**
 - **80M is little for 283M parameters:** the Chinchilla rule of thumb is ~20 tokens per parameter (~5.7B); 80M is ~1.4%. No gain at 80M does **not** show that size does not help.
 - **More data, before any crawling:** more FineWeb-Edu shards (one gave 4.4M tokens at grade ≤ 4, there are hundreds); a reading-level limit rising with each passed grade; synthetic child-level textbooks (Cosmopedia *young children*, or texts by the local teacher for the curriculum). Every new shelf passes the same filters and the exam leak check. Repeating a shelf helps up to ~4 passes.
 
-**Result:** pending.
+**Result:** pending (expected 2026-11-07 morning); then `v0017` and the deep arm are measured the same way: validation loss per shelf, stories on request (held-out phrasings, graded by the teacher), nursery conversation probe, preschool exam.
 
 ## Next phases and their expected effects
 | Phase | What happens | Expected effect | How we will know |
