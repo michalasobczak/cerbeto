@@ -1,6 +1,6 @@
 # 0008 — Growth experiment: a 100M student and more training data
 
-Status: in progress (2026-11-06) — the deep arm (283M, 24 blocks like Qwen2.5-0.5B) is training; the wide 99M arm was stopped at 4.8M tokens and dropped; same-size arm and evaluation pending · Depends on: 0002, 0004, 0005 · Unblocks: decision on student size and library growth
+Status: closed (2026-11-06) — no gain: the wide 99M arm stopped at 4.8M tokens, the deep 283M arm at 18.3M tokens; same-size arm dropped; continued in [0009](0009-deep-100m-conversations.md) · Depends on: 0002, 0004, 0005 · Unblocks: 0009
 
 ## 1. TL;DR
 We grow the school's best version `v0017` (34.6M) function-preservingly to **99.1M** and train it on 80M tokens: shelf windows plus request → reply pairs. A same-size arm (34.6M) gets the same stream. Proof: both arms and `v0017` measured the same way — shelf validation loss, stories on request, the nursery conversation probe, the preschool exam.
@@ -39,10 +39,11 @@ The rest are request → reply pairs. One pass over all 670M would need a ~10× 
 ## 4. Artefact Inventory
 | Artefact | Kind | Status |
 |---|---|---|
-| `brain/cerbeto/train/final_test.py` (`train grown|control`, `eval`) | system | created |
-| Panel tab *Final test* (`brain/cerbeto/panel.py`, `panel.html`) | system | created |
-| `checkpoints/final/{grown,control}/` | data | grown: in progress |
-| `runs/final/{grown,control}/` (state, log, evaluation) | data | grown: in progress |
+| `brain/cerbeto/train/final_test.py` (`train grown|control|deep`, `eval`; bf16) | system | created |
+| Panel tab *300M* (was *Final test*; `brain/cerbeto/panel.py`, `panel.html`) | system | created |
+| `cerbeto chat /stats` (`brain/cerbeto/talk_stats.py`): certainty per token, attention per block | system | created |
+| `checkpoints/final/deep/latest` (step 5,243) | data | kept; grown arm deleted, control never run |
+| `runs/final/deep/` (state, log), `runs/final/eval_v0017.json` | data | kept |
 
 ## 5. Functional Domain Changes
 **Rules:**
@@ -83,4 +84,20 @@ The rest are request → reply pairs. One pass over all 670M would need a ~10× 
 - **Decision (2026-11-06, the user's):** the 80M budget is deliberate — a quick check of the direction, not training to the end. A full pass over the library (~7 days) only if the result is promising.
 - **If more data is needed**, before any crawling: more FineWeb-Edu shards (one gave 4.4M tokens at grade ≤ 4; there are hundreds); a reading-level limit rising with each passed grade; synthetic child-level textbooks (Cosmopedia *young children*, or texts by the local teacher for the curriculum). Every new shelf goes through the 0001 filters and the exam leak check. Repeating a shelf helps up to ~4 passes, then less (Muennighoff et al., 2023).
 - **Sources:** Chinchilla scaling (Hoffmann et al., 2022); data-constrained scaling (Muennighoff et al., 2023); function-preserving growth (0002).
-- **Results:** pending.
+- **Change (2026-11-06, the user's decision): no same-size arm** — only the target size runs.
+- **Learning rate:** at 1e-3 the grown 99M student forgot within ~600 steps (speech validation 3.17 → 3.48, stories 1.38 → 1.80, lessons 0.09 → 0.23); restarted at **3e-4** (continued pretraining needs a low rewarm rate, Gupta et al., 2023).
+- **New hardware (2026-11-06):** the deep arm moved at step 2,963 to a **Mac mini M6, 16 GB**, now the main machine (data, checkpoints, training, panel; code arrives by `git push`). **bf16 mixed precision** from step 3,171 (autocast; weights, optimizer and checkpoint stay fp32): M1 Pro fp32 ~810, M6 fp32 ~950, **M6 bf16 ~1,390 tokens/s**; ~1.4 GB swap on 16 GB, stable.
+- **Results (deep arm stopped at step 5,243, 18.3M tokens):**
+
+  | Validation loss | speech | stories |
+  |---|---|---|
+  | `v0017` | 3.17 | 1.38 |
+  | step 1,000 (3.5M) | 3.23 | 1.50 |
+  | step 2,000 (7.0M) | 3.23 | 1.50 |
+  | step 3,000 (10.4M) | 3.20 | 1.51 |
+  | step 4,000 (13.9M) | 3.20 | 1.50 |
+
+  - The loss on request → reply pairs stayed at ~1.25 from step 100.
+  - **Chat at step 3,875** (`v0017` → deep): "tell me a story" → "Thank you!" → a real story ("Once upon a time, there was a blue bird…"); "tell me a story about a dog named Max" → "A dog is white." → "Max was a big dog…". But after a story, "who are you?" → it goes on with the story ("Tom. Tom was very fast…"), and "what color is the sky?" in that conversation → "blue. The blue bird was red…": the pairs taught one turn, never a conversation.
+  - **Where the capacity went** (`/stats` on "what color is the sky?", weight norms): both models answer "The sky is blue." at 98%. The 16 unrolled blocks were still copies of `v0017`'s four (q norms 38.50 / 38.52 / 38.36 / 38.30); four of them — core 3 and its copies — a **dead attention**: q and k ~3.5× smaller than in the other blocks (~10.8 vs ~37), attention spread evenly over every token (spread 1.00) in every copy. Of 672 heads, 3 pointed at one token (all at `<|answer|>`), none at "sky" or "color"; the most attended token was `<|human|>` (17.7%). The answer comes from memory in the MLPs, not from reading the question.
+- **Decision (2026-11-06, the user's):** stop the 283M arm; grow `v0017` again to a deep, thin **~100M** student with copies that start apart, the dead attention renewed, and conversations of several turns in the data → [0009](0009-deep-100m-conversations.md).

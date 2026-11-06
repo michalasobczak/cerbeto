@@ -37,7 +37,8 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 | [0005](specs/0005-school-day-sleep-exam.md) school: day, sleep, exam | **in progress** (preschool, second run, day 18); open: neuron renewal, self-correction format, brain API |
 | [0006](specs/0006-rails-admin-panel-and-chat.md) admin panel and chat (Rails) | on hold: `cerbeto panel` and `cerbeto chat` are enough for now |
 | [0007](specs/0007-offline-distribution.md) offline distribution | someday, maybe — not planned |
-| [0008](specs/0008-growth-experiment-100m.md) growth experiment (C 283M, D 100M) | **in progress**: C stopped without gain; D (~100M, conversations) next |
+| [0008](specs/0008-growth-experiment-100m.md) growth experiment, 99M → 283M (C) | closed: no gain over `v0017` |
+| [0009](specs/0009-deep-100m-conversations.md) deep 100M student with conversations (D) | **in progress**: training on the M6 |
 
 **Hypotheses**
 
@@ -206,7 +207,7 @@ The rest are request → reply pairs. Seeing all 670M once needs a ~10× longer 
 - **Too slow for the data we have:** ~1,390 tokens/s on the M6; 80M tokens is ~1.4% of the ~20 tokens per parameter rule of thumb.
 
 ## D. A deep, thin ~100M student that learns conversations
-**Spec:** [0008](specs/0008-growth-experiment-100m.md). **Status:** prepared 2026-11-06 (`python -m cerbeto.train.final_test train mid`, panel tab *100M*, `runs/final/mid/`, `checkpoints/final/mid/`).
+**Spec:** [0009](specs/0009-deep-100m-conversations.md). **Status:** training since 2026-11-06 (`python -m cerbeto.train.final_test train mid`, panel tab *100M*, `runs/final/mid/`, `checkpoints/final/mid/`).
 
 **Question:** with the lessons of C — smaller and faster, copies that start apart, no dead attention, and conversations of several turns — does the student learn to keep turns apart and use what was said?
 
