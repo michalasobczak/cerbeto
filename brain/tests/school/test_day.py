@@ -136,3 +136,17 @@ def test_sleep_counts_the_tokens_it_showed_by_source(monkeypatch):
     assert set(diet) == {"today", "earlier_days", "s0_speech", "s0_stories"}
     assert diet["s0_speech"] == diet["s0_stories"] == 32          # one window of 32 inputs per step, 2 steps
     assert diet["today"] > 0 and diet["earlier_days"] > 0
+
+
+def test_dialogues_learn_every_student_turn_and_no_human_turn():
+    from cerbeto.school.smoke import IGNORE, encode_dialogues, encode_pairs
+    from cerbeto.tokenizer import load as load_tokenizer
+    tok = load_tokenizer()
+    one = [("<|human|> Hi\n<|student|>", "<|answer|> Hello!<|eos|>")]
+    two = one + [("<|human|> Who are you?\n<|student|>", "<|answer|> I'm Cerbeto.<|eos|>")]
+    x1, y1 = encode_dialogues([one], tok, "cpu")
+    xp, yp = encode_pairs(one, tok, "cpu")
+    assert torch.equal(x1, xp) and torch.equal(y1, yp)                 # one turn = a plain pair
+    x, y = encode_dialogues([two], tok, "cpu")
+    learned = tok.decode([t for t in y[0].tolist() if t != IGNORE], skip_special_tokens=False)
+    assert learned == "<|answer|> Hello!<|eos|><|answer|> I'm Cerbeto.<|eos|>"

@@ -23,7 +23,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
   - first growth in school: `v0016`, 34.6M, limit raised to 40M;
   - yes/no lessons think "claim → fact → decision" (the student knew the facts but answered "No. A dog says woof.").
 - **Night bench (2026-11-06):** the night after day 17 replayed in 13 variants (learning rate, replay, consolidation, growth, thinking formats, core passes). None beyond chance (±3 pp from the seed alone); every night trades agree/disagree and categories for clarify, and the small validation set kept the start in most nights. Now a night keeps its end unless clearly worse, the exam decides, and earlier days are replayed once per prompt. Day 18 under these rules: **60.5% → 68.5%** (`v0017`) — rare opposites 25 → 85%, clarify 10 → 52%, agree/disagree 67 → 57% while its yes/no thinking changes.
-- **Growth experiments (2026-11-06):** growth experiment C started with a wide 99M student, no better than `v0017`; now a deep **283M** student (24 blocks, no loop) trains on a new Mac mini M6 in bf16, result expected 2026-11-07.
+- **Growth experiments (2026-11-06):** C — a wide 99M student, then a deep **283M** one on a new Mac mini M6 in bf16: no gain over `v0017` after 18M tokens (the unrolled blocks stayed copies, four with a dead attention). D — a deep, thin **~100M** student trained on conversations of several turns.
 - **Next:** school continues from day 18; then grade 1 and grade 2.
 
 **Specifications**
@@ -37,7 +37,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 | [0005](specs/0005-school-day-sleep-exam.md) school: day, sleep, exam | **in progress** (preschool, second run, day 18); open: neuron renewal, self-correction format, brain API |
 | [0006](specs/0006-rails-admin-panel-and-chat.md) admin panel and chat (Rails) | on hold: `cerbeto panel` and `cerbeto chat` are enough for now |
 | [0007](specs/0007-offline-distribution.md) offline distribution | someday, maybe — not planned |
-| [0008](specs/0008-growth-experiment-100m.md) growth experiment (deep 283M, more data) | **in progress**: wide 99M dropped, deep 283M training on the M6, bf16 |
+| [0008](specs/0008-growth-experiment-100m.md) growth experiment (C 283M, D 100M) | **in progress**: C stopped without gain; D (~100M, conversations) next |
 
 **Hypotheses**
 
@@ -48,7 +48,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 | A small local LLM is a reliable teacher when code verifies it | upheld | teacher exam: `gemma4:e4b-mlx` 97.5% correct, 94.8% consistent; unverified explanations never used |
 | Day → sleep → exam raises school skills without forgetting the nursery | partly upheld: preschool 22% → 68.5%, nursery language kept; stage not passed | `runs/school/cycles.jsonl`, [0005](specs/0005-school-day-sleep-exam.md) §9 |
 | Lessons in the training forms transfer to new forms and unseen items by themselves | refuted for this student | `id` high, `ood_hard` 10–57% on several skills; plateau days 9–16 |
-| More parameters help the school plateau | open: on the bench the grown `v0016` behaves like `v0015` (new neurons unused); growth experiment (C): wide 99M no better than `v0017` after 1,000 steps, dropped; deep 283M running | [0005](specs/0005-school-day-sleep-exam.md) §9 |
+| More parameters help the school plateau | open: on the bench the grown `v0016` behaves like `v0015` (new neurons unused); growth experiment C: wide 99M and deep 283M no better than `v0017` (283M after 18M tokens); D (~100M) next | [0005](specs/0005-school-day-sleep-exam.md) §9 |
 | The settings of a school night decide its result | refuted on the bench: 13 variants, all within ±3 pp of a different seed | [0005](specs/0005-school-day-sleep-exam.md) §9, `runs/bench/` |
 | Consolidation (EWC) holds what was learned | refuted as built: the nursery Fisher is almost zero; EWC on earlier lessons does not stop the trade between skills | [0005](specs/0005-school-day-sleep-exam.md) §9 |
 | More passes of the recurrent core at answer time help | not seen in school: validation 75.1 / 76.5 / 75.3 / 73.9% at K = 2 / 4 / 6 / 8 | [0005](specs/0005-school-day-sleep-exam.md) §9 |
@@ -72,7 +72,8 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 |---|---|---|---|
 | A. Nursery (2026-10-31 → 11-01) | 300M | `s0_speech` 142.5M (1.7 passes), `s0_stories` 157.5M (0.29 passes) | BLiMP 65.9% |
 | B. Preschool, school days 1–20 (2026-11-04 → 11-06) | 10.7M | today's lessons 2.4M, earlier days' lessons 2.5M, `s0_speech` 2.9M, `s0_stories` 2.9M | exam 22% → 68.5% (`v0017`) |
-| C. Growth experiment (running since 2026-11-06) | wide 99M: 4.8M (dropped); deep 283M: target 80M | shelf windows two of three steps, request → reply pairs every third | 99M no better than `v0017`; 283M pending |
+| C. Growth experiment (2026-11-06, stopped) | wide 99M: 4.8M; deep 283M: 18.3M | shelf windows two of three steps, request → reply pairs every third | no better than `v0017`; stories on request |
+| D. ~100M with conversations | target 80M | the same, a third of the pairs as conversations of 2–5 turns | pending |
 
 Days 1–20 are estimated after the fact (hippocampus experiences × 141 night steps); from day 21 each night counts its tokens. Inputs only, padding excluded; lessons learn the student's turn only.
 
@@ -138,7 +139,7 @@ Examples from the exam of `v0017` (prompts never seen in lessons); "thinks" is i
 Details: `runs/school/exams/v0017.json`, [specs/0005](specs/0005-school-day-sleep-exam.md) §9.
 
 ## C. Growth experiment — from 100M to a deep 283M student
-**Spec:** [0008](specs/0008-growth-experiment-100m.md). **Status:** running since 2026-11-06 (`python -m cerbeto.train.final_test train deep`, panel tab *Final test*, `runs/final/deep/`, `checkpoints/final/deep/`). Outside the school; its 40M limit stays.
+**Spec:** [0008](specs/0008-growth-experiment-100m.md). **Status:** stopped on 2026-11-06 at step 5,243 (18.3M tokens): no gain over `v0017`; replaced by **D** (`runs/final/deep/`, `checkpoints/final/deep/`, panel tab *300M*). Outside the school; its 40M limit stays.
 
 **Question:** preschool sits at ~68% and no night setting moves it. Is the student short of **capacity** or of **data** (300M tokens, mostly stories, plus 10.7M in school)? Do request → reply pairs make it usable in a talk?
 
@@ -184,7 +185,7 @@ The rest are request → reply pairs. Seeing all 670M once needs a ~10× longer 
 
 16 GB is tight for 283M with AdamW (~4.5 GB of weights, gradients and optimizer state plus activations): ~1.4 GB of swap, stable.
 
-**So far (validation loss, lower is better):**
+**Validation loss (lower is better):**
 
 | Step (tokens) | speech | stories |
 |---|---|---|
@@ -192,12 +193,43 @@ The rest are request → reply pairs. Seeing all 670M once needs a ~10× longer 
 | 1,000 (3.5M) | 3.23 | 1.50 |
 | 2,000 (7.0M) | 3.23 | 1.50 |
 | 3,000 (10.4M) | 3.20 | 1.51 |
+| 4,000 (13.9M) | 3.20 | 1.50 |
 
 **Reading the result**
 - **80M is little for 283M parameters:** the Chinchilla rule of thumb is ~20 tokens per parameter (~5.7B); 80M is ~1.4%. No gain at 80M does **not** show that size does not help.
 - **More data, before any crawling:** more FineWeb-Edu shards (one gave 4.4M tokens at grade ≤ 4, there are hundreds); a reading-level limit rising with each passed grade; synthetic child-level textbooks (Cosmopedia *young children*, or texts by the local teacher for the curriculum). Every new shelf passes the same filters and the exam leak check. Repeating a shelf helps up to ~4 passes.
 
-**Result:** pending (expected 2026-11-07 morning); then `v0017` and the deep arm are measured the same way: validation loss per shelf, stories on request (held-out phrasings, graded by the teacher), nursery conversation probe, preschool exam.
+**Result: no improvement.** After 18M tokens the 283M student was no better than `v0017`:
+- **Validation flat** for 4,000 steps and still slightly worse than `v0017` (speech 3.20 vs 3.17, stories 1.50 vs 1.38); the loss on request → reply pairs flat at ~1.25 from step 100.
+- **One new skill, from the data, not the size:** asked for a story it tells one (`v0017`: "Thank you!"). But after a story it goes on with it when asked "who are you?", and its facts got worse ("what color is the sky?" → "blue. The blue bird was red…"): it never saw more than one turn.
+- **The new capacity was not used** (`cerbeto chat /stats`, weight norms): the 16 unrolled core blocks were still copies of `v0017`'s four (weight norms equal to 0.5%), and four of them a **dead attention** — core 3 of `v0017` has q and k ~3.5× smaller than the other blocks and spreads its attention evenly over every token (spread 1.00), copied four times. Only 3 of 672 heads pointed at one token, none at "sky" or "color": the answer comes from memory in the MLPs, not from reading the question.
+- **Too slow for the data we have:** ~1,390 tokens/s on the M6; 80M tokens is ~1.4% of the ~20 tokens per parameter rule of thumb.
+
+## D. A deep, thin ~100M student that learns conversations
+**Spec:** [0008](specs/0008-growth-experiment-100m.md). **Status:** prepared 2026-11-06 (`python -m cerbeto.train.final_test train mid`, panel tab *100M*, `runs/final/mid/`, `checkpoints/final/mid/`).
+
+**Question:** with the lessons of C — smaller and faster, copies that start apart, no dead attention, and conversations of several turns — does the student learn to keep turns apart and use what was said?
+
+**Architecture: the same idea as C, a different shape**
+
+| | `v0017` | C (283M, stopped) | **D (~107M)** |
+|---|---|---|---|
+| width (d) | 512 | 896 | **640** |
+| heads | 16 × 32 | 28 × 32 | **20 × 32** |
+| MLP | 1,792 | 3,072 | **1,792** |
+| blocks | 2 + 4 (K = 4) + 2 | 2 + 20 + 2 | **2 + 16 + 2 = 20** |
+| core passes (K) | 1–6 / 4 | 1 | **1** |
+
+Deep and thin like MobileLLM-125M; ~2.7× faster than C, so a night shows several times more tokens per parameter.
+
+**What changes from C**
+- **Copies start apart:** the core run 4 times is unrolled into 16 blocks, each copy after the first with 1% Gaussian noise on its weights (within the Δ loss guard).
+- **Dead attention renewed:** in every copy of `v0017`'s core 3, q, k and v start fresh and the output o at zero, so the block learns to attend instead of averaging.
+- **Conversations:** a third of the request → reply steps are conversations of 2–5 turns that change the subject — a story, a question about it ("What was the dog's name?" → "The dog's name was Max."), who the student is, a lesson — every student turn learned, no human turn. The rest: a story on request 30%, preschool lessons 25%, who the student is 15% (18 questions instead of 8).
+- **One turn format** in training and in the chat (`cerbeto chat --memory`): `<|human|> …\n<|student|><|answer|> …<|eos|>` per turn.
+- **A conversation probe** in the evaluation: 10 held-out conversations (a story, then "Do you remember the cat's name?"; a story, then "Who are you?"; a fact after a story …).
+
+**Result:** pending.
 
 ## Next phases and their expected effects
 | Phase | What happens | Expected effect | How we will know |

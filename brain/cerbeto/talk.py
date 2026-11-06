@@ -2,7 +2,7 @@
 
 Every line is a separate question by default: the student was trained on single request → reply pairs and
 does not yet tell turns apart in a longer context (2026-11-06). `/memory on` keeps the conversation as context
-in the chat format (`<|human|> …` / `<|student|> …`), the same one the nursery speech shelf and the exams use. Slash commands probe single skills without the history.
+in the form of the training conversations: `<|human|> …\n<|student|><|answer|> …<|eos|>` per turn. Slash commands probe single skills without the history.
 """
 import re
 import time
@@ -67,8 +67,8 @@ class Talker:
         self.last_thought = thought[1].strip() if thought else ""
         answer = raw.rsplit("<|answer|>", 1)[1] if "<|answer|>" in raw else re.sub(r"<\|think\|>.*?(<\|/think\|>|$)", "", raw, flags=re.S)
         answer = re.sub(r"<\|[^|]*\|>", "", answer).split("\n")[0].strip()
-        if remember:
-            self.history = f"{context} {answer}\n"
+        if remember:      # as in training (encode_dialogues): the student's turn as generated, closed by <|eos|>
+            self.history = f"{context}{raw.rstrip()}<|eos|>"
         return answer
 
     def stats(self) -> str:

@@ -110,3 +110,22 @@ def test_unroll_core_at_k1_computes_what_the_loop_did_at_k(trained_tiny):
     dlogits, dloss = growth.behaviour_delta(model, new, data, k=3, k_new=1)
     assert dlogits < 1e-4 and dloss <= 0.01
     assert new.num_params() == count_params(new.cfg)
+
+
+def test_unroll_core_with_noise_starts_the_copies_apart(trained_tiny):
+    model, _, data = trained_tiny
+    new, event = growth.unroll_core(model, times=3, noise=0.01)
+    n = model.cfg.n_core
+    first, later = new.core[0].attn.q.weight, new.core[n].attn.q.weight
+    assert torch.equal(first, model.core[0].attn.q.weight) and not torch.equal(first, later)
+    assert growth.behaviour_delta(model, new, data, k=3, k_new=1)[1] <= 0.01
+    assert event["noise"] == 0.01
+
+
+def test_renew_attention_silences_the_block_and_gives_it_fresh_readers(trained_tiny):
+    model, _, data = trained_tiny
+    new, event = growth.renew_attention(model, where=[0])
+    attn = new.core[0].attn
+    assert attn.o.weight.abs().sum() == 0 and not torch.equal(attn.q.weight, model.core[0].attn.q.weight)
+    assert torch.equal(new.prelude[0].attn.q.weight, model.prelude[0].attn.q.weight)
+    assert event["where"] == ["core.0"] and new.num_params() == model.num_params()

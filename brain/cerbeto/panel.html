@@ -38,7 +38,7 @@ tr.row{cursor:pointer}tr.row:hover,tr.row.sel{background:var(--bar)}.tag{font-si
 <body>
 <header>
   <h1>Cerbeto · school</h1><span id="pill" class="pill"></span>
-  <nav><button data-t="overview" class="on">Overview</button><button data-t="lessons">Lessons</button><button data-t="exams">Exams</button><button data-t="final">300M</button><button data-t="log">Log</button></nav>
+  <nav><button data-t="overview" class="on">Overview</button><button data-t="lessons">Lessons</button><button data-t="exams">Exams</button><button data-t="final">300M</button><button data-t="mid">100M</button><button data-t="log">Log</button></nav>
   <span class="mut" id="upd" style="margin-left:auto"></span>
 </header>
 <main>
@@ -80,11 +80,8 @@ tr.row{cursor:pointer}tr.row:hover,tr.row.sel{background:var(--bar)}.tag{font-si
 </div></section>
 
 <section id="final" class="hide"><div class="split">
-  <div class="card"><h2>300M — v0017 grown to a deep 283M student, trained on request → reply data</h2><div class="fill" style="overflow-y:auto">
-    <p class="note">Start: school v0017 (34.6M), grown function-preservingly to 282.6M: d 512→896, 28 heads, MLP 3072, 24 blocks with no loop (K = 1); bf16 on the Mac mini M6. (The first, wide 99M arm was dropped.)
-      Two of three steps are shelf windows (stories 40%, speech 30%, books 18%, edu 9%, Wikipedia 3%; every token learned);
-      every third step is request → reply pairs (a story on request 55%, preschool lessons 40%, who the student is 5%; only the
-      student's turn learned). Then v0017 and the grown model are measured the same way.</p>
+  <div class="card"><h2 id="f-title"></h2><div class="fill" style="overflow-y:auto">
+    <p class="note" id="f-note"></p>
     <div id="f-arms"></div></div></div>
   <div class="card"><h2>Evaluation</h2><div class="fill" style="overflow-y:auto" id="f-eval"></div></div>
 </div></section>
@@ -100,12 +97,13 @@ const ask=t=>esc(t).replace(/&lt;\|human\|&gt;\s*/,"").replace(/\s*&lt;\|student
 const rowsFit=el=>Math.max(8,Math.floor((el.closest(".card").clientHeight-90)/22));
 let tab="overview", off=0, eoff=0, S=null;
 function go(t){tab=t;document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x.dataset.t===t));
-  ["overview","lessons","exams","final","log"].forEach(x=>$("#"+x).classList.toggle("hide",x!==t));refresh()}
+  const sec=t==="mid"?"final":t;
+  ["overview","lessons","exams","final","log"].forEach(x=>$("#"+x).classList.toggle("hide",x!==sec));refresh()}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.t));
 const cls=(v,t)=>v==null?"":v>=t?"ok":v>=t-0.15?"warn":"bad";
 
 async function refresh(){
-  if(tab==="lessons") return loadLessons(); if(tab==="exams") return loadExam(); if(tab==="final") return loadFinal();
+  if(tab==="lessons") return loadLessons(); if(tab==="exams") return loadExam(); if(tab==="final"||tab==="mid") return loadFinal();
   const d=await (await fetch("/api/status")).json(); if(d.error){$("#upd").textContent=d.error;return} S=d;
   $("#upd").textContent="updated "+d.now.slice(11);
   const st=d.state, pill=$("#pill"); pill.textContent=!st?"not started":d.running?"running":"stopped"; pill.style.background=!st?"#888":d.running?"var(--ok)":"var(--bad)";
@@ -209,8 +207,21 @@ function lineChart(series,{w=600,h=190,xlab="",fmt=v=>v.toFixed(2)}={}){
     else svg+=`<polyline fill="none" stroke="${s.color}" stroke-width="1.5" points="${s.pts.map(p=>xs(p[0])+","+ys(p[1])).join(" ")}"/>`}
   svg+=`<text x="${w-10}" y="${h-4}" font-size="9" text-anchor="end" fill="var(--mut)">${xlab}</text></svg>`;
   return svg+`<div class="mut legend">${series.map(s=>`<span style="color:${s.color}">● ${esc(s.name)}</span>`).join("")}</div>`}
+const FINAL_TABS={
+  final:{arms:n=>n!=="mid",title:"300M — v0017 grown to a deep 283M student, trained on request → reply data",
+    note:`Start: school v0017 (34.6M), grown function-preservingly to 282.6M: d 512→896, 28 heads, MLP 3072, 24 blocks with no loop (K = 1); bf16 on the Mac mini M6.
+      Two of three steps are shelf windows (stories 40%, speech 30%, books 18%, edu 9%, Wikipedia 3%; every token learned); every third step is request → reply
+      pairs (a story on request 55%, preschool lessons 40%, who the student is 5%; only the student's turn learned). Stopped at 18M tokens: no gain over v0017
+      (validation flat), the unrolled blocks stayed copies of v0017 and four of them a dead attention.`},
+  mid:{arms:n=>n==="mid",title:"100M — v0017 grown to a deep, thin ~107M student, trained on conversations",
+    note:`Start: school v0017 (34.6M) → d 512→640, 20 heads, MLP 1792; the core run 4 times unrolled into 16 blocks with 1% noise (copies start apart),
+      the dead attention (core 3 and its copies: q, k ~3.5× small) renewed: 2 + 16 + 2 = 20 blocks, K = 1, bf16 on the Mac mini M6.
+      Two of three steps are shelf windows as for 300M; every third step: a story on request 30%, preschool lessons 25%, who the student is 15%,
+      conversations of 2–5 turns 30% (a story, a question about it, about the student or a lesson; every student turn learned).`}};
 async function loadFinal(){
+  const T=FINAL_TABS[tab]; $("#f-title").textContent=T.title; $("#f-note").textContent=T.note;
   const d=await (await fetch("/api/final")).json(); if(d.error){$("#f-arms").textContent=d.error;return}
+  d.arms=d.arms.filter(a=>T.arms(a.name)); d.evals=d.evals.filter(e=>e.name==="v0017"||T.arms(e.name));
   $("#f-arms").innerHTML=d.arms.length?d.arms.map(a=>{const l=a.last,st=a.state,tot=a.total_steps,step=l?.step??0,
       eta=l&&tot&&l.tok_s?(tot-step)*4096*(5/6)/l.tok_s:null, M=x=>(x/1e6).toFixed(1)+"M";
     const sm=(rows,k)=>rows.filter(r=>r[k]>0).map(r=>[r.tokens/1e6,r[k]]);
@@ -225,9 +236,9 @@ async function loadFinal(){
       ${a.growth.length?`<p class="note">growth: ${a.growth.map(g=>`${esc(g.op)} ${(g.params_before/1e6).toFixed(1)}M → ${(g.params_after/1e6).toFixed(1)}M (Δ loss ${g.delta_loss})`).join(" · ")}</p>`:""}</div>`}).join(""):'<p class="mut">no run yet</p>';
   const E=d.evals; if(!E.length){$("#f-eval").innerHTML='<p class="mut">Measured when training finishes: shelf validation loss, stories on request (10 held-out phrasings, graded 1–5 by the teacher), the nursery conversation probe (50 situations, teacher) and the preschool exam.</p>';return}
   const f=x=>x==null?"–":x.toFixed(3);
-  let h=`<table><tr><th>model</th><th class="n">params</th><th class="n">speech loss</th><th class="n">stories loss</th><th class="n">story score</th><th class="n">stories ≥4</th><th class="n">conversation</th><th class="n">preschool</th></tr>`+
+  let h=`<table><tr><th>model</th><th class="n">params</th><th class="n">speech loss</th><th class="n">stories loss</th><th class="n">story score</th><th class="n">stories ≥4</th><th class="n">conversation</th><th class="n">dialogue</th><th class="n">preschool</th></tr>`+
     E.map(e=>`<tr><td><b>${esc(e.name)}</b></td><td class="n">${(e.params/1e6).toFixed(1)}M</td><td class="n">${f(e.valid.s0_speech)}</td><td class="n">${f(e.valid.s0_stories)}</td>
-      <td class="n">${e.story.mean_score.toFixed(1)}</td><td class="n">${pct(e.story.stories)}</td><td class="n">${pct(e.conversation.fitting)}</td><td class="n">${pct(e.preschool)}</td></tr>`).join("")+"</table>";
+      <td class="n">${e.story.mean_score.toFixed(1)}</td><td class="n">${pct(e.story.stories)}</td><td class="n">${pct(e.conversation.fitting)}</td><td class="n">${e.dialogue==null?"–":pct(e.dialogue)}</td><td class="n">${pct(e.preschool)}</td></tr>`).join("")+"</table>";
   const cats=Object.keys(E[0].conversation.by_category);
   h+=`<h2 style="margin-top:12px">conversation probe by situation</h2><table><tr><th>situation</th>${E.map(e=>`<th class="n">${esc(e.name)}</th>`).join("")}</tr>`+
     cats.map(c=>`<tr><td>${esc(c)}</td>${E.map(e=>`<td class="n">${pct(e.conversation.by_category[c])}</td>`).join("")}</tr>`).join("")+"</table>";
@@ -235,7 +246,7 @@ async function loadFinal(){
     E.map(e=>`<div><span class="tag">${esc(e.name)} · ${e.story.items[i].score}/5</span> ${esc(e.story.items[i].reply)}</div>`).join("")+"</div>").join("");
   $("#f-eval").innerHTML=h}
 
-refresh(); setInterval(()=>{if(tab==="overview"||tab==="log"||tab==="final")refresh()},5000);
+refresh(); setInterval(()=>{if(tab==="overview"||tab==="log"||tab==="final"||tab==="mid")refresh()},5000);
 window.onresize=()=>{if(tab!=="overview")refresh()};
 </script>
 </body>

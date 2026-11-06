@@ -64,6 +64,30 @@ def encode_pairs(pairs: list[tuple[str, str]], tok, device, max_len: int = 512) 
     return x[:, :-1].to(device), y[:, 1:].to(device)   # predict token t+1 from tokens ≤ t
 
 
+def encode_dialogues(dialogues: list[list[tuple[str, str]]], tok, device,
+                     max_len: int = 512) -> tuple[torch.Tensor, torch.Tensor]:
+    """Conversations of one or more (prompt, target) turns, each in one row: `<|eos|>` then every turn in order,
+    the human's prompt not learned, the student's reply (ending with `<|eos|>`) learned. The chat keeps its history
+    in exactly this form (`cerbeto chat --memory`)."""
+    eos, pad = tok.token_to_id("<|eos|>"), tok.token_to_id("<|pad|>")
+    rows, labels = [], []
+    for turns in dialogues:
+        ids, lab = [eos], [IGNORE]
+        for prompt, target in turns:
+            p, a = tok.encode(prompt).ids, tok.encode(target).ids
+            ids += p + a
+            lab += [IGNORE] * len(p) + a
+        rows.append(ids[:max_len + 1])
+        labels.append(lab[:max_len + 1])
+    width = min(max_len + 1, -(-(max(map(len, rows)) - 1) // WIDTH_STEP) * WIDTH_STEP + 1)
+    x = torch.full((len(rows), width), pad, dtype=torch.long)
+    y = torch.full((len(rows), width), IGNORE, dtype=torch.long)
+    for i, (ids, lab) in enumerate(zip(rows, labels)):
+        x[i, :len(ids)] = torch.tensor(ids)
+        y[i, :len(lab)] = torch.tensor(lab)
+    return x[:, :-1].to(device), y[:, 1:].to(device)
+
+
 def run(student: str = "growing", version: str | None = None, minutes: float = 30, stage: str | None = "preschool",
         lessons_per_step: int = 32, replay_batch: int = 4, lr: float = 3e-4, seed: int = 0,
         device: str | None = None) -> dict:

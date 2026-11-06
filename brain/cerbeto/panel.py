@@ -196,7 +196,7 @@ def final() -> dict:
                           "story": {k: e["story"][k] for k in ("mean_score", "stories")} | {"items": e["story"]["items"]},
                           "conversation": {"fitting": e["conversation"]["fitting"],
                                            "by_category": e["conversation"]["by_category"]},
-                          "exam": e.get("exam")})
+                          "exam": e.get("exam"), "dialogue": (e.get("dialogue") or {}).get("accuracy")})
     return {"arms": arms, "evals": evals}
 
 

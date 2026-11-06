@@ -16,8 +16,8 @@ import json
 import math
 import random
 import re
-import signal
 import shutil
+import signal
 import time
 
 import numpy as np
@@ -31,7 +31,7 @@ from cerbeto.exams import school as school_exam
 from cerbeto.exams.school import exam_hashes
 from cerbeto.model import checkpoint, growth
 from cerbeto.model.student import pick_device
-from cerbeto.school.smoke import IGNORE, encode_pairs, lesson_text, release
+from cerbeto.school.smoke import IGNORE, encode_dialogues, lesson_text, release
 from cerbeto.teachers import chat
 from cerbeto.tokenizer import load as load_tokenizer
 from cerbeto.train.data import ShelfStream
@@ -44,7 +44,10 @@ PAIR_MIX = {"story": 0.55, "lesson": 0.40, "self": 0.05}
 CFG = {"seq_len": 512, "windows": 8, "pairs": 8, "pair_every": 3, "lr": 3e-4, "warmup": 300, "min_lr": 0.1,
        "weight_decay": 0.1, "k_min": 1, "k_max": 6, "k_eval": 4, "save_minutes": 30, "max_story_tokens": 400}
 # passes of the core per arm: the deep arm has no loop (its core is unrolled), so K = 1 in training and evaluation
-ARM_K = {"deep": {"k_min": 1, "k_max": 1, "k_eval": 1}}
+ARM_K = {"deep": {"k_min": 1, "k_max": 1, "k_eval": 1}, "mid": {"k_min": 1, "k_max": 1, "k_eval": 1}}
+# request → reply mix per arm; `mid` adds conversations of several turns (the 283M student, trained on single pairs
+# only, went on with a story when asked "who are you?" after it — 2026-11-06) and more about itself
+ARM_PAIR_MIX = {"mid": {"story": 0.30, "lesson": 0.25, "self": 0.15, "dialogue": 0.30}}
 
 
 def bf16_context(device, wanted: bool):
@@ -77,7 +80,36 @@ SELF = [("Who are you?", "I'm Cerbeto. I'm a little student, and I'm learning to
         ("Are you an animal?", "No, I'm not an animal. I'm a little student."),
         ("What can you do?", "I can talk, answer easy questions and tell stories."),
         ("Can you tell stories?", "Yes! Ask me for a story."),
-        ("Are you a robot?", "I'm a little computer student. I'm learning to talk.")]
+        ("Are you a robot?", "I'm a little computer student. I'm learning to talk."),
+        ("What's your name?", "My name is Cerbeto."),
+        ("What is your name?", "I'm Cerbeto."),
+        ("How old are you?", "I'm very young. I'm still in preschool."),
+        ("Do you go to school?", "Yes, I'm in preschool. I learn something new every day."),
+        ("Do you like stories?", "Yes, I love stories!"),
+        ("Who made you?", "People made me, and a teacher helps me learn."),
+        ("Are you a cat?", "No, I'm not a cat. I'm a little student."),
+        ("Are you a grown-up?", "No, I'm a little student. I'm still learning."),
+        ("Can you talk?", "Yes, I can talk. I'm still learning new words."),
+        ("Are you a girl or a boy?", "I'm not a girl or a boy. I'm a little computer student.")]
+# questions about the story just told: the answer is in the context, not in the weights
+RECALL = [("What was the {kind}'s name?", "The {kind}'s name was {name}."),
+          ("What was the name of the {kind}?", "Its name was {name}."),
+          ("Who was the story about?", "It was about a {kind} named {name}."),
+          ("Who was in the story?", "A {kind} named {name}."),
+          ("Was the story about a {kind}?", "Yes, it was about a {kind} named {name}.")]
+# held out: conversations never seen in training; the last reply must contain one of the words
+DIALOGUE_PROBE = [
+    (["Tell me a story about a cat named Luna.", "Do you remember the cat's name?"], ["luna"]),
+    (["Can you tell me a story about a boy named Sam?", "Who was that story about?"], ["sam"]),
+    (["Tell me a story about a fox named Red.", "Was the story about a dog?"], ["no", "fox"]),
+    (["Tell me a story.", "Who are you?"], ["cerbeto", "student"]),
+    (["Tell me a story about a dog.", "What color is the sky?"], ["blue"]),
+    (["Tell me a story about a bird named Pip.", "Are you a bird?"], ["no"]),
+    (["Who are you?", "What color is grass?"], ["green"]),
+    (["What color is the sky?", "Are you a baby?"], ["no"]),
+    (["Is a cat an animal?", "What is your name?"], ["cerbeto"]),
+    (["Tell me a story about a bear named Ben.", "Is a cat an animal?", "What was the bear's name?"], ["ben"]),
+]
 # held out: phrasings never seen in training (the probe for stories on request)
 STORY_PROBE = ["Could you tell me a bedtime story?", "I'd love a story about a dog.",
                "Tell me a short story about a girl named Mia.", "Story time! What story do you have today?",
@@ -90,13 +122,15 @@ Score 5 = a real story (characters, things happen, an ending) that fits what was
 1 = not a story at all. Answer only with JSON: {"score": <1-5>, "reason": "<short reason>"}"""
 
 
-def stories(limit: int = 120_000, seed: int = 0) -> list[tuple[str, str]]:
-    """(request, story) pairs from the stories shelf: a story told because someone asked for it."""
+def stories(limit: int = 120_000, seed: int = 0) -> list[tuple[str, str, str | None, str | None, int]]:
+    """(request, story, kind, name, tokens) from the stories shelf: a story told because someone asked for it;
+    kind and name when the story has "a <kind> named <Name>" (for questions about it)."""
     tok, rng, out = load_tokenizer(), random.Random(seed), []
     with (paths.SHELVES / "s0_stories" / "train.jsonl").open() as f:
         for line in f:
             text = json.loads(line)["text"].strip()
-            if len(tok.encode(text).ids) > CFG["max_story_tokens"]:
+            n = len(tok.encode(text).ids)
+            if n > CFG["max_story_tokens"]:
                 continue
             m = re.search(r"\b(?:a|an) (?:little |small |big |young |kind |old )?([a-z]+) named ([A-Z][a-z]+)", text)
             r = rng.random()
@@ -106,38 +140,108 @@ def stories(limit: int = 120_000, seed: int = 0) -> list[tuple[str, str]]:
                 ask = rng.choice(ABOUT_KIND).format(kind=m[1])
             else:
                 ask = rng.choice(GENERIC)
-            out.append((f"<|human|> {ask}\n<|student|>", f"<|answer|> {text}<|eos|>"))
+            out.append((f"<|human|> {ask}\n<|student|>", f"<|answer|> {text}<|eos|>",
+                        m[1] if m else None, m[2] if m else None, n + 16))
             if len(out) >= limit:
                 break
     return out
 
 
+def turn(q: str, a: str) -> tuple[str, str]:
+    return f"<|human|> {q}\n<|student|>", f"<|answer|> {a}<|eos|>"
+
+
 class Pairs:
-    def __init__(self, seed: int = 0):
+    """Batches of conversations for the pairs steps: most are one turn (a request and its reply), the `dialogue`
+    share has 2–5 turns that change the subject — a story, then a question about it, about the student or a lesson —
+    so the student learns to answer the last turn, using the earlier ones only when it is asked about them."""
+    def __init__(self, seed: int = 0, mix: dict | None = None):
         self.rng = random.Random(seed)
+        self.mix = mix or PAIR_MIX
+        self.tok = load_tokenizer()
         self.stories = stories(seed=seed)
+        self.named = [s for s in self.stories if s[3]]
         self.lessons = training_stream(seed=30_000 + seed, stage="preschool", exclude=exam_hashes(), lessons=True)
 
-    def batch(self, n: int) -> list[tuple[str, str]]:
+    def one(self, kind: str) -> tuple[str, str]:
+        if kind == "story":
+            return self.rng.choice(self.stories)[:2]
+        if kind == "lesson":
+            return lesson_text(next(self.lessons))
+        return turn(*self.rng.choice(SELF))
+
+    def dialogue(self, budget: int) -> list[tuple[str, str]]:
+        turns, used = [], 0
+
+        def add(t: tuple[str, str], n: int | None = None) -> bool:
+            nonlocal used
+            n = n if n is not None else len(self.tok.encode(t[0] + t[1]).ids)
+            if used + n > budget:
+                return False
+            turns.append(t)
+            used += n
+            return True
+
+        want = self.rng.randint(2, 5)
+        if self.rng.random() < 0.6:                      # a story first, then questions about it or something else
+            st = self.rng.choice(self.named)
+            add(st[:2], st[4])
+            if self.rng.random() < 0.7:
+                q, a = self.rng.choice(RECALL)
+                add(turn(q.format(kind=st[2]), a.format(kind=st[2], name=st[3])))
+        while len(turns) < want:
+            if not add(self.one(self.rng.choice(["lesson", "self", "lesson"]))):
+                break
+        if len(turns) < 2:                               # a story too long for anything after it
+            add(self.one("self"))
+        return turns
+
+    def batch(self, n: int) -> list[list[tuple[str, str]]]:
         out = []
-        for kind in self.rng.choices(list(PAIR_MIX), list(PAIR_MIX.values()), k=n):
-            if kind == "story":
-                out.append(self.rng.choice(self.stories))
-            elif kind == "lesson":
-                out.append(lesson_text(next(self.lessons)))
-            else:
-                q, a = self.rng.choice(SELF)
-                out.append((f"<|human|> {q}\n<|student|>", f"<|answer|> {a}<|eos|>"))
+        for kind in self.rng.choices(list(self.mix), list(self.mix.values()), k=n):
+            out.append(self.dialogue(CFG["seq_len"] - 8) if kind == "dialogue" else [self.one(kind)])
         return out
 
 
 # --- arms -------------------------------------------------------------------------------------------
+def dead_attention(model) -> list[int]:
+    """Core blocks whose q and k are less than half the median of the others: their attention is even over every
+    token (spread 1.00 in `cerbeto chat /stats`)."""
+    norms = [float(b.attn.q.weight.norm() * b.attn.k.weight.norm()) for b in model.core]
+    mid = sorted(norms)[len(norms) // 2]
+    return [i for i, n in enumerate(norms) if n < 0.25 * mid]
+
+
+def start_mid(model, probe, log):
+    """~100M, deep and thin (like MobileLLM-125M): d 512 → 640, heads 16 → 20, the core run 4 times unrolled into
+    16 blocks with 1% noise (copies that start apart), and every copy of a dead attention renewed:
+    2 + 16 + 2 = 20 blocks at K = 1."""
+    for op, kw in (("grow_model_dim", {"new_d": 640}), ("grow_width", {"extra_heads": 4})):
+        model = growth.apply(model, op, probe, k=CFG["k_eval"], max_params=110_000_000, max_delta_loss=0.01,
+                             log_path=log, reason="mid: ~100M deep", std=0.01, **kw)
+    model = growth.apply(model, "unroll_core", probe, k=CFG["k_eval"], k_new=1, max_params=110_000_000,
+                         max_delta_loss=0.02, log_path=log, reason="mid: unroll with noise", times=CFG["k_eval"],
+                         noise=0.01)
+    dead = dead_attention(model)
+    for where in (dead, dead[1:]):                    # all copies; else keep one (its averaging) and renew the rest
+        if not where:
+            break
+        try:
+            return growth.apply(model, "renew_attention", probe, k=1, max_params=110_000_000, max_delta_loss=0.05,
+                                log_path=log, reason="mid: dead attention (q, k ~3.5× small)", where=where)
+        except growth.GrowthRejected:
+            continue
+    return model
+
+
 def start_model(arm: str, device):
     model = checkpoint.load(START, device)
     if arm == "control":
         return model
     probe = ShelfStream("s0_speech", "valid", CFG["seq_len"]).batch(8, np.random.default_rng(1), device)
     log = RUN / arm / "growth_log.jsonl"
+    if arm == "mid":
+        return start_mid(model, probe, log)
     for op, kw in (("grow_model_dim", {"new_d": 896}), ("grow_width", {"extra_heads": 12, "extra_mlp": 1280})):
         model = growth.apply(model, op, probe, k=CFG["k_eval"], max_params=100_000_000, max_delta_loss=0.01,
                              log_path=log, reason="final test: ~100M", std=0.01, **kw)
@@ -173,7 +277,7 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
         (run / "state.json").write_text(json.dumps(state))     # the panel knows the target before the first save
     # the 99M arm keeps only block inputs and recomputes the rest: ~20 GB of activations at k=6 would push a
     # 32 GB Mac into swap, which costs far more than the ~30% recomputation
-    model.checkpointing = arm != "control"
+    model.checkpointing = arm not in ("control", "mid")     # ~100M fits a 16 GB Mac without recomputation
     total_steps = int(state["target_tokens"] / (CFG["windows"] * CFG["seq_len"]))   # ~tokens per step, both kinds
     amp, bf16 = bf16_context(device, bf16)
     state["precision"] = "bf16" if bf16 else "fp32"
@@ -182,7 +286,7 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
     valid = {s: ShelfStream(s, "valid", CFG["seq_len"]).fixed_batches(8, 8, device, seed=1)
              for s in ("s0_speech", "s0_stories")}
     rng = np.random.default_rng(seed + state["step"])
-    pairs = Pairs(seed + state["step"])
+    pairs = Pairs(seed + state["step"], ARM_PAIR_MIX.get(arm))
     stop = {"now": False}
     signal.signal(signal.SIGINT, lambda *_: stop.update(now=True))
     log = (run / "log.jsonl").open("a")
@@ -196,7 +300,7 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
             g["lr"] = lr_at(step, total_steps)
         k = int(rng.integers(kk["k_min"], kk["k_max"] + 1))
         if step % CFG["pair_every"] == CFG["pair_every"] - 1:
-            x, y = encode_pairs(pairs.batch(CFG["pairs"]), tok, device, max_len=CFG["seq_len"])
+            x, y = encode_dialogues(pairs.batch(CFG["pairs"]), tok, device, max_len=CFG["seq_len"])
             with amp():
                 logits = model(x, k)
             loss = F.cross_entropy(logits.float().transpose(1, 2), y, ignore_index=IGNORE)
@@ -238,7 +342,7 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
         if final.exists():
             shutil.rmtree(final)
         checkpoint.save(model, final, parent=START, meta={"final_test": {**state, "cfg": CFG, "shelves": SHELF_MIX,
-                                                                          "pairs": PAIR_MIX}})
+                                                                          "pairs": ARM_PAIR_MIX.get(arm, PAIR_MIX)}})
         print(f"{arm}: finished · {final}", flush=True)
     else:
         print(f"{arm}: interrupted at step {state['step']} — run again to resume", flush=True)
@@ -292,6 +396,20 @@ def story_probe(model, device, k: int) -> dict:
             "stories": sum(i["score"] >= 4 for i in items) / len(items), "items": items}
 
 
+def dialogue_probe(model, device, k: int) -> dict:
+    """Held-out conversations, the history kept as in training; the last reply must contain an expected word."""
+    from cerbeto.talk import Talker
+    talker = Talker(model, device, k=k, temperature=0.0, max_new_tokens=80)
+    talker.memory = True
+    items = []
+    for says, words in DIALOGUE_PROBE:
+        talker.history = ""
+        replies = [talker.reply(say) for say in says]
+        ok = any(w in re.findall(r"[a-z]+", replies[-1].lower()) for w in words)
+        items.append({"says": says, "replies": replies, "expected": words, "ok": ok})
+    return {"accuracy": sum(i["ok"] for i in items) / len(items), "items": items}
+
+
 def evaluate(name: str) -> dict:
     device = pick_device()
     path = START if name == "v0017" else CKPT / name / "final"
@@ -304,6 +422,8 @@ def evaluate(name: str) -> dict:
     k = ks(name)["k_eval"]
     out = {"name": name, "params": model.num_params(), "k": k, "valid": validation(model, valid, k)}
     print(name, out["valid"], flush=True)
+    out["dialogue"] = dialogue_probe(model, device, k)
+    print(name, "dialogue", out["dialogue"]["accuracy"], flush=True)
     out["story"] = story_probe(model, device, k)
     print(name, "story", out["story"]["mean_score"], flush=True)
     torch.manual_seed(0)
@@ -323,7 +443,7 @@ def evaluate(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval"])
-    p.add_argument("arm", help="control | grown | deep (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep | mid (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     a = p.parse_args()

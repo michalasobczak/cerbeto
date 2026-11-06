@@ -60,14 +60,39 @@ def grow_depth(model: Student, std: float = 0.01) -> tuple[Student, dict]:
     return new, _event("grow_depth", model, new, where=f"core.{len(new.core) - 1}")
 
 
-def unroll_core(model: Student, times: int) -> tuple[Student, dict]:
+def unroll_core(model: Student, times: int, noise: float = 0.0) -> tuple[Student, dict]:
     """Untie the recurrent core: its blocks run `times` times become `times` × n_core separate blocks with the same
     weights, so the student at K = 1 computes exactly what it computed at K = `times`; afterwards the copies train
-    apart (a plain deep stack, like Llama or Qwen)."""
+    apart (a plain deep stack, like Llama or Qwen).
+
+    Exact copies barely move apart: after 18M tokens the 283M student's copies still had the same weight norms
+    to 0.5% (2026-11-06). `noise` adds Gaussian noise of that fraction of each weight's spread to every copy after
+    the first, so they start different; the Δ loss guard keeps the behaviour."""
     new = copy.deepcopy(model)
     new.core = nn.ModuleList(copy.deepcopy(b) for _ in range(times) for b in model.core)
+    if noise:
+        with torch.no_grad():
+            for block in list(new.core)[model.cfg.n_core:]:
+                for p in block.parameters():
+                    if p.dim() > 1:
+                        p.add_(torch.randn_like(p) * noise * p.std())
     new.cfg = model.cfg.with_(n_core=model.cfg.n_core * times)
-    return new, _event("unroll_core", model, new, times=times)
+    return new, _event("unroll_core", model, new, times=times, noise=noise)
+
+
+def renew_attention(model: Student, where: list[int], std: float = 0.02) -> tuple[Student, dict]:
+    """Give the attention of core blocks `where` a fresh start: q, k, v random, the output o zero (the block's
+    attention says nothing until it learns). For a dead attention: in `v0017` core 3 has q and k ~3.5× smaller than
+    the other blocks and spreads its attention evenly over every token in every pass (2026-11-06), and the 283M
+    student kept four such copies. Not exactly function-preserving (the block's averaging is gone): the Δ loss guard
+    decides."""
+    new = copy.deepcopy(model)
+    for i in where:
+        attn = new.core[i].attn
+        for lin in (attn.q, attn.k, attn.v):
+            nn.init.normal_(lin.weight, std=std)
+        nn.init.zeros_(attn.o.weight)
+    return new, _event("renew_attention", model, new, where=[f"core.{i}" for i in where])
 
 
 def grow_width(model: Student, extra_mlp: int = 0, extra_heads: int = 0, std: float = 0.01) -> tuple[Student, dict]:
@@ -159,7 +184,7 @@ def apply(model: Student, op: str, probe: torch.Tensor, *, k: int, max_params: i
           log_path: Path | None = None, reason: str = "", k_new: int | None = None, **kwargs) -> Student:
     """Run a growth/pruning operator with the parameter limit and the |Δ loss| guard; log the outcome."""
     ops = {"grow_depth": grow_depth, "grow_width": grow_width, "grow_model_dim": grow_model_dim, "prune_mlp": prune_mlp,
-           "unroll_core": unroll_core}
+           "unroll_core": unroll_core, "renew_attention": renew_attention}
     new, event = ops[op](model, **kwargs)
     event.update(reason=reason, time=time.strftime("%Y-%m-%dT%H:%M:%S"))
     if count_params(new.cfg) != new.num_params():
