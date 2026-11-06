@@ -59,6 +59,27 @@ Derived from [CHANGELOG.md](CHANGELOG.md) (what was delivered, by date) and the 
 - **Teacher:** default `gemma4:e4b-mlx` in local Ollama.
 - **Hardware:** MacBook Pro M1 Pro, 32 GB (MPS, fp32).
 
+**Datasets** (shelves in `data/shelves/`, built by the librarian of [0001](specs/0001-library-and-tokenizer.md))
+
+| Shelf | Stage | Training tokens | Sources | Filter | Licence |
+|---|---|---|---|---|---|
+| `s0_speech` | 0 nursery | 83.6M | CHILDES (child = `<\|student\|>`, adults = `<\|human\|>`), Switchboard, BNC spoken, OpenSubtitles — via BabyLM-2026-Strict | dialogue, no reading-level filter | MIT (BabyLM) + upstream terms |
+| `s0_stories` | 0 nursery | 544.5M | TinyStories V2 (GPT-4 stories in the vocabulary of a 3–4-year-old) | none | CDLA-Sharing 1.0 |
+| `s1_books` | 1 preschool | 37.3M | Project Gutenberg children's books (via BabyLM) | none | public domain |
+| `s2_world` | 2 grade 1 | 0.8M | Simple English Wikipedia (2023-11 dump + BabyLM simple_wiki) | paragraphs up to grade 4 (FK ≤ 4): 99.6% rejected | CC BY-SA 4.0 |
+| `s3_edu` | 3 grade 2 | 4.4M | FineWeb-Edu, one shard of the 10BT sample, edu score ≥ 3 | paragraphs up to grade 4: 99.5% rejected | ODC-By 1.0 |
+| school lessons | 1–3 | generated | 16 task generators of [0004](specs/0004-curriculum-and-exams.md), rephrased and explained by the teacher | exam and validation prompts excluded | own |
+
+**What the student has seen** (training tokens by source; school nights per day in `runs/school/cycles.jsonl`, field `diet`)
+
+| Phase | Tokens | By source | Result |
+|---|---|---|---|
+| Nursery (2026-10-31 → 11-01) | 300M | `s0_speech` 142.5M (1.7 passes over the shelf), `s0_stories` 157.5M (0.29 passes) | BLiMP 65.9% |
+| School, preschool, days 1–20 (2026-11-04 → 11-06) | 10.7M | today's lessons 2.4M, earlier days' lessons 2.5M, `s0_speech` 2.9M, `s0_stories` 2.9M | exam 22% → 68.5% (`v0017`, day 18) |
+| Final test, grown 99.1M student (running since 2026-11-06) | target 80M | two of three steps shelf windows (stories 40%, speech 30%, books 18%, edu 9%, Wikipedia 3%), every third step request → reply pairs | pending |
+
+School days 1–20 are estimated after the fact (hippocampus experiences × the night's 141 steps); from day 21 every night counts its tokens as it trains. Only inputs are counted, padding excluded; in lessons the loss is on the student's turn only.
+
 ## What the student can do after the nursery
 **Nursery exam** (`cerbeto exam nursery`, `checkpoints/growing/v0032`, 29.9M parameters, 2026-11-01):
 

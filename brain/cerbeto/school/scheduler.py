@@ -25,6 +25,7 @@ from cerbeto.model.consolidation import EWC
 from cerbeto.model.student import pick_device
 from cerbeto.school.day import lesson_weights, run_day, teacher
 from cerbeto.school.sleep import Interrupted, estimate_ewc, estimate_skills_ewc, run_sleep
+from cerbeto.school.smoke import release
 from cerbeto.school.validation import by_skill, validation_set
 
 CKPT = paths.REPO / "checkpoints" / "school"
@@ -135,6 +136,7 @@ class School:
                 if self.stop():
                     break
                 self.log(f"day {st['day']} done: {stats}")
+                release(self.device)
                 st["phase"] = "sleep"
                 self.save_state()
             if st["phase"] == "sleep":
@@ -158,6 +160,7 @@ class School:
                     self.log("sleep interrupted — no new version, the student stays on " + st["active"])
                     break
                 hippo.mark_slept([e.id for e in experiences])
+                st["diet"] = stats["diet"]       # goes to this cycle's line in cycles.jsonl
                 if stats["kept_step"] == 0:      # the best moment of the night was before it: nothing to examine
                     self.unchanged(stats)
                     model = self.load(st["active"])
@@ -174,6 +177,7 @@ class School:
                 self.examine(model)
                 model = self.load(st["active"])
                 done_cycles += 1
+            release(self.device)         # between phases: the next one starts without the last one's buffers
         self.save_state()
         self.log("school stopped" if not st["done"] else "school finished: all stages passed")
 
@@ -255,7 +259,7 @@ class School:
         with (RUN / "cycles.jsonl").open("a") as f:
             f.write(json.dumps({"day": st["day"], "candidate": None, "stage": st["stage"], "scores": {},
                                 "promoted": False, "why": "night changed nothing", "minutes": 0,
-                                "time": time.strftime("%Y-%m-%dT%H:%M:%S")}) + "\n")
+                                "time": time.strftime("%Y-%m-%dT%H:%M:%S"), "diet": st.pop("diet", None)}) + "\n")
         self.progress(False)
         st.update(phase="day", candidate=None, day=st["day"] + 1)
         self.save_state()
@@ -276,7 +280,7 @@ class School:
         gain = scores[stage] - (st["best"] or 0)
         record = {"day": st["day"], "candidate": st["candidate"], "stage": stage, "scores": scores,
                   "promoted": ok, "why": why, "minutes": round((time.time() - started) / 60, 1),
-                  "time": time.strftime("%Y-%m-%dT%H:%M:%S")}
+                  "time": time.strftime("%Y-%m-%dT%H:%M:%S"), "diet": st.pop("diet", None)}
         with (RUN / "cycles.jsonl").open("a") as f:
             f.write(json.dumps(record) + "\n")
         summary = " · ".join(f"{s} {100 * v:.1f}%" for s, v in scores.items())

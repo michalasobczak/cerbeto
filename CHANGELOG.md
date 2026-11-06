@@ -9,6 +9,8 @@ What has actually been delivered, by date (newest first). Intent of changes: `sp
 - Panel: Bench tab — validation of every variant along the night, hypotheses with best / step / end, per-skill start → best → end, the running variant's log — [0005].
 - Skills consolidation (EWC on earlier right lessons, per-lesson Fisher normalised to mean 1, `ewc_skills_lambda`); off — 1e-3…1e-1 did not change the night — [0005].
 - Sleep: passes of the recurrent core per step configurable (`k_min`, `k_max`) — [0005].
+- School nights count the tokens they show the student by source (`diet` in `runs/school/cycles.jsonl` and in the version's metadata: today's lessons, earlier days, earlier stages, nursery shelves); days 1–20 estimated after the fact — [0005].
+- README: tables of the datasets and of what the student has seen in each phase.
 
 ### Changed
 - A night keeps its end when its best validation check is within 2 pp of it (`keep_tolerance`): the small validation set only refuses clearly worse nights, the exam decides; before, 9 of 13 bench nights kept their start and nothing reached the exam — [0005].

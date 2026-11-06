@@ -24,6 +24,13 @@ from cerbeto.tokenizer import load as load_tokenizer
 from cerbeto.train.data import ShelfStream
 
 IGNORE = -100
+WIDTH_STEP = 64
+
+
+def release(device) -> None:
+    """Return the GPU memory the allocator caches but no tensor uses (MPS keeps it until asked)."""
+    if str(device).startswith("mps"):
+        torch.mps.empty_cache()
 
 
 def lesson_text(task: Task) -> tuple[str, str]:
@@ -46,7 +53,9 @@ def encode_pairs(pairs: list[tuple[str, str]], tok, device, max_len: int = 512) 
         lab = ([IGNORE] * len(p) + a)[:max_len + 1]
         rows.append(ids)
         labels.append(lab)
-    width = max(map(len, rows))
+    # widths rounded up to a multiple of WIDTH_STEP: the MPS allocator keeps a buffer of every shape it has seen,
+    # and one width per step grew the school's GPU memory to 27 GB in a night (2026-11-06); padding is not learned
+    width = min(max_len + 1, -(-(max(map(len, rows)) - 1) // WIDTH_STEP) * WIDTH_STEP + 1)
     x = torch.full((len(rows), width), pad, dtype=torch.long)
     y = torch.full((len(rows), width), IGNORE, dtype=torch.long)
     for i, (ids, lab) in enumerate(zip(rows, labels)):

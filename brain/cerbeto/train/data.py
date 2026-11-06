@@ -9,6 +9,7 @@ from cerbeto import paths
 
 class ShelfStream:
     def __init__(self, shelf: str, split: str, seq_len: int, root: Path = paths.SHELVES):
+        self.shelf = shelf
         self.tokens = np.memmap(root / shelf / f"{split}.bin", dtype=np.uint16, mode="r")
         self.seq_len = seq_len
 

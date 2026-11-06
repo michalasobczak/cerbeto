@@ -37,8 +37,8 @@ def test_g3_lesson_end_to_end_with_a_mock_teacher(tmp_path, monkeypatch):
 
 
 class _FakeShelf:
-    def __init__(self, *a, **k):
-        pass
+    def __init__(self, shelf, *a, **k):
+        self.shelf = shelf
 
     def batch(self, n, rng, device):
         return torch.randint(0, 8192, (n, 33))
@@ -109,3 +109,30 @@ def test_sleep_keeps_the_end_when_the_best_is_within_noise(monkeypatch):
         out = run_sleep(Student(CFG, seed=0), "cpu", exp, [], {**cfg, "keep_tolerance": tolerance}, None,
                         log=lambda m: None, validate=lambda: next(scores))
         assert out["kept_step"] == kept
+
+
+def test_batch_widths_come_in_few_shapes():
+    from cerbeto.school.smoke import WIDTH_STEP, encode_pairs
+    from cerbeto.tokenizer import load as load_tokenizer
+    tok = load_tokenizer()
+    widths = set()
+    for n in range(1, 40):
+        x, y = encode_pairs([("<|human|> " + "word " * n + "\n<|student|>", "<|answer|> yes<|eos|>")], tok, "cpu")
+        assert x.shape == y.shape and x.shape[1] % WIDTH_STEP == 0
+        assert (y[0] != -100).sum() == len(tok.encode("<|answer|> yes<|eos|>").ids)   # padding is never learned
+        widths.add(x.shape[1])
+    assert len(widths) <= 2
+
+
+def test_sleep_counts_the_tokens_it_showed_by_source(monkeypatch):
+    from cerbeto.memory.hippocampus import Experience
+    monkeypatch.setattr("cerbeto.school.sleep.ShelfStream", _FakeShelf)
+    today = [Experience("t", 2, "preschool", "world.sizes", "code", f"h{i}", "<|human|> Big?\n<|student|>",
+                        "<|answer|> cow<|eos|>", "cow", True, True) for i in range(6)]
+    mem = [("<|human|> Sky?\n<|student|>", "<|answer|> blue<|eos|>", False)]
+    out = run_sleep(Student(CFG, seed=0), "cpu", today, [], {**SLEEP, "epochs": 2, "memory_share": 1.0}, None,
+                    log=lambda m: None, memories=mem)
+    diet = out["diet"]
+    assert set(diet) == {"today", "earlier_days", "s0_speech", "s0_stories"}
+    assert diet["s0_speech"] == diet["s0_stories"] == 32          # one window of 32 inputs per step, 2 steps
+    assert diet["today"] > 0 and diet["earlier_days"] > 0

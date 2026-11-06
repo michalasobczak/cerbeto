@@ -8,6 +8,7 @@ keeps the previous version.
 """
 import math
 import random
+from collections import Counter
 from collections.abc import Callable
 
 import numpy as np
@@ -18,7 +19,7 @@ from cerbeto.curriculum import training_stream
 from cerbeto.exams.school import exam_hashes
 from cerbeto.memory.hippocampus import Experience
 from cerbeto.model.consolidation import EWC
-from cerbeto.school.smoke import IGNORE, encode_pairs, lesson_text
+from cerbeto.school.smoke import IGNORE, encode_pairs, lesson_text, release
 from cerbeto.tokenizer import load as load_tokenizer
 from cerbeto.train.data import ShelfStream
 
@@ -59,12 +60,15 @@ def run_sleep(model, device, experiences: list[Experience], earlier: list[str], 
         model.eval()
         v = validate()
         model.train()
+        release(device)
         val.append((step, v))
         if best is None or v > best[1]:
             best = (step, v, {n: p.detach().clone() for n, p in model.state_dict().items()})
         log(f"sleep · step {step}/{total} · validation {100 * v:.1f}% (best {100 * best[1]:.1f}% at step {best[0]})")
 
     losses = []
+    diet = Counter()                           # tokens the night showed the student, by source (inputs, padding excluded)
+    pad = tok.token_to_id("<|pad|>")
     step = 0
     if validate:
         check()
@@ -77,8 +81,10 @@ def run_sleep(model, device, experiences: list[Experience], earlier: list[str], 
             for g in opt.param_groups:         # warm-up, then cosine to 10%
                 g["lr"] = cfg["lr"] * min(1.0, (step + 1) / cfg["warmup"]) * (0.1 + 0.45 * (1 + math.cos(math.pi * step / total)))
             batch = pairs[b:b + cfg["batch"]]
+            sources = ["today"] * len(batch)
             if n_recall:
                 batch = batch + [(p, t) for p, t, _ in rng.choices(memories, weights=recall_w, k=n_recall)]
+                sources += ["earlier_days"] * n_recall
             if replay:                         # as many lessons of earlier stages, with the reference solution
                 old = []
                 while len(old) < cfg["batch"]:
@@ -86,10 +92,14 @@ def run_sleep(model, device, experiences: list[Experience], earlier: list[str], 
                     if t.stage in earlier:
                         old.append(lesson_text(t))
                 batch = batch + old
+                sources += ["earlier_stages"] * len(old)
             k = int(nrng.integers(cfg.get("k_min", 1), cfg.get("k_max", 6) + 1))   # passes of the core
             x, y = encode_pairs(batch, tok, device)
+            for source, n in zip(sources, (x != pad).sum(1).tolist()):
+                diet[source] += n
             lesson = weighted_loss(model(x, k), y, cfg["surprise_cap"])
             windows = shelves[step % 2].batch(cfg["replay_windows"], nrng, device)
+            diet[shelves[step % 2].shelf] += windows[:, :-1].numel()
             language = model.loss(windows[:, :-1], windows[:, 1:], k)
             loss = lesson + language
             if ewc is not None:
@@ -103,6 +113,7 @@ def run_sleep(model, device, experiences: list[Experience], earlier: list[str], 
             losses.append((lesson.item(), language.item()))
             step += 1
             if step % 25 == 0 or step == total:
+                release(device)
                 recent = losses[-25:]
                 log(f"sleep · step {step}/{total} · lesson loss {sum(a for a, _ in recent) / len(recent):.3f} · "
                     f"language loss {sum(c for _, c in recent) / len(recent):.3f}")
@@ -122,7 +133,7 @@ def run_sleep(model, device, experiences: list[Experience], earlier: list[str], 
         kept = best[0]
         log(f"sleep · keeping the weights of step {kept} (validation {100 * best[1]:.1f}%)")
     return {"steps": step, "kept_step": kept, "validation": val, "experiences": len(experiences),
-            "lesson_loss": sum(a for a, _ in losses[-25:]) / max(1, len(losses[-25:])),
+            "diet": dict(diet), "lesson_loss": sum(a for a, _ in losses[-25:]) / max(1, len(losses[-25:])),
             "language_loss": sum(c for _, c in losses[-25:]) / max(1, len(losses[-25:]))}
 
 
