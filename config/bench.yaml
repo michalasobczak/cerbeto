@@ -1,0 +1,25 @@
+# Night bench (spec 0005): one school night replayed offline per variant, one hypothesis per variant.
+# A variant overrides `base`; `sleep` overrides config/rhythm.yaml sleep. Results: runs/bench/<variant>.json.
+base:
+  version: v0016            # school checkpoint the night starts from (copied, never changed)
+  days: [17]                # lessons of these days are the night's experiences; earlier days are its memories
+  seed: 1
+  consistent_yes_no: true   # leave out yes/no lessons whose thinking does not compare claim and fact
+  dedup_memories: false
+  sleep: {}
+
+variants:
+  base: {}                                          # reference
+  seed2: {seed: 2}                                  # H7: how much a night varies by chance alone
+  inconsistent: {consistent_yes_no: false}          # H1: mixed yes/no thinking formats (the night of day 17)
+  dedup: {dedup_memories: true}                     # H2: memorised prompts of small task spaces
+  lr_low: {sleep: {lr: 5.0e-5}}                     # H3: learning rate too high for a trained student
+  ewc_off: {sleep: {ewc_lambda: 0}}                 # H4: consolidation holds the weights too hard
+  memory_low: {sleep: {memory_share: 0.3}}          # H5: replay of earlier days crowds out today
+  v0015: {version: v0015}                           # H6: the grown student (new neurons) vs the one before growth
+  k4: {sleep: {k_min: 4, k_max: 4}}                 # H8: random passes of the core (1–6) vs the exam's K = 4
+  skills_ewc_3: {sleep: {ewc_skills_lambda: 1.0e-3}}   # H9: nothing holds the skills of earlier days (EWC on lessons)
+  skills_ewc_2: {sleep: {ewc_skills_lambda: 1.0e-2}}   # H9, stronger
+  skills_ewc_1: {sleep: {ewc_skills_lambda: 1.0e-1}}   # H9, strongest
+  dedup_k4: {dedup_memories: true, sleep: {k_min: 4, k_max: 4}}   # H2 + H8: the two nights that ended above the start
+  smoke: {limit: 64, sleep: {epochs: 1, validate_every: 1000}}   # checks the bench itself (not a hypothesis)

@@ -65,6 +65,10 @@ def main() -> None:
     sr.add_argument("--teacher", help="name from config/teachers.yaml (default: the default teacher)")
     sr.add_argument("--device")
     sc_sub.add_parser("status", help="school state and the last cycles")
+    sb = sc_sub.add_parser("bench", help="replay a school night offline in variants (config/bench.yaml)")
+    sb.add_argument("action", choices=["run", "summary", "list"])
+    sb.add_argument("variants", nargs="*", help="variant names (default for run: all)")
+    sb.add_argument("--device")
     sg = sc_sub.add_parser("grow", help="grow the active school version (function-preserving) into a new version")
     sg.add_argument("--mlp", type=int, default=0, help="MLP neurons added to every block")
     sg.add_argument("--heads", type=int, default=0, help="attention heads added to every block")
@@ -147,6 +151,16 @@ def main() -> None:
     elif args.group == "school" and args.cmd == "status":
         from cerbeto.school.scheduler import status
         status()
+    elif args.group == "school" and args.cmd == "bench":
+        from cerbeto.school import bench
+        if args.action == "list":
+            print("\n".join(bench.config()["variants"]))
+        elif args.action == "summary":
+            bench.summary()
+        else:
+            for name in args.variants or [n for n in bench.config()["variants"] if n != "smoke"]:
+                bench.run(name, args.device)
+            bench.summary()
     elif args.group == "school" and args.cmd == "grow":
         from cerbeto.school.scheduler import School
         School(device="cpu").grow(args.mlp, args.heads, args.reason)

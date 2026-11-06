@@ -2,14 +2,37 @@
 
 What has actually been delivered, by date (newest first). Intent of changes: `specs/`. Proof: tests.
 
+## 2026-11-06 — night bench: what a school night does
+
+### Added
+- `cerbeto school bench run|summary|list`: a school night replayed offline from a copy of a version and lessons already in the hippocampus, one setting per variant (`config/bench.yaml`), validation per skill at every check (`runs/bench/`); 13 variants of the night after day 17 — none beyond chance (a seed alone: ±3 pp) — [0005].
+- Panel: Bench tab — validation of every variant along the night, hypotheses with best / step / end, per-skill start → best → end, the running variant's log — [0005].
+- Skills consolidation (EWC on earlier right lessons, per-lesson Fisher normalised to mean 1, `ewc_skills_lambda`); off — 1e-3…1e-1 did not change the night — [0005].
+- Sleep: passes of the recurrent core per step configurable (`k_min`, `k_max`) — [0005].
+
+### Changed
+- A night keeps its end when its best validation check is within 2 pp of it (`keep_tolerance`): the small validation set only refuses clearly worse nights, the exam decides; before, 9 of 13 bench nights kept their start and nothing reached the exam — [0005].
+- Sleep replays each earlier prompt once, its latest lesson (`dedup_memories`: 1,739 instead of 18,770 memories, the same night on the bench) — [0005].
+
+### Fixed
+- Panel: the exam history shows every cycle, scrollable — [0005].
+
+### Results
+- First night under the new rules (day 18): exam 60.5% → **68.5%**, promoted `v0017`; `ood_hard` opposites 25 → 85%, clarify 10 → 52%, sizes 54 → 69%; agree/disagree 67 → 57% — [0005] §9.
+
+### Found
+- The nursery EWC has no effect (its Fisher sums to 1.7 over 34.6M weights: a batch-mean gradient squared); every night trades agree/disagree and categories for clarify already by step 35, whatever holds the weights — [0005] §9.
+
 ## 2026-11-05 — school: harder lessons, reading, new passing rule, growth
 
 ### Added
+- Validation of a night logged per skill, with the change against the start of the night — [0005].
 - Harder school days after a plateau at 60.5% (days 9–16): weaker skills on the last exam come up more often (`focus`), and four lesson-only mixes of two preschool skills (never an exam form, never a rare item) make about 20% of a day — [0005].
 - Reading lessons `read.facts` (rare facts told in a text, then asked about) and three more lesson-only mixes practising forms next to the exam's held-out ones (`mix.say_back`, `mix.not_statement`, `mix.which_category`); per-skill lesson weight overrides — [0005].
 - `cerbeto school grow --mlp N --heads N`: function-preserving growth of the active school version into a new active version; parameter limit raised 30M → 40M; `v0015` grown into `v0016` (29.9M → 34.6M, +384 MLP neurons per block, Δ loss 0.0) — [0005].
 
 ### Fixed
+- One format of thinking for yes/no: lessons always learn the code's comparison (the tutor is not asked on yes/no), and older yes/no memories without it are retired from replay (`retired` column; still in the database) — [0005].
 - Yes/no lessons think claim → fact → decision ("The question says: … So that is wrong, and the answer is no."); categories had no thinking, agree/disagree thinking never compared the fact with the claim — the student answered "No. A dog says woof." — [0005].
 - Lesson weights of a grown version come from the last promoted version's exam (they came from the nursery exam) — [0005].
 

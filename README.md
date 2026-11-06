@@ -12,19 +12,20 @@ The project uses **[Rondo](https://workwithrondo.com)** as its reference enginee
 - tests are the proof, derived from each specification's control gates;
 - [MANIFESTO.md](MANIFESTO.md) is the engineering manifesto — implementation principles applied to every specification.
 
-## Current state (2026-11-05)
+## Current state (2026-11-06)
 Derived from [CHANGELOG.md](CHANGELOG.md) (what was delivered, by date) and the status line of each specification.
 
 **Where we are:** the student is **in preschool** (school stage 1 of 3) and has not passed it yet.
 - **Nursery done:** the growing student finished it (300M tokens, 6.9M → 29.9M parameters, BLiMP 65.9%).
-- **School running:** the automatic school (day with the LLM teacher → sleep → exam) runs on a laptop, offline. The preschool score went from ~22% after the nursery to **60.5%** by day 7, then stayed flat for days 9–16.
+- **School running:** the automatic school (day with the LLM teacher → sleep → exam) runs on a laptop, offline. The preschool score went from ~22% after the nursery to **60.5%** by day 7, then stayed flat for days 9–16; **68.5%** after day 18.
 - **Cause of the plateau:** lessons were 97% right, and the missing points were knowledge and question forms that lessons never gave.
 - **Response (2026-11-05):**
   - harder days: weak skills come up more often, lessons mix two skills, and new reading lessons tell the rare facts;
   - a passing rule fitted to moving between grades: mastery of what was taught in every skill, transfer on average, no skill without transfer;
   - the first growth in school: `v0016`, 34.6M parameters, limit raised to 40M;
   - yes/no lessons now think "claim → fact → decision": the student knew the facts but answered "No. A dog says woof.", which held agree/disagree and categories below 85%.
-- **Next:** the first days with the new lessons show whether preschool moves toward passing; then grade 1 and grade 2.
+- **Night bench (2026-11-06):** the night after day 17 replayed offline in 13 variants (learning rate, replay, consolidation, growth, thinking formats, core passes). None moved the night beyond chance (±3 pp from the seed alone); every night trades agree/disagree and categories for clarify, and the small validation set kept the start in most nights, so their learning never reached the exam. Now a night keeps its end unless it is clearly worse, and the exam decides; earlier days are replayed once per prompt. The first such night (day 18) raised the exam **60.5% → 68.5%** (`v0017`): rare opposites 25 → 85%, clarify 10 → 52%; agree/disagree fell 67 → 57% while it changes its yes/no thinking.
+- **Next:** the school runs again from day 18 with these rules; the next nights show whether the student gets through the yes/no format change toward passing; then grade 1 and grade 2.
 
 **Specifications**
 
@@ -34,7 +35,7 @@ Derived from [CHANGELOG.md](CHANGELOG.md) (what was delivered, by date) and the 
 | [0002](specs/0002-student-architecture-and-growth.md) student architecture and growth | delivered |
 | [0003](specs/0003-nursery-stage-0-pretraining.md) nursery | delivered for the growing student; control student run open |
 | [0004](specs/0004-curriculum-and-exams.md) curriculum and exams | delivered; passing rule changed 2026-11-05; G5 (human review of tasks) pending |
-| [0005](specs/0005-school-day-sleep-exam.md) school: day, sleep, exam | **in progress**: the school runs (preschool, second run, day 17); open: neuron renewal, self-correction format, brain API, control student |
+| [0005](specs/0005-school-day-sleep-exam.md) school: day, sleep, exam | **in progress**: the school runs (preschool, second run, day 18); open: neuron renewal, self-correction format, brain API, control student |
 | [0006](specs/0006-rails-admin-panel-and-chat.md) admin panel and chat (Rails) | planned (a read-only school panel `cerbeto panel` exists in the brain) |
 | [0007](specs/0007-offline-distribution.md) offline distribution | planned |
 
@@ -45,9 +46,11 @@ Derived from [CHANGELOG.md](CHANGELOG.md) (what was delivered, by date) and the 
 | A small model trained from scratch on child-level text learns grammar and short conversation | upheld | BLiMP 65.9%, conversation probe ([0003](specs/0003-nursery-stage-0-pretraining.md)) |
 | Growth during the nursery keeps behaviour and saves compute | upheld for function preservation (Δ loss ≈ 0 at every growth); saving vs a fixed student: open (control student not run) | growth logs; [0002](specs/0002-student-architecture-and-growth.md) |
 | A small local LLM can be a reliable teacher when code verifies it | upheld | teacher exam: `gemma4:e4b-mlx` 97.5% correct, 94.8% consistent; unverified explanations are never used |
-| Day → sleep → exam raises school skills without forgetting the nursery | partly upheld: preschool 22% → 60.5%, nursery language kept (EWC + replay); stage not passed yet | `runs/school/cycles.jsonl`, [0005](specs/0005-school-day-sleep-exam.md) §9 |
+| Day → sleep → exam raises school skills without forgetting the nursery | partly upheld: preschool 22% → 68.5% (day 18), nursery language kept (EWC + replay); stage not passed yet | `runs/school/cycles.jsonl`, [0005](specs/0005-school-day-sleep-exam.md) §9 |
 | Lessons in the training forms transfer to new forms and unseen items by themselves | refuted for this student | `id` high, `ood_hard` 10–57% on several skills; plateau days 9–16 |
-| More parameters help the school plateau | open: tested since 2026-11-05 together with harder lessons (causes not separated) | [0005](specs/0005-school-day-sleep-exam.md) §9 |
+| More parameters help the school plateau | open: tested since 2026-11-05 together with harder lessons; on the bench the grown `v0016` and `v0015` behave the same (new neurons not used yet) | [0005](specs/0005-school-day-sleep-exam.md) §9 |
+| The settings of a school night (learning rate, replay share, consolidation, core passes) decide its result | refuted on the bench: 13 variants, all within the ±3 pp of a different seed | [0005](specs/0005-school-day-sleep-exam.md) §9, `runs/bench/` |
+| Consolidation (EWC) holds what was learned | refuted as built: the nursery Fisher is almost zero (no effect); EWC on earlier lessons does not stop the trade between skills | [0005](specs/0005-school-day-sleep-exam.md) §9 |
 | More passes of the recurrent core at answer time help | not seen in school: validation 75.1 / 76.5 / 75.3 / 73.9% at K = 2 / 4 / 6 / 8 | [0005](specs/0005-school-day-sleep-exam.md) §9 |
 
 **Setup**

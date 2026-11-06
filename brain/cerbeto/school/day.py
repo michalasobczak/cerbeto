@@ -125,7 +125,7 @@ def run_day(model, device, student: str, day: int, stage: str, cfg: dict, ask: A
         for t, g, reply in zip(tasks, given, replies):
             ok = grade(t, reply)
             steps, origin, said = (" ".join(t.steps) or None), "code", {}
-            if not ok and t.answer_type != "unknown" and not stop():
+            if not ok and t.answer_type not in ("unknown", "yesno") and not stop():   # yes/no: code's comparison
                 explained = tutor(t, lambda m, th: said.setdefault("reply", ask(m, th)), t.skill in think_skills)
                 if explained:
                     steps, origin = explained[0], "teacher"

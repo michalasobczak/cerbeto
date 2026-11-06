@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS experiences (
 );
 CREATE INDEX IF NOT EXISTS pending ON experiences (student, slept, verified);
 """
-COLUMNS = {"asked_as": "TEXT", "teacher_reply": "TEXT"}   # added later; older databases are migrated on open
+COLUMNS = {"asked_as": "TEXT", "teacher_reply": "TEXT", "retired": "INTEGER DEFAULT 0"}   # added later; older databases are migrated on open
 
 
 @dataclass
@@ -81,12 +81,37 @@ class Hippocampus:
             "FROM experiences WHERE student = ? AND slept = 0 AND verified = 1 ORDER BY id", (student,)).fetchall()
         return [Experience(*r[:9], bool(r[9]), bool(r[10]), r[11]) for r in rows]
 
-    def memories(self, student: str, stage: str, limit: int = 20_000) -> list[tuple[str, str, bool]]:
+    def memories(self, student: str, stage: str, limit: int = 20_000,
+                 unique: bool = False) -> list[tuple[str, str, bool]]:
         """(prompt, target, student was right) of experiences of `stage` already slept on — replayed in later
-        sleeps, so a new night does not wash out what earlier nights taught."""
-        return [(p, t, bool(c)) for p, t, c in self.db.execute(
+        sleeps, so a new night does not wash out what earlier nights taught. `unique`: each prompt once, its latest
+        lesson (small task spaces otherwise come back many times: 18770 memories were 1739 prompts)."""
+        rows = self.db.execute(
             "SELECT prompt, target, correct FROM experiences WHERE student = ? AND stage = ? AND slept = 1 "
-            "AND verified = 1 ORDER BY id DESC LIMIT ?", (student, stage, limit))]
+            "AND verified = 1 AND COALESCE(retired, 0) = 0 ORDER BY id DESC" + ("" if unique else " LIMIT ?"),
+            (student, stage) if unique else (student, stage, limit))
+        out, seen = [], set()
+        for p, t, c in rows:
+            if unique and p in seen:
+                continue
+            seen.add(p)
+            out.append((p, t, bool(c)))
+        return out[:limit]
+
+    YES_NO_SKILLS = ("social.agree_disagree", "world.categories", "mix.opposite_statement", "mix.not_statement",
+                     "read.facts")
+
+    def retire_yes_no_without_comparison(self, student: str) -> int:
+        """Keep yes/no memories out of replay when their thinking does not compare the claim with the fact (lessons
+        before 2026-11-05, or a teacher's own explanation): one format of thinking per kind of question. They stay in
+        the database (panel, history). Idempotent; returns how many were retired now."""
+        cur = self.db.execute(
+            f"UPDATE experiences SET retired = 1 WHERE student = ? AND COALESCE(retired, 0) = 0 "
+            f"AND skill IN ({','.join('?' * len(self.YES_NO_SKILLS))}) "
+            "AND (target LIKE '%<|answer|> Yes%' OR target LIKE '%<|answer|> No%') "
+            "AND target NOT LIKE '%The question says:%'", (student, *self.YES_NO_SKILLS))
+        self.db.commit()
+        return cur.rowcount
 
     def mark_slept(self, ids: list[int]) -> None:
         self.db.executemany("UPDATE experiences SET slept = 1 WHERE id = ?", [(i,) for i in ids])

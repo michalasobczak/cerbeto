@@ -94,3 +94,18 @@ def test_sleep_keeps_the_weights_with_the_best_validation(monkeypatch):
                     validate=lambda: next(scores))
     assert out["kept_step"] == 0
     assert all(torch.equal(start[n], p) for n, p in model.state_dict().items())
+
+
+def test_sleep_keeps_the_end_when_the_best_is_within_noise(monkeypatch):
+    from cerbeto.memory.hippocampus import Experience
+    monkeypatch.setattr("cerbeto.school.sleep.ShelfStream", _FakeShelf)
+    exp = [Experience("t", 1, "preschool", "world.facts", "code", f"h{i}", "<|human|> Sky?\n<|student|>",
+                      "<|answer|> blue<|eos|>", "red", False, True) for i in range(12)]
+    cfg = {**SLEEP, "epochs": 2, "validate_every": 1}
+    steps = len(run_sleep(Student(CFG, seed=0), "cpu", exp, [], cfg, None, log=lambda m: None,
+                          validate=lambda: 0.5)["validation"]) - 1
+    for tolerance, kept in ((0.02, steps), (0.005, 0)):
+        scores = iter([0.765] + [0.75] * steps)            # the end is 1.5 pp below the start
+        out = run_sleep(Student(CFG, seed=0), "cpu", exp, [], {**cfg, "keep_tolerance": tolerance}, None,
+                        log=lambda m: None, validate=lambda: next(scores))
+        assert out["kept_step"] == kept

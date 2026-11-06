@@ -38,7 +38,8 @@ def weighted_loss(logits: torch.Tensor, labels: torch.Tensor, cap: float) -> tor
 
 def run_sleep(model, device, experiences: list[Experience], earlier: list[str], cfg: dict, ewc: EWC | None,
               seed: int = 0, stop: Callable[[], bool] = lambda: False, log: Callable[[str], None] = print,
-              memories: list[tuple[str, str, bool]] = (), validate: Callable[[], float] | None = None) -> dict:
+              memories: list[tuple[str, str, bool]] = (), validate: Callable[[], float] | None = None,
+              skills_ewc: EWC | None = None) -> dict:
     tok = load_tokenizer()
     rng, nrng = random.Random(seed), np.random.default_rng(seed)
     shelves = [ShelfStream(s, "train", model.cfg.max_seq_len) for s in ("s0_speech", "s0_stories")]
@@ -85,7 +86,7 @@ def run_sleep(model, device, experiences: list[Experience], earlier: list[str], 
                     if t.stage in earlier:
                         old.append(lesson_text(t))
                 batch = batch + old
-            k = int(nrng.integers(1, 7))
+            k = int(nrng.integers(cfg.get("k_min", 1), cfg.get("k_max", 6) + 1))   # passes of the core
             x, y = encode_pairs(batch, tok, device)
             lesson = weighted_loss(model(x, k), y, cfg["surprise_cap"])
             windows = shelves[step % 2].batch(cfg["replay_windows"], nrng, device)
@@ -93,6 +94,8 @@ def run_sleep(model, device, experiences: list[Experience], earlier: list[str], 
             loss = lesson + language
             if ewc is not None:
                 loss = loss + cfg["ewc_lambda"] / 2 * ewc.penalty(model)
+            if skills_ewc is not None:
+                loss = loss + cfg["ewc_skills_lambda"] / 2 * skills_ewc.penalty(model)
             opt.zero_grad(set_to_none=True)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -107,13 +110,50 @@ def run_sleep(model, device, experiences: list[Experience], earlier: list[str], 
                 check()
     model.eval()
     kept = step
-    if best is not None and best[0] != step:
+    end = val[-1][1] if val and val[-1][0] == step else None
+    tolerance = cfg.get("keep_tolerance", 0.0)
+    if best is not None and best[0] != step and end is not None and best[1] - end <= tolerance:
+        # the validation set is small: one seed alone moves a night by ±3 pp (bench, 2026-11-06), so a best check
+        # within `tolerance` of the end is noise — the night's learning goes to the exam, which decides
+        log(f"sleep · keeping the end of the night (validation {100 * end:.1f}%, within "
+            f"{100 * tolerance:.1f} pp of the best {100 * best[1]:.1f}% at step {best[0]})")
+    elif best is not None and best[0] != step:
         model.load_state_dict(best[2])
         kept = best[0]
         log(f"sleep · keeping the weights of step {kept} (validation {100 * best[1]:.1f}%)")
     return {"steps": step, "kept_step": kept, "validation": val, "experiences": len(experiences),
             "lesson_loss": sum(a for a, _ in losses[-25:]) / max(1, len(losses[-25:])),
             "language_loss": sum(c for _, c in losses[-25:]) / max(1, len(losses[-25:]))}
+
+
+def estimate_skills_ewc(model, device, memories: list[tuple[str, str, bool]], n: int, seed: int = 0,
+                        k: int = 4) -> EWC | None:
+    """Importance of every weight for what the student already does right in this stage, at the current weights.
+
+    The nursery EWC protects only language; nothing held the skills of earlier school days, so a night traded them
+    (bench, 2026-11-05: agree −20, categories −12 while clarify +37). Squared gradients of the lesson loss, one
+    earlier lesson at a time (a batch mean squares away almost everything: the nursery Fisher sums to 1.7 over 34.6M
+    weights), normalised to mean 1 per weight, so `ewc_skills_lambda` reads on the same scale for any student size."""
+    right = [(p, t) for p, t, c in memories if c]
+    if not right:
+        return None
+    tok = load_tokenizer()
+    sample = random.Random(seed).sample(right, min(n, len(right)))
+    fisher = {name: torch.zeros_like(p, dtype=torch.float32) for name, p in model.named_parameters()}
+    model.eval()
+    for pair in sample:
+        model.zero_grad(set_to_none=True)
+        x, y = encode_pairs([pair], tok, device)
+        F.cross_entropy(model(x, k).float().transpose(1, 2), y, ignore_index=IGNORE).backward()
+        for name, p in model.named_parameters():
+            if p.grad is not None:
+                fisher[name] += p.grad.detach().float() ** 2
+    model.zero_grad(set_to_none=True)
+    total = sum(float(v.sum()) for v in fisher.values())
+    count = sum(v.numel() for v in fisher.values())
+    scale = count / max(total, 1e-30)
+    anchor = {name: p.detach().float().clone() for name, p in model.named_parameters()}
+    return EWC({name: v * scale for name, v in fisher.items()}, anchor)
 
 
 def estimate_ewc(model, device, batches: int, seed: int = 0) -> EWC:

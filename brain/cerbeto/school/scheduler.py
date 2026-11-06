@@ -24,8 +24,8 @@ from cerbeto.model import checkpoint
 from cerbeto.model.consolidation import EWC
 from cerbeto.model.student import pick_device
 from cerbeto.school.day import lesson_weights, run_day, teacher
-from cerbeto.school.sleep import Interrupted, estimate_ewc, run_sleep
-from cerbeto.school.validation import score, validation_set
+from cerbeto.school.sleep import Interrupted, estimate_ewc, estimate_skills_ewc, run_sleep
+from cerbeto.school.validation import by_skill, validation_set
 
 CKPT = paths.REPO / "checkpoints" / "school"
 RUN = paths.REPO / "runs" / "school"
@@ -123,6 +123,8 @@ class School:
         st = self.state
         model = self.load(st["active"])
         hippo = Hippocampus()
+        if n := hippo.retire_yes_no_without_comparison(STUDENT):
+            self.log(f"retired {n} yes/no memories whose thinking does not compare the claim with the fact")
         done_cycles = 0
         while not st["done"] and not self.stop() and (cycles is None or done_cycles < cycles):
             stage = st["stage"]
@@ -138,14 +140,20 @@ class School:
             if st["phase"] == "sleep":
                 experiences = hippo.pending(STUDENT)
                 earlier = st["passed"]
-                memories = hippo.memories(STUDENT, stage)
+                memories = hippo.memories(STUDENT, stage, unique=self.cfg["sleep"].get("dedup_memories", False))
+                self._night_first = None
                 self.log(f"── sleep · {len(experiences)} experiences · {len(memories)} memories of earlier days · "
                          f"replay of {earlier or 'nursery only'}")
+                skills_ewc = None
+                if self.cfg["sleep"].get("ewc_skills_lambda"):  # hold what earlier days taught (bench, spec 0005)
+                    n_less = self.cfg["sleep"].get("ewc_skills_lessons", 256)
+                    skills_ewc = estimate_skills_ewc(model, self.device, memories, n_less, seed=st["day"])
+                    self.log(f"skills consolidation from {n_less} earlier right lessons · "
+                             f"lambda {self.cfg['sleep']['ewc_skills_lambda']}")
                 try:
                     stats = run_sleep(model, self.device, experiences, earlier, self.cfg["sleep"], self.ewc(model),
                                       seed=st["day"], stop=self.stop, log=self.log, memories=memories,
-                                      validate=lambda: score(model, validation_set(stage), self.cfg["day"]["k"],
-                                                             self.device))
+                                      validate=lambda: self.validate(model, stage), skills_ewc=skills_ewc)
                 except Interrupted:
                     self.log("sleep interrupted — no new version, the student stays on " + st["active"])
                     break
@@ -197,6 +205,17 @@ class School:
         (CKPT / "LATEST").write_text(cand)
         self.save_state()
         return cand
+
+    def validate(self, model, stage: str) -> float:
+        """Validation of the night, logged per skill against the first check of the night."""
+        v = by_skill(model, validation_set(stage), self.cfg["day"]["k"], self.device)
+        first = getattr(self, "_night_first", None)
+        if first is None or first.get("_stage") != stage or set(first) - {"_stage"} != set(v):
+            first = self._night_first = {**v, "_stage": stage}
+        self.log("validation by skill · " + " · ".join(
+            f"{s.split('.')[-1]} {100 * x:.0f}" + (f" ({100 * (x - first[s]):+.0f})" if x != first[s] else "")
+            for s, x in v.items() if s != "_all"))
+        return v["_all"]
 
     def last_exam(self) -> Path:
         """The exam of the active version; for a grown version (not examined yet) the last promoted version's;

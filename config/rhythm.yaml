@@ -25,6 +25,10 @@ sleep:
   surprise_cap: 3          # a surprising experience (high loss) weighs up to ×3
   ewc_lambda: 50           # synaptic consolidation of the nursery language (and of every passed stage)
   ewc_batches: 20
+  ewc_skills_lambda: 0     # EWC on earlier right lessons: off — 1e-3…1e-1 changed nothing on the bench (2026-11-06)
+  ewc_skills_lessons: 256
+  dedup_memories: true     # replay each earlier prompt once (1739 instead of 18770): same night on the bench, less rote
+  keep_tolerance: 0.02     # a best check within 2 pp of the end is noise (±3 pp by seed alone): keep the end, the exam decides
 
 exam:
   min_gain_pp: 1           # improvement of the current stage that counts as progress

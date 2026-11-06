@@ -36,5 +36,15 @@ def validation_hashes(stages: list[str]) -> set[str]:
 
 
 def score(model, tasks: tuple[Task, ...], k: int, device) -> float:
+    return by_skill(model, tasks, k, device)["_all"]
+
+
+def by_skill(model, tasks: tuple[Task, ...], k: int, device) -> dict[str, float]:
+    """Accuracy per skill and overall (`_all`) on the validation set."""
     replies = answer(model, [t.prompt for t in tasks], k, device)
-    return sum(grade(t, r) for t, r in zip(tasks, replies)) / len(tasks)
+    right: dict[str, list[bool]] = {}
+    for t, r in zip(tasks, replies):
+        right.setdefault(t.skill, []).append(grade(t, r))
+    out = {s: sum(v) / len(v) for s, v in sorted(right.items())}
+    out["_all"] = sum(sum(v) for v in right.values()) / len(tasks)
+    return out

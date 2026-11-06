@@ -115,3 +115,67 @@ def test_yes_no_lessons_compare_before_deciding():
                 continue
             assert t.steps and t.steps[0].startswith("The question says:"), (s.name, t.prompt)
             assert t.steps[-1].endswith(f"the answer is {t.answer}."), (s.name, t.steps)
+
+
+def test_retire_keeps_one_thinking_format(tmp_path):
+    from cerbeto.memory.hippocampus import Experience, Hippocampus
+    h = Hippocampus(tmp_path / "b.sqlite")
+    def e(skill, target):
+        return Experience("s", 1, "preschool", skill, "code", "h", "p", target, "r", True, True)
+    h.add([e("social.agree_disagree", "<|think|> A dog says woof. So the answer is no. <|/think|><|answer|> No."),
+           e("social.agree_disagree", "<|think|> The question says: x. X. So that is right, and the answer is yes. "
+                                      "<|/think|><|answer|> Yes, that's right."),
+           e("social.opinion", "<|answer|> Yes, I like dogs because they are fun."),
+           e("world.categories", "<|answer|> No, a train is a vehicle.")])
+    h.mark_slept([1, 2, 3, 4])
+    assert h.retire_yes_no_without_comparison("s") == 2
+    assert h.retire_yes_no_without_comparison("s") == 0
+    kept = [t for _, t, _ in h.memories("s", "preschool")]
+    assert len(kept) == 2 and any("I like dogs" in t for t in kept) and any("The question says" in t for t in kept)
+
+
+def test_validation_by_skill_has_overall():
+    from cerbeto.school import validation
+
+    class Stub:
+        pass
+    tasks = tuple(generate(n, "train", i, unanswerable=False) for n in ("world.facts", "world.sizes") for i in range(3))
+    orig = validation.answer
+    validation.answer = lambda m, prompts, k, d: [t.reply for t in tasks[:3]] + ["nonsense"] * 3
+    try:
+        v = validation.by_skill(Stub(), tasks, 4, "cpu")
+    finally:
+        validation.answer = orig
+    assert v == {"world.facts": 1.0, "world.sizes": 0.0, "_all": 0.5}
+
+
+def test_skills_ewc_holds_what_was_right():
+    """Consolidation of earlier school days: per-lesson importance, mean 1, zero penalty at the anchor."""
+    import torch
+    from cerbeto.model.student import Student, StudentConfig
+    from cerbeto.school.sleep import estimate_skills_ewc
+    torch.manual_seed(0)
+    from cerbeto.tokenizer import load as load_tokenizer
+    model = Student(StudentConfig(vocab_size=load_tokenizer().get_vocab_size(), d_model=64, n_heads=2, head_dim=32,
+                                  mlp_hidden=128, n_prelude=1, n_core=1, n_coda=1, max_seq_len=128))
+    mem = [("<|human|> What does a dog say? <|student|>", "<|answer|> Woof.", True),
+           ("<|human|> Is a cat big? <|student|>", "<|answer|> No, a cat is small.", True),
+           ("<|human|> What is hot? <|student|>", "<|answer|> Fire.", False)]
+    assert estimate_skills_ewc(model, "cpu", [m for m in mem if not m[2]], 4) is None
+    ewc = estimate_skills_ewc(model, "cpu", mem, 4, k=1)
+    f = torch.cat([v.flatten() for v in ewc.fisher.values()])
+    assert abs(f.mean().item() - 1) < 1e-4
+    assert ewc.penalty(model).item() == 0
+    with torch.no_grad():
+        next(model.parameters()).add_(0.1)
+    assert ewc.penalty(model).item() > 0
+
+
+def test_unique_memories_keep_the_latest_lesson(tmp_path):
+    from cerbeto.memory.hippocampus import Experience, Hippocampus
+    h = Hippocampus(tmp_path / "b.sqlite")
+    h.add([Experience("s", d, "preschool", "world.facts", "code", "h", p, t, "r", True, True)
+           for d, p, t in ((1, "p1", "old"), (2, "p1", "new"), (2, "p2", "x"))])
+    h.mark_slept([1, 2, 3])
+    assert len(h.memories("s", "preschool")) == 3
+    assert h.memories("s", "preschool", unique=True) == [("p2", "x", True), ("p1", "new", True)]
