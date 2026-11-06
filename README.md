@@ -36,7 +36,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 | [0005](specs/0005-school-day-sleep-exam.md) school: day, sleep, exam | **in progress** (preschool, second run, day 18); open: neuron renewal, self-correction format, brain API |
 | [0006](specs/0006-rails-admin-panel-and-chat.md) admin panel and chat (Rails) | on hold: `cerbeto panel` and `cerbeto chat` are enough for now |
 | [0007](specs/0007-offline-distribution.md) offline distribution | someday, maybe — not planned |
-| [0008](specs/0008-growth-experiment-100m.md) growth experiment (100M, more data) | **in progress**: grown arm training |
+| [0008](specs/0008-growth-experiment-100m.md) growth experiment (deep 283M, more data) | **in progress**: deep arm training |
 
 **Hypotheses**
 
@@ -142,12 +142,12 @@ Details: `runs/school/exams/v0017.json`, [specs/0005](specs/0005-school-day-slee
 **Question:** preschool sits at ~68% and no night setting moves it. Is the student short of **capacity** or of **data** (300M tokens, mostly stories, plus 10.7M in school)? Do request → reply pairs make it usable in a talk?
 
 **Setup**
-- **Grown arm:** `v0017` grown function-preservingly to **99.1M** — width 512 → 896, heads 16 → 28, MLP 1792 → 3072, blocks unchanged (2 + 4 × K + 2). After growth it answers exactly like `v0017`; only training uses the new neurons.
+- **Deep arm (like Qwen2.5-0.5B):** `v0017` grown function-preservingly to **282.6M** — width 512 → 896, heads 16 → 28, MLP 1792 → 3072; the recurrent core unrolled (4 blocks × K = 4 → 16 separate blocks) plus 4 new blocks: **24 blocks, no loop (K = 1)**. After growth it answers exactly like `v0017`. Replaced the first, wide 99M arm (8 blocks), stopped at 4.8M tokens: at this size deep-and-thin beats wide (MobileLLM, SmolLM).
 - **Same-size arm:** `v0017` at 34.6M on the same stream, to separate the effect of size from the effect of data.
 - **Stream, 80M tokens per arm:** two of three steps are shelf windows (stories 40%, speech 30%, books 18%, edu 9%, Wikipedia 3%; every token learned); every third step is request → reply pairs (story on request 55%, preschool lessons 40% — never an exam prompt, who the student is 5%; student's turn learned).
 - **Measured for `v0017` and both arms:** validation loss per shelf, stories on request (held-out phrasings, graded by the teacher), nursery conversation probe, preschool exam.
 
-**Why 80M tokens:** a deliberate budget, ~18 h on this Mac (~1,200 tokens/s). A quick check whether 99M + request → reply data works at all, not training to the end. One pass over the library (670M) would take ~7 days and makes sense only if the 18 h result is promising. A longer run can continue from the current step (the learning-rate schedule extends).
+**Why 80M tokens:** a deliberate budget, ~50 h for the deep arm on this Mac (~450 tokens/s; ~7 GB GPU memory, fits a 16 GB Mac). A quick check whether 99M + request → reply data works at all, not training to the end. One pass over the library (670M) would take ~7 days and makes sense only if the 18 h result is promising. A longer run can continue from the current step (the learning-rate schedule extends).
 
 **What 80M shows from each shelf:**
 
@@ -162,7 +162,7 @@ Details: `runs/school/exams/v0017.json`, [specs/0005](specs/0005-school-day-slee
 The rest are request → reply pairs. Seeing all 670M once needs a ~10× longer run (~7 days).
 
 **Reading the result**
-- **80M is little for 99M parameters:** the Chinchilla rule of thumb is ~20 tokens per parameter (~2B); 80M is ~4%. No gain at 80M does **not** show that size does not help.
+- **80M is little for 283M parameters:** the Chinchilla rule of thumb is ~20 tokens per parameter (~5.7B); 80M is ~1.4%. No gain at 80M does **not** show that size does not help.
 - **More data, before any crawling:** more FineWeb-Edu shards (one gave 4.4M tokens at grade ≤ 4, there are hundreds); a reading-level limit rising with each passed grade; synthetic child-level textbooks (Cosmopedia *young children*, or texts by the local teacher for the curriculum). Every new shelf passes the same filters and the exam leak check. Repeating a shelf helps up to ~4 passes.
 
 **Result:** pending.

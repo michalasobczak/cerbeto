@@ -13,6 +13,7 @@ What has actually been delivered, by date (newest first). Intent of changes: `sp
 - README: tables of the datasets and of what the student has seen in each phase.
 
 ### Changed
+- Growth experiment (0008): the wide 99M arm stopped and replaced by a deep arm like Qwen2.5-0.5B — core unrolled (`growth.unroll_core`, same function at K = 1) plus 4 blocks: 24 blocks, 282.6M, no loop; ~450 tokens/s, ~7 GB GPU memory.
 - Control student dropped (0003, 0005): not needed; growth is judged by its own logs and the school's results.
 - 0006 Rails panel on hold — the brain's `cerbeto panel` and `cerbeto chat` are enough for now; 0007 offline distribution: someday, maybe.
 - Spec 0008: growth experiment — `v0017` grown to 99.1M vs the same size, 80M tokens of shelves + request → reply pairs, evaluation and how to read it.

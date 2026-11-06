@@ -101,3 +101,12 @@ def test_pruning_removes_persistently_useless_neurons(trained_tiny):
     pruned = growth.apply(model, "prune_mlp", data, k=2, max_params=10**8, max_delta_loss=0.01, keep=plan)
     assert pruned.cfg.mlp_hidden == model.cfg.mlp_hidden - 10
     assert growth.behaviour_delta(model, pruned, data, k=2)[0] < 1e-5
+
+
+def test_unroll_core_at_k1_computes_what_the_loop_did_at_k(trained_tiny):
+    model, _, data = trained_tiny
+    new, event = growth.unroll_core(model, times=3)
+    assert new.cfg.n_core == 3 * model.cfg.n_core and event["params_after"] > event["params_before"]
+    dlogits, dloss = growth.behaviour_delta(model, new, data, k=3, k_new=1)
+    assert dlogits < 1e-4 and dloss <= 0.01
+    assert new.num_params() == count_params(new.cfg)

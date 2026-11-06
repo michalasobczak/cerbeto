@@ -42,6 +42,12 @@ SHELF_MIX = {"s0_stories": 0.40, "s0_speech": 0.30, "s1_books": 0.18, "s3_edu": 
 PAIR_MIX = {"story": 0.55, "lesson": 0.40, "self": 0.05}
 CFG = {"seq_len": 512, "windows": 8, "pairs": 8, "pair_every": 3, "lr": 3e-4, "warmup": 300, "min_lr": 0.1,
        "weight_decay": 0.1, "k_min": 1, "k_max": 6, "k_eval": 4, "save_minutes": 30, "max_story_tokens": 400}
+# passes of the core per arm: the deep arm has no loop (its core is unrolled), so K = 1 in training and evaluation
+ARM_K = {"deep": {"k_min": 1, "k_max": 1, "k_eval": 1}}
+
+
+def ks(arm: str) -> dict:
+    return {k: CFG[k] for k in ("k_min", "k_max", "k_eval")} | ARM_K.get(arm, {})
 
 # --- request → reply data ---------------------------------------------------------------------------
 GENERIC = ["Tell me a story.", "Can you tell me a story?", "Tell me a story, please.", "I want a story.",
@@ -121,6 +127,14 @@ def start_model(arm: str, device):
     for op, kw in (("grow_model_dim", {"new_d": 896}), ("grow_width", {"extra_heads": 12, "extra_mlp": 1280})):
         model = growth.apply(model, op, probe, k=CFG["k_eval"], max_params=100_000_000, max_delta_loss=0.01,
                              log_path=log, reason="final test: ~100M", std=0.01, **kw)
+    if arm == "deep":
+        # like Qwen2.5-0.5B (24 blocks at d 896): the core run 4 times becomes 16 blocks (same function at K = 1),
+        # then 4 new blocks with zero output: 2 + 20 + 2 = 24 blocks, ~283M parameters
+        model = growth.apply(model, "unroll_core", probe, k=CFG["k_eval"], k_new=1, max_params=300_000_000,
+                             max_delta_loss=0.01, log_path=log, reason="final test: deep like Qwen", times=CFG["k_eval"])
+        for _ in range(4):
+            model = growth.apply(model, "grow_depth", probe, k=1, max_params=300_000_000, max_delta_loss=0.01,
+                                 log_path=log, reason="final test: deep like Qwen", std=0.01)
     return model
 
 
@@ -159,11 +173,12 @@ def train(arm: str, tokens: float, seed: int = 0) -> None:
     print(f"{arm}: {model.num_params():,} parameters · step {state['step']}/{total_steps} · {device}", flush=True)
     model.train()
     saved, t0, t0_tokens, recent = time.time(), time.time(), state["tokens"], []
+    kk = ks(arm)
     while state["step"] < total_steps and not stop["now"]:
         step = state["step"]
         for g in opt.param_groups:
             g["lr"] = lr_at(step, total_steps)
-        k = int(rng.integers(CFG["k_min"], CFG["k_max"] + 1))
+        k = int(rng.integers(kk["k_min"], kk["k_max"] + 1))
         if step % CFG["pair_every"] == CFG["pair_every"] - 1:
             x, y = encode_pairs(pairs.batch(CFG["pairs"]), tok, device, max_len=CFG["seq_len"])
             logits = model(x, k)
@@ -190,7 +205,7 @@ def train(arm: str, tokens: float, seed: int = 0) -> None:
                    "lr": round(lr_at(step, total_steps), 6), "tok_s": round((state["tokens"] - t0_tokens) / max(1, time.time() - t0))}
             recent = []
             if state["step"] % 1000 == 0:
-                row["valid"] = validation(model, valid)
+                row["valid"] = validation(model, valid, kk["k_eval"])
                 model.train()
             log.write(json.dumps(row) + "\n")
             log.flush()
@@ -223,9 +238,9 @@ def save(model, opt, arm: str, state: dict) -> None:
 
 
 @torch.no_grad()
-def validation(model, valid: dict) -> dict:
+def validation(model, valid: dict, k: int) -> dict:
     model.eval()
-    out = {s: round(sum(model.loss(b[:, :-1], b[:, 1:], CFG["k_eval"]).item() for b in bs) / len(bs), 4)
+    out = {s: round(sum(model.loss(b[:, :-1], b[:, 1:], k).item() for b in bs) / len(bs), 4)
            for s, bs in valid.items()}
     release(next(model.parameters()).device)
     return out
@@ -233,20 +248,20 @@ def validation(model, valid: dict) -> dict:
 
 # --- evaluation -------------------------------------------------------------------------------------
 @torch.no_grad()
-def tell(model, ask: str, device, max_new_tokens: int = 220) -> str:
+def tell(model, ask: str, device, k: int, max_new_tokens: int = 220) -> str:
     tok = load_tokenizer()
     ids = torch.tensor([[tok.token_to_id("<|eos|>")] + tok.encode(f"<|human|> {ask}\n<|student|>").ids], device=device)
-    out = model.generate(ids, max_new_tokens, k=CFG["k_eval"], temperature=0.7, top_k=40)[0, ids.shape[1]:].tolist()
+    out = model.generate(ids, max_new_tokens, k=k, temperature=0.7, top_k=40)[0, ids.shape[1]:].tolist()
     stops = {tok.token_to_id(t) for t in ("<|eos|>", "<|human|>", "<|student|>")}
     cut = next((i for i, t in enumerate(out) if t in stops), len(out))
     return re.sub(r"<\|[^|]*\|>", "", tok.decode(out[:cut], skip_special_tokens=False)).strip()
 
 
-def story_probe(model, device) -> dict:
+def story_probe(model, device, k: int) -> dict:
     torch.manual_seed(0)
     items = []
     for ask in STORY_PROBE:
-        reply = tell(model, ask, device)
+        reply = tell(model, ask, device, k)
         content = chat([{"role": "system", "content": STORY_RUBRIC},
                         {"role": "user", "content": f'Request: "{ask}"\nStudent: "{reply}"'}],
                        temperature=0.0, json_output=True)
@@ -268,14 +283,15 @@ def evaluate(name: str) -> dict:
     model = checkpoint.load(path, device).eval()
     valid = {s: ShelfStream(s, "valid", CFG["seq_len"]).fixed_batches(8, 8, device, seed=1)
              for s in ("s0_speech", "s0_stories")}
-    out = {"name": name, "params": model.num_params(), "valid": validation(model, valid)}
+    k = ks(name)["k_eval"]
+    out = {"name": name, "params": model.num_params(), "k": k, "valid": validation(model, valid, k)}
     print(name, out["valid"], flush=True)
-    out["story"] = story_probe(model, device)
+    out["story"] = story_probe(model, device, k)
     print(name, "story", out["story"]["mean_score"], flush=True)
     torch.manual_seed(0)
-    out["conversation"] = conversation.evaluate(model, CFG["k_eval"], device)
+    out["conversation"] = conversation.evaluate(model, k, device)
     print(name, "conversation", out["conversation"]["fitting"], flush=True)
-    exam = school_exam.evaluate(model, CFG["k_eval"], device)
+    exam = school_exam.evaluate(model, k, device)
     from cerbeto.school.scheduler import stage_scores
     out["preschool"] = stage_scores(exam["results"]).get("preschool")
     out["exam"] = {s: {v: r[v]["accuracy"] for v in ("id", "ood_hard", "ood_combo")}
@@ -289,7 +305,7 @@ def evaluate(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval"])
-    p.add_argument("arm", help="control | grown (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     a = p.parse_args()
     train(a.arm, a.tokens) if a.what == "train" else evaluate(a.arm)

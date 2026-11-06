@@ -60,6 +60,16 @@ def grow_depth(model: Student, std: float = 0.01) -> tuple[Student, dict]:
     return new, _event("grow_depth", model, new, where=f"core.{len(new.core) - 1}")
 
 
+def unroll_core(model: Student, times: int) -> tuple[Student, dict]:
+    """Untie the recurrent core: its blocks run `times` times become `times` × n_core separate blocks with the same
+    weights, so the student at K = 1 computes exactly what it computed at K = `times`; afterwards the copies train
+    apart (a plain deep stack, like Llama or Qwen)."""
+    new = copy.deepcopy(model)
+    new.core = nn.ModuleList(copy.deepcopy(b) for _ in range(times) for b in model.core)
+    new.cfg = model.cfg.with_(n_core=model.cfg.n_core * times)
+    return new, _event("unroll_core", model, new, times=times)
+
+
 def grow_width(model: Student, extra_mlp: int = 0, extra_heads: int = 0, std: float = 0.01) -> tuple[Student, dict]:
     """Add MLP neurons and/or attention heads to every block (readers random, writers zero)."""
     new = copy.deepcopy(model)
@@ -133,19 +143,23 @@ def prune_mlp(model: Student, keep: dict[int, torch.Tensor]) -> tuple[Student, d
 
 
 @torch.no_grad()
-def behaviour_delta(old: Student, new: Student, probe: torch.Tensor, k: int) -> tuple[float, float]:
-    """Max |Δ logits| and |Δ loss| between two students on a probe batch of token windows."""
+def behaviour_delta(old: Student, new: Student, probe: torch.Tensor, k: int,
+                    k_new: int | None = None) -> tuple[float, float]:
+    """Max |Δ logits| and |Δ loss| between two students on a probe batch of token windows (`k_new`: passes of the
+    new student's core, when they differ, as after `unroll_core`)."""
     old.eval(), new.eval()
     x, y = probe[:, :-1], probe[:, 1:]
-    lo, ln = old(x, k).float(), new(x, k).float()
-    dl = abs(old.loss(x, y, k).item() - new.loss(x, y, k).item())
+    kn = k if k_new is None else k_new
+    lo, ln = old(x, k).float(), new(x, kn).float()
+    dl = abs(old.loss(x, y, k).item() - new.loss(x, y, kn).item())
     return (lo - ln).abs().max().item(), dl
 
 
 def apply(model: Student, op: str, probe: torch.Tensor, *, k: int, max_params: int, max_delta_loss: float,
-          log_path: Path | None = None, reason: str = "", **kwargs) -> Student:
+          log_path: Path | None = None, reason: str = "", k_new: int | None = None, **kwargs) -> Student:
     """Run a growth/pruning operator with the parameter limit and the |Δ loss| guard; log the outcome."""
-    ops = {"grow_depth": grow_depth, "grow_width": grow_width, "grow_model_dim": grow_model_dim, "prune_mlp": prune_mlp}
+    ops = {"grow_depth": grow_depth, "grow_width": grow_width, "grow_model_dim": grow_model_dim, "prune_mlp": prune_mlp,
+           "unroll_core": unroll_core}
     new, event = ops[op](model, **kwargs)
     event.update(reason=reason, time=time.strftime("%Y-%m-%dT%H:%M:%S"))
     if count_params(new.cfg) != new.num_params():
@@ -153,7 +167,7 @@ def apply(model: Student, op: str, probe: torch.Tensor, *, k: int, max_params: i
     try:
         if new.num_params() > max_params:
             raise GrowthRejected(f"{op} would reach {new.num_params():,} > limit {max_params:,} parameters")
-        dlogits, dloss = behaviour_delta(model, new, probe, k)
+        dlogits, dloss = behaviour_delta(model, new, probe, k, k_new)
         event.update(max_delta_logits=dlogits, delta_loss=dloss)
         if dloss > max_delta_loss:
             raise GrowthRejected(f"{op} changed loss by {dloss:.4f} > {max_delta_loss}")

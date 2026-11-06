@@ -1,6 +1,6 @@
 # 0008 — Growth experiment: a 100M student and more training data
 
-Status: in progress (2026-11-06) — training of the grown arm running; same-size arm and evaluation pending · Depends on: 0002, 0004, 0005 · Unblocks: decision on student size and library growth
+Status: in progress (2026-11-06) — the deep arm (283M, 24 blocks like Qwen2.5-0.5B) is training; the wide 99M arm was stopped at 4.8M tokens and dropped; same-size arm and evaluation pending · Depends on: 0002, 0004, 0005 · Unblocks: decision on student size and library growth
 
 ## 1. TL;DR
 We grow the school's best version `v0017` (34.6M) function-preservingly to **99.1M** and train it on 80M tokens: shelf windows plus request → reply pairs. A same-size arm (34.6M) gets the same stream. Proof: both arms and `v0017` measured the same way — shelf validation loss, stories on request, the nursery conversation probe, the preschool exam.
@@ -75,6 +75,11 @@ The rest are request → reply pairs. One pass over all 670M would need a ~10× 
 - **Rollback:** none needed — the school's checkpoints are not touched.
 
 ## 9. Additional Information
+- **Change (2026-11-06, the user's decision): deep instead of wide.** At ~100M, deep-and-thin models beat wide-and-shallow ones (MobileLLM, 2024: 30 blocks at d 576 over 12 at d 768; SmolLM-135M follows it), and the student's errors (question forms, multi-step) and the flat K curve point away from more width. The wide 99M arm (8 blocks, 20 effective at K = 4) was stopped at 4.8M tokens and its progress deleted. New **deep arm**, closer to Qwen2.5-0.5B (24 blocks at d 896):
+  - `v0017` grown to d 896, 28 heads, MLP 3072 (as before), then the recurrent core **unrolled**: its 4 blocks run 4 times become 16 separate blocks with the same weights (`growth.unroll_core`), so at K = 1 it computes exactly what `v0017` did at K = 4; then 4 new core blocks with zero output (`grow_depth`): **2 + 20 + 2 = 24 blocks, 282.6M parameters**, Δ loss 0.0 at every step.
+  - No loop: K = 1 in training and evaluation.
+  - Measured on the M1 Pro: ~450 tokens/s with activation checkpointing, so 80M tokens take **~50 h**; GPU memory ~7 GB (driver), so it fits a 16 GB Mac.
+  - The 34.6M same-size arm stays as the comparison.
 - **Decision (2026-11-06, the user's):** the 80M budget is deliberate — a quick check of the direction, not training to the end. A full pass over the library (~7 days) only if the result is promising.
 - **If more data is needed**, before any crawling: more FineWeb-Edu shards (one gave 4.4M tokens at grade ≤ 4; there are hundreds); a reading-level limit rising with each passed grade; synthetic child-level textbooks (Cosmopedia *young children*, or texts by the local teacher for the curriculum). Every new shelf goes through the 0001 filters and the exam leak check. Repeating a shelf helps up to ~4 passes, then less (Muennighoff et al., 2023).
 - **Sources:** Chinchilla scaling (Hoffmann et al., 2022); data-constrained scaling (Muennighoff et al., 2023); function-preserving growth (0002).
