@@ -206,6 +206,34 @@ def bench() -> dict:
     return {"base": cfg["base"], "variants": out, "log": tail, "log_name": latest.stem if latest else None}
 
 
+FINAL = paths.REPO / "runs" / "final"
+
+
+def final() -> dict:
+    """Final test (cerbeto/train/final_test.py): each arm's training curve and progress, and the evaluations."""
+    arms = []
+    for d in sorted(p for p in FINAL.glob("*") if p.is_dir()) if FINAL.exists() else []:
+        state = json.loads((d / "state.json").read_text()) if (d / "state.json").exists() else {}
+        rows = _json_lines(d / "log.jsonl")
+        log = d / "log.jsonl"
+        fresh = log.exists() and time.time() - log.stat().st_mtime < 900
+        total = int(state.get("target_tokens", 0) / 4096) or None
+        arms.append({"name": d.name, "state": state, "total_steps": total, "rows": rows[-1500:][::max(1, len(rows[-1500:]) // 400)],
+                     "last": rows[-1] if rows else None, "valid": [r for r in rows if "valid" in r],
+                     "running": fresh and (total is None or (rows and rows[-1]["step"] < total)),
+                     "growth": _json_lines(d / "growth_log.jsonl")})
+    evals = []
+    for f in sorted(FINAL.glob("eval_*.json")) if FINAL.exists() else []:
+        e = json.loads(f.read_text())
+        if e:
+            evals.append({"name": e["name"], "params": e["params"], "valid": e["valid"], "preschool": e.get("preschool"),
+                          "story": {k: e["story"][k] for k in ("mean_score", "stories")} | {"items": e["story"]["items"]},
+                          "conversation": {"fitting": e["conversation"]["fitting"],
+                                           "by_category": e["conversation"]["by_category"]},
+                          "exam": e.get("exam")})
+    return {"arms": arms, "evals": evals}
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args):        # quiet
         pass
@@ -225,7 +253,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(PAGE.read_bytes(), "text/html; charset=utf-8")
             data = {"/api/status": status, "/api/lessons": lambda: lessons(q), "/api/exam": lambda: exam(q),
                     "/api/skills": lambda: skills(int(q["day"]) if q.get("day") else None),
-                    "/api/bench": bench}.get(url.path)
+                    "/api/bench": bench, "/api/final": final}.get(url.path)
             if data is None:
                 return self._send(b"not found", "text/plain", 404)
             return self._send(json.dumps(data(), default=str).encode(), "application/json")

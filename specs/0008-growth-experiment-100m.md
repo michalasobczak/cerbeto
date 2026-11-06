@@ -39,8 +39,8 @@ The rest are request → reply pairs. One pass over all 670M would need a ~10× 
 ## 4. Artefact Inventory
 | Artefact | Kind | Status |
 |---|---|---|
-| `brain/cerbeto/train/final_test.py` (`train grown|control`, `eval`) | system | created, not committed |
-| Panel tab *Final test* (`brain/cerbeto/panel.py`, `panel.html`) | system | created, not committed |
+| `brain/cerbeto/train/final_test.py` (`train grown|control`, `eval`) | system | created |
+| Panel tab *Final test* (`brain/cerbeto/panel.py`, `panel.html`) | system | created |
 | `checkpoints/final/{grown,control}/` | data | grown: in progress |
 | `runs/final/{grown,control}/` (state, log, evaluation) | data | grown: in progress |
 

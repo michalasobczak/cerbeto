@@ -38,7 +38,7 @@ tr.row{cursor:pointer}tr.row:hover,tr.row.sel{background:var(--bar)}.tag{font-si
 <body>
 <header>
   <h1>Cerbeto · school</h1><span id="pill" class="pill"></span>
-  <nav><button data-t="overview" class="on">Overview</button><button data-t="exams">Exams</button><button data-t="lessons">Lessons</button><button data-t="log">Log</button><button data-t="bench">Bench</button></nav>
+  <nav><button data-t="overview" class="on">Overview</button><button data-t="exams">Exams</button><button data-t="lessons">Lessons</button><button data-t="log">Log</button><button data-t="bench">Bench</button><button data-t="final">Final test</button></nav>
   <span class="mut" id="upd" style="margin-left:auto"></span>
 </header>
 <main>
@@ -86,6 +86,16 @@ tr.row{cursor:pointer}tr.row:hover,tr.row.sel{background:var(--bar)}.tag{font-si
     <div id="b-sel" style="flex:none"></div><pre id="b-log" style="flex:1;min-height:0;overflow-y:auto"></pre></div></div>
 </div></section>
 
+<section id="final" class="hide"><div class="split">
+  <div class="card"><h2>Final test — v0017 grown to ~100M, trained on request → reply data</h2><div class="fill" style="overflow-y:auto">
+    <p class="note">Start: school v0017 (34.6M), grown function-preservingly to 99.1M (d 512→896, 28 heads, MLP 3072).
+      Two of three steps are shelf windows (stories 40%, speech 30%, books 18%, edu 9%, Wikipedia 3%; every token learned);
+      every third step is request → reply pairs (a story on request 55%, preschool lessons 40%, who the student is 5%; only the
+      student's turn learned). Then v0017 and the grown model are measured the same way.</p>
+    <div id="f-arms"></div></div></div>
+  <div class="card"><h2>Evaluation</h2><div class="fill" style="overflow-y:auto" id="f-eval"></div></div>
+</div></section>
+
 <section id="log" class="hide"><div class="card" style="height:100%"><div class="fill" style="display:flex;flex-direction:column;justify-content:flex-end"><pre id="logtext"></pre></div></div></section>
 </main>
 <script>
@@ -97,12 +107,12 @@ const ask=t=>esc(t).replace(/&lt;\|human\|&gt;\s*/,"").replace(/\s*&lt;\|student
 const rowsFit=el=>Math.max(8,Math.floor((el.closest(".card").clientHeight-90)/22));
 let tab="overview", off=0, eoff=0, S=null;
 function go(t){tab=t;document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x.dataset.t===t));
-  ["overview","exams","lessons","log","bench"].forEach(x=>$("#"+x).classList.toggle("hide",x!==t));refresh()}
+  ["overview","exams","lessons","log","bench","final"].forEach(x=>$("#"+x).classList.toggle("hide",x!==t));refresh()}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.t));
 const cls=(v,t)=>v==null?"":v>=t?"ok":v>=t-0.15?"warn":"bad";
 
 async function refresh(){
-  if(tab==="lessons") return loadLessons(); if(tab==="exams") return loadExam(); if(tab==="bench") return loadBench();
+  if(tab==="lessons") return loadLessons(); if(tab==="exams") return loadExam(); if(tab==="bench") return loadBench(); if(tab==="final") return loadFinal();
   const d=await (await fetch("/api/status")).json(); if(d.error){$("#upd").textContent=d.error;return} S=d;
   $("#upd").textContent="updated "+d.now.slice(11);
   const st=d.state, pill=$("#pill"); pill.textContent=!st?"not started":d.running?"running":"stopped"; pill.style.background=!st?"#888":d.running?"var(--ok)":"var(--bad)";
@@ -237,7 +247,44 @@ async function loadBench(){
   $("#b-log").textContent=(d.log_name?`— ${d.log_name}.log —\n`:"")+d.log.join("\n"); $("#b-log").scrollTop=1e9;
 }
 
-refresh(); setInterval(()=>{if(tab==="overview"||tab==="log"||tab==="bench")refresh()},5000);
+// ── final test ──
+function lineChart(series,{w=600,h=190,xlab="",fmt=v=>v.toFixed(2)}={}){
+  const pts=series.flatMap(s=>s.pts); if(!pts.length) return '<p class="mut">no data yet</p>';
+  const x0=Math.min(...pts.map(p=>p[0])),x1=Math.max(...pts.map(p=>p[0]),x0+1),lo=Math.min(...pts.map(p=>p[1])),hi=Math.max(...pts.map(p=>p[1]),lo+.01);
+  const xs=x=>34+(x-x0)*(w-44)/(x1-x0),ys=v=>h-18-(v-lo)/(hi-lo)*(h-28);
+  let svg=`<svg viewBox="0 0 ${w} ${h}" style="height:${h+10}px">`;
+  for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4;svg+=`<line x1="34" x2="${w-10}" y1="${ys(v)}" y2="${ys(v)}" stroke="var(--line)"/><text x="30" y="${ys(v)+3}" font-size="9" text-anchor="end" fill="var(--mut)">${fmt(v)}</text>`}
+  for(const s of series){ if(s.dots) s.pts.forEach(p=>svg+=`<circle cx="${xs(p[0])}" cy="${ys(p[1])}" r="3" fill="${s.color}"><title>${s.name} ${p[1].toFixed(3)}</title></circle>`);
+    else svg+=`<polyline fill="none" stroke="${s.color}" stroke-width="1.5" points="${s.pts.map(p=>xs(p[0])+","+ys(p[1])).join(" ")}"/>`}
+  svg+=`<text x="${w-10}" y="${h-4}" font-size="9" text-anchor="end" fill="var(--mut)">${xlab}</text></svg>`;
+  return svg+`<div class="mut legend">${series.map(s=>`<span style="color:${s.color}">● ${esc(s.name)}</span>`).join("")}</div>`}
+async function loadFinal(){
+  const d=await (await fetch("/api/final")).json(); if(d.error){$("#f-arms").textContent=d.error;return}
+  $("#f-arms").innerHTML=d.arms.length?d.arms.map(a=>{const l=a.last,st=a.state,tot=a.total_steps,step=l?.step??0,
+      eta=l&&tot&&l.tok_s?(tot-step)*4096*(5/6)/l.tok_s:null, M=x=>(x/1e6).toFixed(1)+"M";
+    const sm=(rows,k)=>rows.filter(r=>r[k]>0).map(r=>[r.tokens/1e6,r[k]]);
+    return `<div style="margin-bottom:14px"><div><b>${esc(a.name)}</b> · ${(st.params||a.growth.at(-1)?.params_after||0).toLocaleString()} parameters ·
+      <span class="${a.running?"warn":"mut"}">${a.running?"training":step>=tot?"finished":"stopped"}</span></div>
+      <div class="bar"><i style="width:${tot?100*step/tot:0}%"></i></div>
+      <div class="mut">step ${step.toLocaleString()} / ${tot?.toLocaleString()??"–"} · ${M(l?.tokens??0)} tokens · ${l?.tok_s??"–"} tok/s · lr ${l?.lr??"–"}${eta!=null&&a.running?` · about ${dur(eta)} left`:""}</div>
+      <h2 style="margin-top:10px">training loss (mean of the last 100 steps)</h2>
+      ${lineChart([{name:"shelf windows",color:"#3b6fd8",pts:sm(a.rows,"shelf_loss")},{name:"request → reply pairs",color:"#d64545",pts:sm(a.rows,"pair_loss")}],{xlab:"million tokens →"})}
+      <h2 style="margin-top:10px">validation loss (every 1000 steps)</h2>
+      ${lineChart([{name:"speech",color:"#1f9d55",dots:1,pts:a.valid.map(r=>[r.tokens/1e6,r.valid.s0_speech])},{name:"stories",color:"#b7800f",dots:1,pts:a.valid.map(r=>[r.tokens/1e6,r.valid.s0_stories])}],{xlab:"million tokens →",h:150})}
+      ${a.growth.length?`<p class="note">growth: ${a.growth.map(g=>`${esc(g.op)} ${(g.params_before/1e6).toFixed(1)}M → ${(g.params_after/1e6).toFixed(1)}M (Δ loss ${g.delta_loss})`).join(" · ")}</p>`:""}</div>`}).join(""):'<p class="mut">no run yet</p>';
+  const E=d.evals; if(!E.length){$("#f-eval").innerHTML='<p class="mut">Measured when training finishes: shelf validation loss, stories on request (10 held-out phrasings, graded 1–5 by the teacher), the nursery conversation probe (50 situations, teacher) and the preschool exam.</p>';return}
+  const f=x=>x==null?"–":x.toFixed(3);
+  let h=`<table><tr><th>model</th><th class="n">params</th><th class="n">speech loss</th><th class="n">stories loss</th><th class="n">story score</th><th class="n">stories ≥4</th><th class="n">conversation</th><th class="n">preschool</th></tr>`+
+    E.map(e=>`<tr><td><b>${esc(e.name)}</b></td><td class="n">${(e.params/1e6).toFixed(1)}M</td><td class="n">${f(e.valid.s0_speech)}</td><td class="n">${f(e.valid.s0_stories)}</td>
+      <td class="n">${e.story.mean_score.toFixed(1)}</td><td class="n">${pct(e.story.stories)}</td><td class="n">${pct(e.conversation.fitting)}</td><td class="n">${pct(e.preschool)}</td></tr>`).join("")+"</table>";
+  const cats=Object.keys(E[0].conversation.by_category);
+  h+=`<h2 style="margin-top:12px">conversation probe by situation</h2><table><tr><th>situation</th>${E.map(e=>`<th class="n">${esc(e.name)}</th>`).join("")}</tr>`+
+    cats.map(c=>`<tr><td>${esc(c)}</td>${E.map(e=>`<td class="n">${pct(e.conversation.by_category[c])}</td>`).join("")}</tr>`).join("")+"</table>";
+  h+=`<h2 style="margin-top:12px">stories on request</h2>`+E[0].story.items.map((it,i)=>`<div style="margin-bottom:10px"><b>${esc(it.ask)}</b>`+
+    E.map(e=>`<div><span class="tag">${esc(e.name)} · ${e.story.items[i].score}/5</span> ${esc(e.story.items[i].reply)}</div>`).join("")+"</div>").join("");
+  $("#f-eval").innerHTML=h}
+
+refresh(); setInterval(()=>{if(tab==="overview"||tab==="log"||tab==="bench"||tab==="final")refresh()},5000);
 window.onresize=()=>{if(tab!=="overview")refresh()};
 </script>
 </body>
