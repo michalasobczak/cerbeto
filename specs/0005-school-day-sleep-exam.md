@@ -1,6 +1,6 @@
 # 0005 — School: day, sleep, exam, growth
 
-Status: in progress (2026-11-05) — teacher exam, day, hippocampus, sleep, exam gates, versions, `cerbeto school run` and `cerbeto school grow` delivered; the school runs (preschool, second run); open: automatic growth controller, neuron renewal, self-correction format, brain API, control student · Depends on: 0002, 0003, 0004 · Unblocks: 0006, 0007
+Status: in progress (2026-11-05) — teacher exam, day, hippocampus, sleep, exam gates, versions, `cerbeto school run` and `cerbeto school grow` delivered; the school runs (preschool, second run); open: automatic growth controller, neuron renewal, self-correction format, brain API; control student dropped (2026-11-06) · Depends on: 0002, 0003, 0004 · Unblocks: 0006, 0007
 
 ## 1. TL;DR
 An automatic learning loop: **day** (lessons with a large LLM teacher, experiences recorded in the hippocampus) → **sleep** (consolidation into the weights with replay and synaptic consolidation) → **exam** (gates) → version promotion / rollback / growth. Proof: after N cycles the student's result on the grade's `ood` exams rises, and forgetting stays within 2 pp.
@@ -18,7 +18,7 @@ This is the core of the MVP priority: a measurable improvement in reasoning on n
 - **Exam after sleep** + the 0004 gates → promotion or automatic rollback.
 - **Growth controller:** no improvement of ≥ 1 pp on the current grade's exam for 3 cycles and a result below the pass threshold → growth operator (0002) → new version.
 - **Rhythm:** automatic; settings: lessons per day, sleep start (after N lessons or at a given time), pause, "learn now", "sleep now".
-- The **control student** goes through the same curriculum without growth.
+- ~~The **control student** goes through the same curriculum without growth.~~ Dropped (2026-11-06).
 
 **Out of scope:** fast plasticity in chat, dendrites, RL with a reward signal (project stage 2), knowledge sharing between copies.
 
@@ -26,7 +26,7 @@ This is the core of the MVP priority: a measurable improvement in reasoning on n
 - The growing student passes stages 1–3 in school order — preschool, grade 1, grade 2 — according to the 0004 thresholds.
 - The `ood_hard` + `ood_combo` result of every grade rises by ≥ 20 pp relative to the baseline measurement (0003).
 - Forgetting: no earlier grade loses > 2 pp in an accepted version.
-- Comparison report: growing student vs control student (result, number of cycles, time, parameters).
+- ~~Comparison report: growing student vs control student.~~ Dropped with the control student (2026-11-06).
 
 ## 4. Artefact Inventory
 | Artefact | Kind | Status |
@@ -81,13 +81,14 @@ This is the core of the MVP priority: a measurable improvement in reasoning on n
 
 ## 8. Expected Outcome
 - **Direct:** the student learns on its own, cyclically, with a large local LLM.
-- **Measurable:** curve of `id/ood` results per grade over time, forgetting, number of growths, comparison with the control student.
+- **Measurable:** curve of `id/ood` results per grade over time, forgetting, number of growths.
 - **Side effects:** prolonged GPU load (27B teacher + student training).
 - **Rollback:** any earlier version from the registry; pausing the school.
 
 ## 9. Additional Information
 - **Rejected alternatives:** external API as the default teacher (costs, no offline — remains an option); LLM as the judge of correctness for verifiable tasks.
-- **Technical debt:** a single lesson queue (no multiple teachers in parallel) in the first version; not yet built: growth controller (blocked by the 30M limit), neuron renewal, self-correction format, assistant examiner, brain API, control student.
+- **Technical debt:** a single lesson queue (no multiple teachers in parallel) in the first version; not yet built: growth controller (blocked by the 30M limit), neuron renewal, self-correction format, assistant examiner, brain API.
+- **Decision (2026-11-06, the user's):** the control student (a fixed-size student on the same data) is **dropped** — it is not needed for the project's goals. The growth hypothesis is no longer tested against a fixed student; growth is judged by its own logs and by the school's results.
 - **First cycles (2026-11-04, growing/v0032 → school, gemma4 teacher, 1500 lessons/day):** night 1 raised preschool from ~20% to 61.9% (promoted `v0001`; lesson accuracy next day 18% → 80%); nights 2 and 3 raised the `id` forms further (opposites 32 → 79%, sizes 52 → 81%) but lost `ood` forms the lessons never show (clarify in context 100 → 22%: the student answered "Thank you!" to "There is a red ball and a blue ball. Give me the ball.") and were rolled back (58.0%, 54.6%). Part of `v0001`'s score came from habits ("Which one?" to everything, "No" on an unbalanced pool) — the exam pools were rebalanced (0004).
 - **Next cheap steps (from the literature):** early stopping on validation (above); more surface diversity — rephrase most lessons, including yes/no statements, under the code checks (instruction diversity drives generalization, 2024); before grade 1, lessons that combine two skills in pairs **different** from the exam's `ood_combo` (SKILL-MIX: training on skill combinations improves held-out combinations).
 - **Plateau of the second run (2026-11-05, days 9–16):** preschool stuck at 60.5% (`v0007`/`v0009`); in most nights validation was best at step 0, so early stopping kept the weights from before sleep and the "promoted" versions `v0010`–`v0013`, `v0015` were copies with the same score. Lessons were 97% right (the teacher explained 35 of 1500), so a day had almost nothing to teach. The missing points are mostly `ood_hard` items that lessons never give by design (rare opposites push/pull, win/lose; rare sounds owl, wolf; rare sizes ant, whale, bear: the student answers "The opposite of push is closed") and held-out forms (clarify with two similar things in context: 10%, opposite of the opposite: 18%). More passes of the core do not help: validation of `v0015` at K = 2/4/6/8 is 75.1/76.5/75.3/73.9%.

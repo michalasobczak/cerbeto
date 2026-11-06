@@ -1,6 +1,6 @@
 # 0006 — Admin panel (Rails) and chat with the student
 
-Status: planned · Depends on: 0005 (brain API) · Unblocks: 0007
+Status: **on hold (2026-11-06, the user's decision)** — the brain's read-only panel `cerbeto panel` (school, exams, bench, final test, log) and the terminal chat `cerbeto chat` cover what is needed now; the Rails panel is built only if that changes · Depends on: 0005 (brain API) · Unblocks: 0007
 
 ## 1. TL;DR
 A local Rails 8 application for managing the school: teachers, live lesson view, progress, the student's "brain", versions with comparison and rollback, the library, and a chat with the student in which a human can correct it. Proof: Rails system tests against a mock brain API and an E2E test with the real brain.

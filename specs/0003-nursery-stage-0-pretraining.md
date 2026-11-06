@@ -1,6 +1,6 @@
 # 0003 — Nursery: language learning (stage 0) and baseline measurement
 
-Status: delivered for the growing student (2026-11-01) — still open: control student run, G4 baseline (waits for 0004 exam pools), G5 human review · Depends on: 0001, 0002 · Unblocks: 0005
+Status: delivered (2026-11-01); control student dropped (2026-11-06) — still open: G4 baseline (waits for 0004 exam pools), G5 human review · Depends on: 0001, 0002 · Unblocks: 0005
 
 ## 1. TL;DR
 We teach the student to speak English on the stage 0 shelves (child-directed speech → simple stories), in parallel with a control student of fixed size 30M. Speech is kept as a **conversation with roles** (adult `<|human|>` ↔ child `<|student|>`), so turn-taking is learned from day one. Proof: the nursery exam (BLiMP + a conversation probe) and a recorded baseline measurement for all school stages 1–3 (preschool, grade 1, grade 2).
@@ -86,7 +86,8 @@ The students are trained **sequentially** (first the growing one, then the contr
 - **Rollback:** any nursery checkpoint.
 
 ## 9. Additional Information
-- **Rejected alternatives:** a single student without a control group (impossible to prove the benefit of growth).
+- **Rejected alternatives:** a single student without a control group (impossible to prove the benefit of growth) — reversed on 2026-11-06, see below.
+- **Decision (2026-11-06, the user's):** the control student (a fixed-size student on the same data) is **dropped** — it is not needed for the project's goals. The growth hypothesis is no longer tested against a fixed student; growth is judged by its own logs and by the school's results.
 - **Technical debt:** the conversation probe is graded by an LLM (soft); the hard gates are BLiMP and the code-based exams in 0004 (including the code-graded social skills).
 - **Rejected alternatives (added):** story continuation as the nursery ability test — it does not show whether the student can hold a conversation.
 - **Results — growing student, attempt 2 (2026-10-31 21:55 → 2026-11-01 13:37, 15 h 42 min, M1 Pro, fp32):**

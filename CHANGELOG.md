@@ -13,6 +13,10 @@ What has actually been delivered, by date (newest first). Intent of changes: `sp
 - README: tables of the datasets and of what the student has seen in each phase.
 
 ### Changed
+- Control student dropped (0003, 0005): not needed; growth is judged by its own logs and the school's results.
+- 0006 Rails panel on hold — the brain's `cerbeto panel` and `cerbeto chat` are enough for now; 0007 offline distribution: someday, maybe.
+- Spec 0008: growth experiment — `v0017` grown to 99.1M vs the same size, 80M tokens of shelves + request → reply pairs, evaluation and how to read it.
+- README: the 100M experiment (v0017 grown to 99.1M vs the same size, 80M tokens of shelves + request → reply pairs) described, with how to read its result and where more data would come from.
 - A night keeps its end when its best validation check is within 2 pp of it (`keep_tolerance`): the small validation set only refuses clearly worse nights, the exam decides; before, 9 of 13 bench nights kept their start and nothing reached the exam — [0005].
 - Sleep replays each earlier prompt once, its latest lesson (`dedup_memories`: 1,739 instead of 18,770 memories, the same night on the bench) — [0005].
 

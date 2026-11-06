@@ -1,6 +1,6 @@
 # 0007 — Distribution package: further development of the student at people's homes (offline)
 
-Status: planned · Depends on: 0003, 0005, 0006 · Unblocks: —
+Status: **someday, maybe (2026-11-06, the user's decision)** — not planned; it may never happen · Depends on: 0003, 0005, 0006 · Unblocks: —
 
 ## 1. TL;DR
 A package with the "post-nursery" student, the curriculum, generators, replay portions, the learning tool and the admin panel, which on a computer with 16 GB RAM lets the student continue developing (lessons, sleep, growth) completely offline with a local teacher. Proof: installation on a clean 16 GB computer and 3 learning cycles without internet.
