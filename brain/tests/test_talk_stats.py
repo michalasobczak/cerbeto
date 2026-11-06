@@ -29,6 +29,7 @@ def test_stats_report_after_a_reply():
     from cerbeto.talk import Talker
     talker = Talker(Student(CFG, seed=0), "cpu", k=2, temperature=0.0, max_new_tokens=8)
     assert talker.stats() == "(no reply yet)"
+    talker.memory = True
     talker.reply("hello")
     talker.reply("who are you?")
     report = talker.stats()

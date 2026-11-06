@@ -1,7 +1,8 @@
 """`cerbeto chat`: talk to a student checkpoint in the terminal and probe what it can do.
 
-The conversation is kept as context in the chat format (`<|human|> …` / `<|student|> …`), the same one
-the nursery speech shelf and the exams use. Slash commands probe single skills without the history.
+Every line is a separate question by default: the student was trained on single request → reply pairs and
+does not yet tell turns apart in a longer context (2026-11-06). `/memory on` keeps the conversation as context
+in the chat format (`<|human|> …` / `<|student|> …`), the same one the nursery speech shelf and the exams use. Slash commands probe single skills without the history.
 """
 import re
 import time
@@ -21,6 +22,7 @@ HELP = """commands:
   /think <question>     answer with K = 1, 2, 4, 8 passes of the recurrent core (greedy)
   /k <n>                passes of the recurrent core for chat ("think longer"), now {k}
   /temp <t>             sampling temperature, 0 = always the most likely token, now {temperature}
+  /memory on|off        keep the conversation as context (off: every line is a separate question), now {memory}
   /reset                forget the conversation
   /stats [on|off]       inference statistics of the last reply: speed, certainty per token, attention per block
                         (on: after every reply)
@@ -36,6 +38,7 @@ class Talker:
         self.eos = self.tok.token_to_id("<|eos|>")
         self.stops = {self.tok.token_to_id(t) for t in ("<|eos|>", "<|human|>", "<|student|>")}
         self.history = ""
+        self.memory = False             # off: every line is a separate question
         self.last_thought = ""          # what the student thought (<|think|> … <|/think|>) before its last reply
         self.last = None                # the last exchange, for /stats
 
@@ -52,7 +55,9 @@ class Talker:
                                 "device": str(self.device)}}
         return self.tok.decode(out[:cut], skip_special_tokens=False)
 
-    def reply(self, say: str, remember: bool = True, k: int | None = None, temperature: float | None = None) -> str:
+    def reply(self, say: str, remember: bool | None = None, k: int | None = None,
+              temperature: float | None = None) -> str:
+        remember = self.memory if remember is None else remember
         context = (self.history if remember else "") + f"<|human|> {say}\n<|student|>"
         raw = self._continue(context, k or self.k, self.temperature if temperature is None else temperature,
                              self.max_new_tokens, self.stops)
@@ -115,9 +120,11 @@ def _thought(talker: Talker) -> str:
 
 
 def run(student: str, version: str | None, device: str | None, k: int, temperature: float,
-        says: list[str] | None = None, stats: bool = False) -> None:
+        says: list[str] | None = None, stats: bool = False,
+        memory: bool = False) -> None:
     model, version, dev = load_student(student, version, device)
     talker = Talker(model, dev, k, temperature)
+    talker.memory = memory
     info = f"{student}/{version} · {model.num_params():,} parameters · {dev}"
     if says:  # one-shot: a scripted conversation, e.g. for scripts or quick checks
         for say in says:
@@ -148,7 +155,7 @@ def run(student: str, version: str | None, device: str | None, k: int, temperatu
             if cmd in ("/quit", "/exit"):
                 return
             elif cmd == "/help":
-                print(HELP.format(k=talker.k, temperature=talker.temperature))
+                print(HELP.format(k=talker.k, temperature=talker.temperature, memory="on" if talker.memory else "off"))
             elif cmd == "/stats":
                 if rest in ("on", "off"):
                     stats = rest == "on"
@@ -157,6 +164,9 @@ def run(student: str, version: str | None, device: str | None, k: int, temperatu
                     print(talker.stats())
             elif cmd == "/info":
                 print(info)
+            elif cmd == "/memory" and rest in ("on", "off"):
+                talker.memory, talker.history = rest == "on", ""
+                print(f"(memory {rest}" + (": the conversation is context)" if talker.memory else ": every line is separate)"))
             elif cmd == "/reset":
                 talker.history = ""
                 print("(conversation forgotten)")

@@ -88,6 +88,7 @@ def main() -> None:
     ch.add_argument("--temperature", type=float, default=0.7)
     ch.add_argument("--device", help="mps / cpu (default: best available)")
     ch.add_argument("--say", action="append", help="one-shot: say this and print the reply (repeatable)")
+    ch.add_argument("--memory", action="store_true", help="keep the conversation as context (also /memory on)")
     ch.add_argument("--stats", action="store_true", help="inference statistics after every reply (also /stats)")
 
     tp = sub.add_parser("top", help="live dashboard of the students and the machine")
@@ -171,7 +172,7 @@ def main() -> None:
         sys.exit(0 if run_teacher_exam(args.teacher, args.per_skill, args.seed)["summary"]["passed"] else 1)
     elif args.group == "chat":
         from cerbeto.talk import run as run_chat
-        run_chat(args.student, args.version, args.device, args.k, args.temperature, args.say, args.stats)
+        run_chat(args.student, args.version, args.device, args.k, args.temperature, args.say, args.stats, args.memory)
     elif args.group == "panel":
         from cerbeto.panel import run as run_panel
         run_panel(host=args.host, port=args.port)

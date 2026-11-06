@@ -26,6 +26,8 @@ def talker(monkeypatch):
 
 @needs_tokenizer
 def test_reply_stops_at_next_speaker_and_is_remembered(talker):
+    assert talker.reply("Hello!") == "hi there!" and talker.history == ""        # by default every line is separate
+    talker.memory = True
     assert talker.reply("Hello!") == "hi there!"
     assert talker.history == "<|human|> Hello!\n<|student|> hi there!\n"
     talker.reply("How are you?")
