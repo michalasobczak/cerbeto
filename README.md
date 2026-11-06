@@ -173,7 +173,7 @@ The recurrent core is unrolled: its 4 blocks × K = 4 become 16 separate blocks 
 The rest are request → reply pairs. Seeing all 670M once needs a ~10× longer run.
 
 **New hardware: Mac mini M6, 16 GB, bf16**
-- Started on the MacBook (M1 Pro, fp32, ~810 tokens/s); moved at step 2,963 to a **Mac mini M6** (16 GB), now the main machine: data, checkpoints, runs, training and the panel live there (`scripts/deploy-m6.sh` copies the code). Training resumes from the last save (weights, optimizer, step).
+- Started on the MacBook (M1 Pro, fp32, ~810 tokens/s); moved at step 2,963 to a **Mac mini M6** (16 GB), now the main machine: data, checkpoints, runs, training and the panel live there (the code arrives with `git push`: the Mac mini checkout is a second push target of `origin`, next to GitHub). Training resumes from the last save (weights, optimizer, step).
 - **bf16 mixed precision** (from step 3,171): forward and backward in bfloat16, weights and the optimizer stay fp32 — the checkpoint is not converted. The M1 has no native bf16; the M6 does. `--fp32` turns it off.
 
 | Machine | Precision | Tokens/s | 80M tokens |
