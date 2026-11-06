@@ -172,40 +172,6 @@ def exam(q: dict) -> dict:
             "summary": summary, "rows": items[offset:offset + limit]}
 
 
-BENCH = paths.REPO / "runs" / "bench"
-_VALIDATION = re.compile(r"step (\d+)/(\d+) · validation ([\d.]+)%")
-
-
-def bench() -> dict:
-    """Night bench (config/bench.yaml): every variant with its hypothesis, finished checks per skill, or the progress
-    of the one still running (read from its log)."""
-    cfg_file = paths.CONFIG / "bench.yaml"
-    if not cfg_file.exists():
-        return {"variants": []}
-    cfg = yaml.safe_load(cfg_file.read_text())
-    notes = dict(re.findall(r"^  (\w+): .*?#\s*(.+)$", cfg_file.read_text(), re.M))
-    logs = sorted(BENCH.glob("*.log"), key=lambda f: f.stat().st_mtime) if BENCH.exists() else []
-    latest = logs[-1] if logs else None
-    out = []
-    for name, over in cfg["variants"].items():
-        row = {"name": name, "note": notes.get(name, ""), "overrides": over, "state": "waiting"}
-        res, log = BENCH / f"{name}.json", BENCH / f"{name}.log"
-        if res.exists() and (not log.exists() or res.stat().st_mtime >= log.stat().st_mtime - 5):
-            r = json.loads(res.read_text())
-            row |= {"state": "done", "checks": r["checks"], "minutes": r["minutes"], "kept_step": r["kept_step"],
-                    "experiences": r["experiences"], "memories": r["memories"], "lesson_loss": r["lesson_loss"]}
-        elif log.exists():
-            lines = log.read_text().splitlines()
-            pts = [(int(m[1]), float(m[3]) / 100) for m in map(_VALIDATION.search, lines) if m]
-            steps = [int(m[2]) for m in map(_VALIDATION.search, lines) if m]
-            fresh = log == latest and time.time() - log.stat().st_mtime < 900
-            row |= {"state": "running" if fresh else "interrupted",
-                    "checks": [{"step": s, "_all": v} for s, v in pts], "steps": steps[-1] if steps else None}
-        out.append(row)
-    tail = latest.read_text().splitlines()[-30:] if latest else []
-    return {"base": cfg["base"], "variants": out, "log": tail, "log_name": latest.stem if latest else None}
-
-
 FINAL = paths.REPO / "runs" / "final"
 
 
@@ -252,8 +218,7 @@ class Handler(BaseHTTPRequestHandler):
             if url.path == "/":
                 return self._send(PAGE.read_bytes(), "text/html; charset=utf-8")
             data = {"/api/status": status, "/api/lessons": lambda: lessons(q), "/api/exam": lambda: exam(q),
-                    "/api/skills": lambda: skills(int(q["day"]) if q.get("day") else None),
-                    "/api/bench": bench, "/api/final": final}.get(url.path)
+                    "/api/skills": lambda: skills(int(q["day"]) if q.get("day") else None), "/api/final": final}.get(url.path)
             if data is None:
                 return self._send(b"not found", "text/plain", 404)
             return self._send(json.dumps(data(), default=str).encode(), "application/json")

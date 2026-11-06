@@ -38,7 +38,7 @@ tr.row{cursor:pointer}tr.row:hover,tr.row.sel{background:var(--bar)}.tag{font-si
 <body>
 <header>
   <h1>Cerbeto · school</h1><span id="pill" class="pill"></span>
-  <nav><button data-t="overview" class="on">Overview</button><button data-t="exams">Exams</button><button data-t="lessons">Lessons</button><button data-t="log">Log</button><button data-t="bench">Bench</button><button data-t="final">Final test</button></nav>
+  <nav><button data-t="overview" class="on">Overview</button><button data-t="lessons">Lessons</button><button data-t="exams">Exams</button><button data-t="final">300M</button><button data-t="log">Log</button></nav>
   <span class="mut" id="upd" style="margin-left:auto"></span>
 </header>
 <main>
@@ -79,16 +79,9 @@ tr.row{cursor:pointer}tr.row:hover,tr.row.sel{background:var(--bar)}.tag{font-si
   <div class="card"><h2>Lesson</h2><div class="fill" id="l-detail"><p class="mut">Click a lesson.</p></div></div>
 </div></section>
 
-<section id="bench" class="hide"><div class="split">
-  <div class="card"><h2>Night bench — one school night replayed offline per variant</h2><div class="fill" style="overflow-y:auto">
-    <p class="note" id="b-about"></p><div id="b-chart"></div><div id="b-table"></div></div></div>
-  <div class="card"><h2 id="b-sel-h">Variant</h2><div class="fill" style="display:flex;flex-direction:column;gap:8px">
-    <div id="b-sel" style="flex:none"></div><pre id="b-log" style="flex:1;min-height:0;overflow-y:auto"></pre></div></div>
-</div></section>
-
 <section id="final" class="hide"><div class="split">
-  <div class="card"><h2>Final test — v0017 grown to ~100M, trained on request → reply data</h2><div class="fill" style="overflow-y:auto">
-    <p class="note">Start: school v0017 (34.6M), grown function-preservingly to 99.1M (d 512→896, 28 heads, MLP 3072).
+  <div class="card"><h2>300M — v0017 grown to a deep 283M student, trained on request → reply data</h2><div class="fill" style="overflow-y:auto">
+    <p class="note">Start: school v0017 (34.6M), grown function-preservingly to 282.6M: d 512→896, 28 heads, MLP 3072, 24 blocks with no loop (K = 1); bf16 on the Mac mini M6. (The first, wide 99M arm was dropped.)
       Two of three steps are shelf windows (stories 40%, speech 30%, books 18%, edu 9%, Wikipedia 3%; every token learned);
       every third step is request → reply pairs (a story on request 55%, preschool lessons 40%, who the student is 5%; only the
       student's turn learned). Then v0017 and the grown model are measured the same way.</p>
@@ -107,12 +100,12 @@ const ask=t=>esc(t).replace(/&lt;\|human\|&gt;\s*/,"").replace(/\s*&lt;\|student
 const rowsFit=el=>Math.max(8,Math.floor((el.closest(".card").clientHeight-90)/22));
 let tab="overview", off=0, eoff=0, S=null;
 function go(t){tab=t;document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x.dataset.t===t));
-  ["overview","exams","lessons","log","bench","final"].forEach(x=>$("#"+x).classList.toggle("hide",x!==t));refresh()}
+  ["overview","lessons","exams","final","log"].forEach(x=>$("#"+x).classList.toggle("hide",x!==t));refresh()}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.t));
 const cls=(v,t)=>v==null?"":v>=t?"ok":v>=t-0.15?"warn":"bad";
 
 async function refresh(){
-  if(tab==="lessons") return loadLessons(); if(tab==="exams") return loadExam(); if(tab==="bench") return loadBench(); if(tab==="final") return loadFinal();
+  if(tab==="lessons") return loadLessons(); if(tab==="exams") return loadExam(); if(tab==="final") return loadFinal();
   const d=await (await fetch("/api/status")).json(); if(d.error){$("#upd").textContent=d.error;return} S=d;
   $("#upd").textContent="updated "+d.now.slice(11);
   const st=d.state, pill=$("#pill"); pill.textContent=!st?"not started":d.running?"running":"stopped"; pill.style.background=!st?"#888":d.running?"var(--ok)":"var(--bad)";
@@ -205,48 +198,6 @@ function showLesson(r){$("#l-detail").innerHTML=`<div class="kv">
   ${r.teacher_reply?`<span class="mut">tutor (gemma) explained</span><pre>${esc(r.teacher_reply)}</pre><span class="mut"></span><span class="${r.origin==="teacher"?"ok":"bad"}">${r.origin==="teacher"?"verified by code — used":"rejected by code — reference used"}</span>`:""}
   <span class="mut">learns at night</span><pre>${say(r.target)}</pre><span class="mut">status</span><span>${r.slept?"slept on":"waiting for the night"} · ${esc(r.created)}</span></div>`}
 
-// ── bench ──
-const BC=["#3b6fd8","#d64545","#1f9d55","#b7800f","#8e5bd8","#d8589b","#2aa3a3","#7a8699","#e07b28","#5b8c2a"];
-let B=null, bsel=null;
-async function loadBench(){
-  const d=await (await fetch("/api/bench")).json(); if(d.error){$("#b-about").textContent=d.error;return} B=d;
-  const vs=d.variants.filter(v=>v.name!=="smoke"); vs.forEach((v,i)=>v.color=BC[i%BC.length]);
-  const run=vs.find(v=>v.state==="running"), done=vs.filter(v=>v.state==="done").length;
-  if(!bsel) bsel=(run||vs.find(v=>v.state==="done")||vs[0])?.name;
-  $("#b-about").innerHTML=`Start: <b>${esc(d.base.version)}</b> · lessons of day ${d.base.days.join(", ")} as the night's experiences, earlier preschool days as memories · seed ${d.base.seed}.
-    Each variant changes one setting (one hypothesis); the line is validation (preschool, K=${S?.rhythm?.day?.k??4}) at every check of the night.
-    The night keeps the best check. <b>${done}</b> of ${vs.length} done${run?` · running <b>${esc(run.name)}</b>`:""}. Click a row or a line.`;
-  const all=vs.filter(v=>v.checks?.length), maxStep=Math.max(126,...all.flatMap(v=>v.checks.map(c=>c.step)),...vs.map(v=>v.steps||0));
-  const vals=all.flatMap(v=>v.checks.map(c=>c._all)), lo=Math.min(.68,...vals)-.01, hi=Math.max(.82,...vals)+.01;
-  const w=600,h=200,xs=x=>30+x*(w-40)/maxStep,ys=v=>h-18-(v-lo)/(hi-lo)*(h-28);
-  let svg=`<svg viewBox="0 0 ${w} ${h}" style="height:220px">`;
-  for(let g=Math.ceil(lo*50)/50;g<=hi;g+=.02) svg+=`<line x1="30" x2="${w-10}" y1="${ys(g)}" y2="${ys(g)}" stroke="var(--line)"/><text x="26" y="${ys(g)+3}" font-size="9" text-anchor="end" fill="var(--mut)">${(100*g).toFixed(0)}</text>`;
-  const start=all[0]?.checks[0]?._all; if(start!=null) svg+=`<line x1="30" x2="${w-10}" y1="${ys(start)}" y2="${ys(start)}" stroke="var(--mut)" stroke-dasharray="4"/>`;
-  for(const v of all){const sel=v.name===bsel;
-    svg+=`<polyline data-v="${v.name}" fill="none" stroke="${v.color}" stroke-width="${sel?3:1.5}" opacity="${sel?1:.55}" ${v.state==="running"?'stroke-dasharray="5 3"':""} points="${v.checks.map(c=>xs(c.step)+","+ys(c._all)).join(" ")}" style="cursor:pointer"/>`;
-    v.checks.forEach(c=>svg+=`<circle cx="${xs(c.step)}" cy="${ys(c._all)}" r="${sel?3:2}" fill="${v.color}"><title>${v.name} · step ${c.step} · ${(100*c._all).toFixed(1)}%</title></circle>`)}
-  svg+=`<text x="${w-10}" y="${h-4}" font-size="9" text-anchor="end" fill="var(--mut)">step of the night →</text></svg>`;
-  $("#b-chart").innerHTML=svg+`<div class="mut legend">${all.map(v=>`<span style="color:${v.color}">● ${esc(v.name)}</span>`).join("")}<span>dashed = start</span></div>`;
-  $("#b-chart").querySelectorAll("polyline").forEach(l=>l.onclick=()=>{bsel=l.dataset.v;loadBench()});
-  const f=x=>x==null?"–":(100*x).toFixed(1);
-  $("#b-table").innerHTML=`<table style="margin-top:8px"><tr><th></th><th>variant</th><th>hypothesis</th><th class="n">best</th><th class="n">step</th><th class="n">end</th><th class="n">Δ best</th><th>state</th></tr>`+vs.map(v=>{
-    const c=v.checks||[], best=c.length?c.reduce((a,b)=>b._all>a._all?b:a):null, s0=c[0]?._all, gain=best&&s0!=null?best._all-s0:null;
-    return `<tr class="row ${v.name===bsel?"sel":""}" data-v="${v.name}"><td style="color:${v.color}">●</td><td><b>${esc(v.name)}</b></td><td class="mut">${esc(v.note)}</td>
-      <td class="n">${f(best?._all)}</td><td class="n">${best?.step??"–"}</td><td class="n">${f(c.at?.(-1)?._all)}</td>
-      <td class="n ${gain>0.005?"ok":gain<-0.005?"bad":"mut"}">${gain==null?"":(gain>=0?"+":"")+(100*gain).toFixed(1)}</td>
-      <td class="${v.state==="running"?"warn":v.state==="done"?"ok":"mut"}">${v.state==="running"&&v.steps?`running (${c.at(-1)?.step??0}/${v.steps})`:v.state}${v.minutes?` · ${v.minutes} min`:""}</td></tr>`}).join("")+"</table>";
-  $("#b-table").querySelectorAll("tr.row").forEach(tr=>tr.onclick=()=>{bsel=tr.dataset.v;loadBench()});
-  const v=vs.find(x=>x.name===bsel); $("#b-sel-h").textContent="Variant · "+(v?.name||"");
-  if(v){const c=v.checks||[], skills=c.length?Object.keys(c[0]).filter(k=>k!=="step"&&k!=="_all"):[], best=c.length?c.reduce((a,b)=>b._all>a._all?b:a):null;
-    let html=`<p class="note">${esc(v.note)}<br>overrides: <code>${esc(JSON.stringify(v.overrides))}</code>${v.experiences?` · ${v.experiences} experiences · ${v.memories} memories · lesson loss ${v.lesson_loss.toFixed(3)}`:""}</p>`;
-    if(skills.length){html+=`<table><tr><th>skill</th><th class="n">start</th><th class="n">best (step ${best.step})</th><th class="n">end</th></tr>`+skills.map(k=>{
-      const a=c[0][k],b=best[k],e=c.at(-1)[k],d=x=>{const g=x-a;return `<span class="${g>0.005?"ok":g<-0.005?"bad":"mut"}">${pct(x)}</span>`};
-      return `<tr><td>${esc(k)}</td><td class="n">${pct(a)}</td><td class="n">${d(b)}</td><td class="n">${d(e)}</td></tr>`}).join("")+"</table>"}
-    else html+=`<p class="mut">${v.state==="waiting"?"not run yet":"per-skill results when the variant finishes"}</p>`;
-    $("#b-sel").innerHTML=html}
-  $("#b-log").textContent=(d.log_name?`— ${d.log_name}.log —\n`:"")+d.log.join("\n"); $("#b-log").scrollTop=1e9;
-}
-
 // ── final test ──
 function lineChart(series,{w=600,h=190,xlab="",fmt=v=>v.toFixed(2)}={}){
   const pts=series.flatMap(s=>s.pts); if(!pts.length) return '<p class="mut">no data yet</p>';
@@ -284,7 +235,7 @@ async function loadFinal(){
     E.map(e=>`<div><span class="tag">${esc(e.name)} · ${e.story.items[i].score}/5</span> ${esc(e.story.items[i].reply)}</div>`).join("")+"</div>").join("");
   $("#f-eval").innerHTML=h}
 
-refresh(); setInterval(()=>{if(tab==="overview"||tab==="log"||tab==="bench"||tab==="final")refresh()},5000);
+refresh(); setInterval(()=>{if(tab==="overview"||tab==="log"||tab==="final")refresh()},5000);
 window.onresize=()=>{if(tab!=="overview")refresh()};
 </script>
 </body>
