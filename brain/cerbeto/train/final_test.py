@@ -277,7 +277,7 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
         (run / "state.json").write_text(json.dumps(state))     # the panel knows the target before the first save
     # the 99M arm keeps only block inputs and recomputes the rest: ~20 GB of activations at k=6 would push a
     # 32 GB Mac into swap, which costs far more than the ~30% recomputation
-    model.checkpointing = arm not in ("control", "mid")     # ~100M fits a 16 GB Mac without recomputation
+    model.checkpointing = arm != "control"      # ~100M without recomputation ran out of GPU memory on the 16 GB M6
     total_steps = int(state["target_tokens"] / (CFG["windows"] * CFG["seq_len"]))   # ~tokens per step, both kinds
     amp, bf16 = bf16_context(device, bf16)
     state["precision"] = "bf16" if bf16 else "fp32"
