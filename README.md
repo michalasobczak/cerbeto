@@ -108,6 +108,41 @@ Observed outside the formal exam, in conversation with the same checkpoint. In s
 - **Know itself or count:** *"Who are you?"* → *"no."*; *"Can you count to five?"* → *"no."* (true — it has not been taught).
 - **Talk about a story.** It writes stories well, but asked *"What did the bear want?"* it answers *"I don't know."* — writing a story and answering questions about one are still separate skills.
 
+## What the student can do in preschool
+**Last promoted version:** `checkpoints/school/v0017` (34.6M parameters, school day 18, 2026-11-06), preschool exam **68.5%** (after the nursery: ~22%). Preschool is **not passed yet**: it needs mastery of what was taught in every skill (`id`) and transfer (`ood`).
+
+| Skill | `id` (as taught) | `ood_hard` (harder) | `ood_combo` (new combinations) |
+|---|---|---|---|
+| Polite routines | **97%** | 77% | 74% |
+| Opinion with a reason (form only, checked by code) | 90% | 73% | 46% |
+| Asking for clarification | **100%** | 52% | 45% |
+| Agree / disagree | 57% | 56% | 57% |
+| Facts (colours, body parts, animals) | **95%** | 57% | 69% |
+| Opposites | **94%** | **85%** | 13% |
+| Sizes (bigger / smaller) | **98%** | 69% | 50% |
+| Categories (is X a Y?) | 66% | 74% | 53% |
+
+Examples below are from the exam of `v0017` (prompts it never saw in lessons); `<|think|>` is its own thought before the answer.
+
+**Can do**
+- **Polite routines:** *"You can have a candy."* → *"Thank you!"*; *"Grandma gives you an apple. What do you say?"* → *"Thank you!"*.
+- **Ask when a request is unclear:** *"There is a yellow bag and a blue bag. Can you bring me the bag?"* → *"Which one? The yellow bag or the blue…"*.
+- **Say "I don't know" honestly** when the answer is not in the conversation or its knowledge: *"Anna has a dog. What is the name of Anna's dog?"* → *"I don't know."*; *"What did my grandma eat for breakfast yesterday?"* → *"I don't know."*.
+- **Facts and opposites it was taught:** *"Which part of your body helps you chew?"* → *"I chew with my teeth."*; *"Tell me the opposite of long."* → *"The opposite of long is short."*; and uses a fact inside a small story: *"Anna draws the sky. Which crayon does Anna need?"* → *"The crayon is blue."*
+- **Compare sizes, also of three things:** *"Which is the biggest: a mouse, a dog or a cow?"* → *"A cow is the biggest."*
+- **Opinion with a reason:** *"Do you like dogs?"* → *"Yes, I like dogs because they are soft."*; *"What do you like more, carrots or the park? Why?"* → *"I like carrots because they are sweet and juicy."*
+- **Think in a fixed format** before a yes/no answer — claim → fact → decision: *"Ducks can't swim. Right?"* → thinks *"Ducks can swim. So that is wrong"* → *"No."*
+
+**Cannot do yet**
+- **Decide yes/no reliably — its weakest skill.** The thought often has the right fact and the wrong decision: *"A lemon is a fruit. Right?"* → *"A lemon is a fruit. So that is wrong"* → *"No."*; *"A helicopter is an animal."* → *"A helicopter is a vehicle. So that is right"*. It is changing its yes/no thinking format, and agree/disagree fell 67 → 57% on that day.
+- **Ask for clarification in a new form:** with two coats it often just says *"Here is the coat."*
+- **Combine operations:** *"What is the opposite of the opposite of big?"* → *"small"* (13% on such combinations).
+- **Keep the question's direction:** *"Which is smaller, a whale or a lion?"* → *"A whale is smaller."*; *"Your friend says thank you for the toy."* → *"Thank you!"* instead of *"You're welcome."*
+- **Answer the question asked, not a nearby one:** *"You hear with your ears. What do you clap with?"* → *"I hear with my ears."*; *"Why don't you like snow?"* → *"Yes, I like snow."*
+- **Rarer words:** *"Tell me the opposite of in."* → *"The opposite of in is in."*; *"You clap with your what?"* → *"I clap with my clums."*
+
+Details: `runs/school/exams/v0017.json`, [specs/0005](specs/0005-school-day-sleep-exam.md) §9.
+
 ## Next phases and their expected effects
 | Phase | What happens | Expected effect on the student | How we will know |
 |---|---|---|---|
