@@ -76,6 +76,9 @@ def apply_rope(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.T
 
 
 class Attention(nn.Module):
+    capture: list | None = None     # set by cerbeto.talk_stats: every attention call appends its weights here
+    capture_rows: slice = slice(None)
+
     def __init__(self, cfg: StudentConfig):
         super().__init__()
         self.n_heads, self.head_dim = cfg.n_heads, cfg.head_dim
@@ -90,7 +93,14 @@ class Attention(nn.Module):
         q, k, v = (proj(x).view(b, t, self.n_heads, self.head_dim).transpose(1, 2)
                    for proj in (self.q, self.k, self.v))
         q, k = apply_rope(q, cos, sin), apply_rope(k, cos, sin)
-        y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+        if Attention.capture is None:
+            y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+        else:                       # inspection (cerbeto chat /stats): the same attention, weights kept
+            rows = Attention.capture_rows
+            att = (q.float() @ k.float().transpose(-2, -1)) / self.head_dim ** 0.5
+            att = att.masked_fill(torch.ones(t, t, dtype=torch.bool, device=x.device).triu(1), float("-inf")).softmax(-1)
+            Attention.capture.append(att[:, :, rows].detach().cpu())
+            y = (att @ v.float()).type_as(v)
         return self.o(y.transpose(1, 2).reshape(b, t, -1))
 
 

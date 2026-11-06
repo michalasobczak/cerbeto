@@ -4,6 +4,7 @@ The conversation is kept as context in the chat format (`<|human|> …` / `<|stu
 the nursery speech shelf and the exams use. Slash commands probe single skills without the history.
 """
 import re
+import time
 from pathlib import Path
 
 import torch
@@ -11,6 +12,7 @@ import torch
 from cerbeto import paths
 from cerbeto.model import checkpoint
 from cerbeto.model.student import Student, pick_device
+from cerbeto.talk_stats import analyse, layer_names, render
 from cerbeto.tokenizer import load as load_tokenizer
 
 HELP = """commands:
@@ -20,6 +22,8 @@ HELP = """commands:
   /k <n>                passes of the recurrent core for chat ("think longer"), now {k}
   /temp <t>             sampling temperature, 0 = always the most likely token, now {temperature}
   /reset                forget the conversation
+  /stats [on|off]       inference statistics of the last reply: speed, certainty per token, attention per block
+                        (on: after every reply)
   /info                 which student is loaded
   /help  /quit"""
 
@@ -33,19 +37,27 @@ class Talker:
         self.stops = {self.tok.token_to_id(t) for t in ("<|eos|>", "<|human|>", "<|student|>")}
         self.history = ""
         self.last_thought = ""          # what the student thought (<|think|> … <|/think|>) before its last reply
+        self.last = None                # the last exchange, for /stats
 
     @torch.no_grad()
     def _continue(self, text: str, k: int, temperature: float, max_new_tokens: int, stops: set[int]) -> str:
         ids = [self.eos] + self.tok.encode(text).ids
         idx = torch.tensor([ids], device=self.device)
+        t0 = time.perf_counter()
         out = self.model.generate(idx, max_new_tokens, k=k, temperature=temperature, top_k=40)[0, len(ids):].tolist()
+        seconds = time.perf_counter() - t0
         cut = next((i for i, t in enumerate(out) if t in stops), len(out))
+        self.last = {"ids": ids + out[:cut + 1], "n_ctx": len(ids), "n_hist": 1, "k": k,     # + the stop token
+                     "timing": {"seconds": seconds, "tokens": len(out), "temperature": temperature,
+                                "device": str(self.device)}}
         return self.tok.decode(out[:cut], skip_special_tokens=False)
 
     def reply(self, say: str, remember: bool = True, k: int | None = None, temperature: float | None = None) -> str:
         context = (self.history if remember else "") + f"<|human|> {say}\n<|student|>"
         raw = self._continue(context, k or self.k, self.temperature if temperature is None else temperature,
                              self.max_new_tokens, self.stops)
+        if remember and self.history:
+            self.last["n_hist"] = 1 + len(self.tok.encode(self.history).ids)
         thought = re.search(r"<\|think\|>(.*?)(?:<\|/think\|>|<\|answer\|>|$)", raw, re.S)
         self.last_thought = thought[1].strip() if thought else ""
         answer = raw.rsplit("<|answer|>", 1)[1] if "<|answer|>" in raw else re.sub(r"<\|think\|>.*?(<\|/think\|>|$)", "", raw, flags=re.S)
@@ -53,6 +65,14 @@ class Talker:
         if remember:
             self.history = f"{context} {answer}\n"
         return answer
+
+    def stats(self) -> str:
+        if not self.last or len(self.last["ids"]) <= self.last["n_ctx"]:
+            return "(no reply yet)"
+        last = self.last
+        st = analyse(self.model, last["ids"], last["n_hist"], last["n_ctx"], last["k"], self.device)
+        timing = {**last["timing"], "seconds": last["timing"]["seconds"] * len(st["reply"]) / max(1, last["timing"]["tokens"])}
+        return render(st, self.tok, layer_names(self.model.cfg, last["k"]), timing, self.model, last["k"])
 
     def story(self, beginning: str, max_new_tokens: int = 150) -> str:
         return re.sub(r"<\|[^|]*\|>", "", self._continue(beginning, self.k, self.temperature, max_new_tokens, {self.eos})).strip()
@@ -95,7 +115,7 @@ def _thought(talker: Talker) -> str:
 
 
 def run(student: str, version: str | None, device: str | None, k: int, temperature: float,
-        says: list[str] | None = None) -> None:
+        says: list[str] | None = None, stats: bool = False) -> None:
     model, version, dev = load_student(student, version, device)
     talker = Talker(model, dev, k, temperature)
     info = f"{student}/{version} · {model.num_params():,} parameters · {dev}"
@@ -103,6 +123,8 @@ def run(student: str, version: str | None, device: str | None, k: int, temperatu
         for say in says:
             answer = talker.reply(say)
             print(f"you> {say}\n{_thought(talker)}student> {answer}")
+            if stats:
+                print(talker.stats())
         return
     _enable_line_editing()
     print(f"Talking to {info}. /help for commands, /quit to leave; ↑/↓ browse earlier lines.")
@@ -117,6 +139,8 @@ def run(student: str, version: str | None, device: str | None, k: int, temperatu
         if not line.startswith("/"):
             answer = talker.reply(line)
             print(f"{_thought(talker)}student> {answer}")
+            if stats:
+                print(talker.stats())
             continue
         cmd, _, rest = line.partition(" ")
         rest = rest.strip()
@@ -125,6 +149,12 @@ def run(student: str, version: str | None, device: str | None, k: int, temperatu
                 return
             elif cmd == "/help":
                 print(HELP.format(k=talker.k, temperature=talker.temperature))
+            elif cmd == "/stats":
+                if rest in ("on", "off"):
+                    stats = rest == "on"
+                    print(f"(statistics after every reply: {rest})")
+                else:
+                    print(talker.stats())
             elif cmd == "/info":
                 print(info)
             elif cmd == "/reset":
