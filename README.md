@@ -207,7 +207,7 @@ The rest are request → reply pairs. Seeing all 670M once needs a ~10× longer 
 - **Too slow for the data we have:** ~1,390 tokens/s on the M6; 80M tokens is ~1.4% of the ~20 tokens per parameter rule of thumb.
 
 ## D. A deep, thin ~100M student that learns conversations
-**Spec:** [0009](specs/0009-deep-100m-conversations.md). **Status:** training since 2026-11-06 (`python -m cerbeto.train.final_test train mid`, panel tab *100M*, `runs/final/mid/`, `checkpoints/final/mid/`).
+**Spec:** [0009](specs/0009-deep-100m-conversations.md). **Status:** trained 2026-11-06 → 07, evaluation running (`python -m cerbeto.train.final_test train mid`, panel tab *100M*, `runs/final/mid/`, `checkpoints/final/mid/`).
 
 **Question:** with the lessons of C — smaller and faster, copies that start apart, no dead attention, and conversations of several turns — does the student learn to keep turns apart and use what was said?
 
@@ -230,7 +230,26 @@ Deep and thin like MobileLLM-125M; ~2.7× faster than C, so a night shows severa
 - **One turn format** in training and in the chat (`cerbeto chat --memory`): `<|human|> …\n<|student|><|answer|> …<|eos|>` per turn.
 - **A conversation probe** in the evaluation: 10 held-out conversations (a story, then "Do you remember the cat's name?"; a story, then "Who are you?"; a fact after a story …).
 
-**Result:** pending.
+**Training result — the first real long-run gain.** The full run finished on 2026-11-07 at 05:00: 19,531 steps, **69.4M tokens** (the step count was planned for 80M; the request → reply steps carry fewer tokens than shelf windows), ~2,630 tokens/s, ~7.3 h on the M6.
+
+![D: training and validation loss of the ~107M student](docs/img/d-100m-training.webp)
+
+| Step (tokens) | speech | stories |
+|---|---|---|
+| `v0017` | 3.17 | 1.38 |
+| C, 283M, step 4,000 (13.9M) | 3.20 | 1.50 |
+| 1,000 (3.6M) | 3.21 | 1.47 |
+| 5,000 (17.8M) | 3.20 | 1.49 |
+| 10,000 (35.5M) | 3.17 | 1.46 |
+| 15,000 (53.3M) | 3.11 | 1.40 |
+| **19,000 (67.5M)** | **3.09** | **1.38** |
+
+- **Speech better than `v0017`** (3.09 vs 3.17) — the first growth that beats the school's best version; C never did.
+- **Stories back to `v0017`'s level:** after growth and the new data mix they rose to ~1.50 and needed the whole run to come back.
+- **Still falling at the end**, with the learning rate already at its minimum: the student is not saturated; 69M tokens is ~3% of ~20 tokens per parameter. More data should help.
+- **Request → reply pairs:** loss down from ~1.1 to ~0.9 (C stayed flat at ~1.25).
+
+**Evaluation** (conversation probe, stories graded by the teacher, nursery conversations, preschool exam, `/stats`): running.
 
 ## Next phases and their expected effects
 | Phase | What happens | Expected effect | How we will know |
