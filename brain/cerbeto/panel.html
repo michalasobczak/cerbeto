@@ -197,7 +197,7 @@ function showLesson(r){$("#l-detail").innerHTML=`<div class="kv">
   <span class="mut">learns at night</span><pre>${say(r.target)}</pre><span class="mut">status</span><span>${r.slept?"slept on":"waiting for the night"} · ${esc(r.created)}</span></div>`}
 
 // ── final test ──
-function lineChart(series,{w=600,h=190,xlab="",fmt=v=>v.toFixed(2)}={}){
+function lineChart(series,{w=600,h=190,xlab="",fmt=v=>v.toFixed(2),marks=[]}={}){
   const pts=series.flatMap(s=>s.pts); if(!pts.length) return '<p class="mut">no data yet</p>';
   const x0=Math.min(...pts.map(p=>p[0])),x1=Math.max(...pts.map(p=>p[0]),x0+1),lo=Math.min(...pts.map(p=>p[1])),hi=Math.max(...pts.map(p=>p[1]),lo+.01);
   const xs=x=>34+(x-x0)*(w-44)/(x1-x0),ys=v=>h-18-(v-lo)/(hi-lo)*(h-28);
@@ -205,6 +205,8 @@ function lineChart(series,{w=600,h=190,xlab="",fmt=v=>v.toFixed(2)}={}){
   for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4;svg+=`<line x1="34" x2="${w-10}" y1="${ys(v)}" y2="${ys(v)}" stroke="var(--line)"/><text x="30" y="${ys(v)+3}" font-size="9" text-anchor="end" fill="var(--mut)">${fmt(v)}</text>`}
   for(const s of series){ if(s.dots) s.pts.forEach(p=>svg+=`<circle cx="${xs(p[0])}" cy="${ys(p[1])}" r="3" fill="${s.color}"><title>${s.name} ${p[1].toFixed(3)}</title></circle>`);
     else svg+=`<polyline fill="none" stroke="${s.color}" stroke-width="1.5" points="${s.pts.map(p=>xs(p[0])+","+ys(p[1])).join(" ")}"/>`}
+  for(const m of marks){ if(m.x<x0||m.x>x1) continue; const x=xs(m.x);   // saved checkpoints: a dashed line and its name
+    svg+=`<line x1="${x}" x2="${x}" y1="8" y2="${h-18}" stroke="#2f855a" stroke-dasharray="3 3"><title>${esc(m.title)}</title></line><text x="${x-3}" y="16" font-size="9" text-anchor="end" fill="#2f855a">${esc(m.label)}</text>`}
   svg+=`<text x="${w-10}" y="${h-4}" font-size="9" text-anchor="end" fill="var(--mut)">${xlab}</text></svg>`;
   return svg+`<div class="mut legend">${series.map(s=>`<span style="color:${s.color}">● ${esc(s.name)}</span>`).join("")}</div>`}
 const FINAL_TABS={
@@ -231,16 +233,18 @@ async function loadFinal(){
       prog=a.progress??(tot?step/tot:0),
       eta=l&&l.tok_s&&st.target_tokens?(st.target_tokens-(l.tokens??0))/l.tok_s:null, M=x=>(x/1e6).toFixed(1)+"M";
     const sm=(rows,k)=>rows.filter(r=>r[k]>0).map(r=>[r.tokens/1e6,r[k]]);
+    const marks=(a.checkpoints||[]).map(c=>({x:c.tokens/1e6,label:`💾 ${c.name}`,title:`checkpoints/final/${a.name}/${c.name} · step ${c.step} · ${M(c.tokens)} tokens · saved ${c.saved}`}));
     return `<div style="margin-bottom:14px"><div><b>${esc(a.name)}</b> · ${(st.params||a.growth.at(-1)?.params_after||0).toLocaleString()} parameters ·
       <span class="${a.running?"warn":"mut"}">${a.running?"training":prog>=1?"finished":"stopped"}</span></div>
       <div class="bar"><i style="width:${100*Math.min(1,prog)}%"></i></div>
       <div class="mut">step ${step.toLocaleString()} · ${M(l?.tokens??0)} / ${M(st.target_tokens??0)} tokens (${(100*prog).toFixed(1)}%) · ${l?.tok_s??"–"} tok/s · lr ${l?.lr??"–"}${eta!=null&&a.running?` · about ${dur(eta)} left`:""}</div>
       <h2 style="margin-top:10px">training loss (mean of the last 100 steps)</h2>
-      ${lineChart([{name:"shelf windows",color:"#3b6fd8",pts:sm(a.rows,"shelf_loss")},{name:"request → reply pairs",color:"#d64545",pts:sm(a.rows,"pair_loss")}],{xlab:"million tokens →"})}
+      ${lineChart([{name:"shelf windows",color:"#3b6fd8",pts:sm(a.rows,"shelf_loss")},{name:"request → reply pairs",color:"#d64545",pts:sm(a.rows,"pair_loss")}],{xlab:"million tokens →",marks})}
       <h2 style="margin-top:10px">validation loss (every 1000 steps)</h2>
       ${lineChart([{name:"speech",color:"#1f9d55",dots:1,pts:a.valid.map(r=>[r.tokens/1e6,r.valid.s0_speech])},{name:"stories",color:"#b7800f",dots:1,pts:a.valid.map(r=>[r.tokens/1e6,r.valid.s0_stories])},
         ...[["s3_edu_plus","edu","#7a4fd0"],["s2_textbooks","textbooks","#d6457f"],["s0_dialogue","dialogue","#2a9bb0"]].filter(([k])=>a.valid.some(r=>r.valid[k]!=null))
-          .map(([k,n,c])=>({name:n,color:c,dots:1,pts:a.valid.filter(r=>r.valid[k]!=null).map(r=>[r.tokens/1e6,r.valid[k]])}))],{xlab:"million tokens →",h:150})}
+          .map(([k,n,c])=>({name:n,color:c,dots:1,pts:a.valid.filter(r=>r.valid[k]!=null).map(r=>[r.tokens/1e6,r.valid[k]])}))],{xlab:"million tokens →",h:150,marks})}
+      ${a.checkpoints?.length?`<p class="note">💾 checkpoints on disk: ${a.checkpoints.map(c=>`<b>${esc(c.name)}</b> at ${M(c.tokens)} tokens (step ${c.step.toLocaleString()}, saved ${esc(c.saved)})`).join(" · ")}${a.running?" — <i>latest</i> is overwritten every 30 minutes":""}</p>`:a.checkpoints?'<p class="note">💾 no checkpoint on disk</p>':""}
       ${l&&a.last_passes?`<p class="note">passes over each shelf: ${Object.entries(a.last_passes).map(([s,p])=>`${esc(s)} ${p.toFixed(2)}×`).join(" · ")}</p>`:""}
       ${a.growth.length?`<p class="note">growth: ${a.growth.map(g=>`${esc(g.op)} ${(g.params_before/1e6).toFixed(1)}M → ${(g.params_after/1e6).toFixed(1)}M (Δ loss ${g.delta_loss})`).join(" · ")}</p>`:""}</div>`}).join(""):'<p class="mut">no run yet</p>';
   const E=d.evals; if(!E.length){$("#f-eval").innerHTML='<p class="mut">Measured when training finishes: shelf validation loss, stories on request (10 held-out phrasings, graded 1–5 by the teacher), the nursery conversation probe (50 situations, teacher) and the preschool exam.</p>';return}

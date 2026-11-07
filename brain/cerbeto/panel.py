@@ -173,6 +173,21 @@ def exam(q: dict) -> dict:
 
 
 FINAL = paths.REPO / "runs" / "final"
+FINAL_CKPT = paths.REPO / "checkpoints" / "final"
+
+
+def _checkpoints(arm: str) -> list[dict]:
+    """The arm's checkpoints still on disk (`latest` is overwritten every save, `final` at the end) and where they were taken."""
+    out = []
+    for c in sorted((FINAL_CKPT / arm).glob("*")):
+        f = c / "architecture.json"
+        if c.name.endswith(".tmp") or not f.exists():
+            continue
+        ft = json.loads(f.read_text()).get("final_test") or {}
+        if "tokens" in ft:
+            out.append({"name": c.name, "step": ft.get("step", 0), "tokens": ft["tokens"],
+                        "saved": time.strftime("%Y-%m-%d %H:%M", time.localtime(f.stat().st_mtime))})
+    return sorted(out, key=lambda c: c["tokens"])
 
 
 def final() -> dict:
@@ -192,7 +207,7 @@ def final() -> dict:
                      "last": rows[-1] if rows else None, "valid": [r for r in rows if "valid" in r],
                      "progress": progress, "last_passes": passes[-1] if passes else None,
                      "running": fresh and progress < 1,
-                     "growth": _json_lines(d / "growth_log.jsonl")})
+                     "growth": _json_lines(d / "growth_log.jsonl"), "checkpoints": _checkpoints(d.name)})
     evals = []
     for f in sorted(FINAL.glob("eval_*.json")) if FINAL.exists() else []:
         e = json.loads(f.read_text())
