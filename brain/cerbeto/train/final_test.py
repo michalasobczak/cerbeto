@@ -34,6 +34,7 @@ from cerbeto.model.student import pick_device
 from cerbeto.school.smoke import IGNORE, encode_dialogues, lesson_text, release
 from cerbeto.teachers import chat
 from cerbeto.tokenizer import load as load_tokenizer
+from cerbeto.train import conversations
 from cerbeto.train.data import ShelfStream
 
 START = paths.REPO / "checkpoints" / "school" / "v0017"
@@ -47,7 +48,19 @@ CFG = {"seq_len": 512, "windows": 8, "pairs": 8, "pair_every": 3, "lr": 3e-4, "w
 ARM_K = {"deep": {"k_min": 1, "k_max": 1, "k_eval": 1}, "mid": {"k_min": 1, "k_max": 1, "k_eval": 1}}
 # request → reply mix per arm; `mid` adds conversations of several turns (the 283M student, trained on single pairs
 # only, went on with a story when asked "who are you?" after it — 2026-11-06) and more about itself
-ARM_PAIR_MIX = {"mid": {"story": 0.30, "lesson": 0.25, "self": 0.15, "dialogue": 0.30}}
+ARM_PAIR_MIX = {"mid": {"story": 0.30, "lesson": 0.25, "self": 0.15, "dialogue": 0.30},
+                # spec 0010: half of the pairs are conversations (2–8 turns), plus two-step relations
+                "bil": {"story": 0.15, "lesson": 0.20, "self": 0.10, "relation": 0.10, "dialogue": 0.45}}
+# spec 0010 (`bil`): 1B tokens from the 0009 student; new shelves widen vocabulary and knowledge (measured
+# 2026-11-07 on one shard each); no shelf is repeated more than MAX_PASSES times
+ARM_SHELF_MIX = {"bil": {"s3_edu_plus": 0.32, "s2_textbooks": 0.22, "s0_dialogue": 0.15, "s0_stories": 0.15,
+                         "s0_speech": 0.08, "s1_books": 0.05, "s2_wiki_plus": 0.03}}
+ARM_START = {"bil": CKPT / "mid" / "final"}
+ARM_K["bil"] = {"k_min": 1, "k_max": 1, "k_eval": 1}
+ARM_VALID = {"bil": ("s0_speech", "s0_stories", "s3_edu_plus", "s2_textbooks", "s0_dialogue")}
+ARM_TURNS = {"bil": (2, 8)}                 # turns per conversation (0009: 2–5)
+BY_TOKENS = {"bil"}                         # the run ends at its token target (0009 counted steps and fell short)
+MAX_PASSES = 4
 
 
 def bf16_context(device, wanted: bool):
@@ -155,9 +168,10 @@ class Pairs:
     """Batches of conversations for the pairs steps: most are one turn (a request and its reply), the `dialogue`
     share has 2–5 turns that change the subject — a story, then a question about it, about the student or a lesson —
     so the student learns to answer the last turn, using the earlier ones only when it is asked about them."""
-    def __init__(self, seed: int = 0, mix: dict | None = None):
+    def __init__(self, seed: int = 0, mix: dict | None = None, turns: tuple[int, int] = (2, 5)):
         self.rng = random.Random(seed)
         self.mix = mix or PAIR_MIX
+        self.turns = turns
         self.tok = load_tokenizer()
         self.stories = stories(seed=seed)
         self.named = [s for s in self.stories if s[3]]
@@ -168,6 +182,9 @@ class Pairs:
             return self.rng.choice(self.stories)[:2]
         if kind == "lesson":
             return lesson_text(next(self.lessons))
+        if kind == "relation":
+            q, a, _ = conversations.relation(self.rng)
+            return turn(q, a)
         return turn(*self.rng.choice(SELF))
 
     def dialogue(self, budget: int) -> list[tuple[str, str]]:
@@ -182,16 +199,30 @@ class Pairs:
             used += n
             return True
 
-        want = self.rng.randint(2, 5)
-        if self.rng.random() < 0.6:                      # a story first, then questions about it or something else
+        want = self.rng.randint(*self.turns)
+        long = self.turns[1] > 5
+        fillers = ["lesson", "self", "lesson"] + (["relation"] if long else [])
+        ask_back = None                                  # a question about the first turn, asked after other subjects
+        r = self.rng.random()
+        if long and r < 0.3:                             # the human tells something and asks for it later
+            said, qs = conversations.remembered_fact(self.rng)
+            add(turn(*said))
+            q, a, _ = self.rng.choice(qs)
+            ask_back = turn(q, a)
+        elif r < 0.6 + (0.1 if long else 0):             # a story first, then questions about it or something else
             st = self.rng.choice(self.named)
             add(st[:2], st[4])
-            if self.rng.random() < 0.7:
-                q, a = self.rng.choice(RECALL)
-                add(turn(q.format(kind=st[2]), a.format(kind=st[2], name=st[3])))
-        while len(turns) < want:
-            if not add(self.one(self.rng.choice(["lesson", "self", "lesson"]))):
+            q, a = self.rng.choice(RECALL)
+            recall = turn(q.format(kind=st[2]), a.format(kind=st[2], name=st[3]))
+            if long and self.rng.random() < 0.5:
+                ask_back = recall
+            elif self.rng.random() < 0.7:
+                add(recall)
+        while len(turns) < want - (ask_back is not None):
+            if not add(self.one(self.rng.choice(fillers))):
                 break
+        if ask_back:
+            add(ask_back)
         if len(turns) < 2:                               # a story too long for anything after it
             add(self.one("self"))
         return turns
@@ -235,6 +266,8 @@ def start_mid(model, probe, log):
 
 
 def start_model(arm: str, device):
+    if arm in ARM_START:
+        return checkpoint.load(ARM_START[arm], device)
     model = checkpoint.load(START, device)
     if arm == "control":
         return model
@@ -254,6 +287,28 @@ def start_model(arm: str, device):
             model = growth.apply(model, "grow_depth", probe, k=1, max_params=300_000_000, max_delta_loss=0.01,
                                  log_path=log, reason="final test: deep like Qwen", std=0.01)
     return model
+
+
+class ShelfMix:
+    """Picks a shelf per step by the mix, never past MAX_PASSES over a shelf: a shelf that reaches it leaves the mix
+    (the others are renormalised) and the log says so. `used` (tokens drawn per shelf) is kept in the run state."""
+    def __init__(self, mix: dict, streams: dict, used: dict | None = None):
+        self.mix, self.streams = mix, streams
+        self.size = {s: len(streams[s].tokens) for s in mix}
+        self.used = {s: int((used or {}).get(s, 0)) for s in mix}
+
+    def passes(self) -> dict:
+        return {s: round(self.used[s] / self.size[s], 3) for s in self.mix}
+
+    def pick(self, rng) -> str:
+        open_ = [s for s in self.mix if self.used[s] < MAX_PASSES * self.size[s]]
+        if not open_:
+            raise RuntimeError(f"every shelf reached {MAX_PASSES} passes")
+        w = np.array([self.mix[s] for s in open_])
+        return open_[rng.choice(len(open_), p=w / w.sum())]
+
+    def took(self, shelf: str, n: int) -> None:
+        self.used[shelf] += n
 
 
 def lr_at(step: int, total: int) -> float:
@@ -279,14 +334,19 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
     # 32 GB Mac into swap, which costs far more than the ~30% recomputation
     model.checkpointing = arm != "control"      # ~100M without recomputation ran out of GPU memory on the 16 GB M6
     total_steps = int(state["target_tokens"] / (CFG["windows"] * CFG["seq_len"]))   # ~tokens per step, both kinds
+    by_tokens = arm in BY_TOKENS
+    progress = (lambda: state["tokens"] / state["target_tokens"]) if by_tokens else (lambda: state["step"] / total_steps)
+    lr_now = lambda: lr_at(int(progress() * total_steps), total_steps)                       # noqa: E731
     amp, bf16 = bf16_context(device, bf16)
     state["precision"] = "bf16" if bf16 else "fp32"
     tok = load_tokenizer()
-    shelves = {s: ShelfStream(s, "train", CFG["seq_len"]) for s in SHELF_MIX}
+    shelf_mix = ARM_SHELF_MIX.get(arm, SHELF_MIX)
+    shelves = ShelfMix(shelf_mix, {s: ShelfStream(s, "train", CFG["seq_len"]) for s in shelf_mix},
+                       state.get("shelf_tokens"))
     valid = {s: ShelfStream(s, "valid", CFG["seq_len"]).fixed_batches(8, 8, device, seed=1)
-             for s in ("s0_speech", "s0_stories")}
+             for s in ARM_VALID.get(arm, ("s0_speech", "s0_stories"))}
     rng = np.random.default_rng(seed + state["step"])
-    pairs = Pairs(seed + state["step"], ARM_PAIR_MIX.get(arm))
+    pairs = Pairs(seed + state["step"], ARM_PAIR_MIX.get(arm), ARM_TURNS.get(arm, (2, 5)))
     stop = {"now": False}
     signal.signal(signal.SIGINT, lambda *_: stop.update(now=True))
     log = (run / "log.jsonl").open("a")
@@ -294,10 +354,10 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
     model.train()
     saved, t0, t0_tokens, recent = time.time(), time.time(), state["tokens"], []
     kk = ks(arm)
-    while state["step"] < total_steps and not stop["now"]:
+    while progress() < 1 and not stop["now"]:
         step = state["step"]
         for g in opt.param_groups:
-            g["lr"] = lr_at(step, total_steps)
+            g["lr"] = lr_now()
         k = int(rng.integers(kk["k_min"], kk["k_max"] + 1))
         if step % CFG["pair_every"] == CFG["pair_every"] - 1:
             x, y = encode_dialogues(pairs.batch(CFG["pairs"]), tok, device, max_len=CFG["seq_len"])
@@ -306,11 +366,12 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
             loss = F.cross_entropy(logits.float().transpose(1, 2), y, ignore_index=IGNORE)
             kind, n = "pairs", x.numel()
         else:
-            name = rng.choice(list(SHELF_MIX), p=list(SHELF_MIX.values()))
-            w = shelves[name].batch(CFG["windows"], rng, device)
+            name = shelves.pick(rng)
+            w = shelves.streams[name].batch(CFG["windows"], rng, device)
             with amp():
                 loss = model.loss(w[:, :-1], w[:, 1:], k)
             kind, n = "shelf", w[:, :-1].numel()
+            shelves.took(name, n)
         opt.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -324,10 +385,12 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
             pr = [v for c, v in recent if c == "pairs"]
             row = {"time": time.strftime("%H:%M:%S"), "step": state["step"], "tokens": state["tokens"],
                    "shelf_loss": round(sum(sh) / max(1, len(sh)), 4), "pair_loss": round(sum(pr) / max(1, len(pr)), 4),
-                   "lr": round(lr_at(step, total_steps), 6), "tok_s": round((state["tokens"] - t0_tokens) / max(1, time.time() - t0))}
+                   "lr": round(lr_now(), 6), "tok_s": round((state["tokens"] - t0_tokens) / max(1, time.time() - t0))}
             recent = []
+            state["shelf_tokens"] = shelves.used
             if state["step"] % 1000 == 0:
                 row["valid"] = validation(model, valid, kk["k_eval"])
+                row["passes"] = shelves.passes()
                 model.train()
             log.write(json.dumps(row) + "\n")
             log.flush()
@@ -336,12 +399,13 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
         if time.time() - saved > CFG["save_minutes"] * 60:
             save(model, opt, arm, state)
             saved = time.time()
+    state["shelf_tokens"] = shelves.used
     save(model, opt, arm, state)
-    if state["step"] >= total_steps:
+    if progress() >= 1:
         final = CKPT / arm / "final"
         if final.exists():
             shutil.rmtree(final)
-        checkpoint.save(model, final, parent=START, meta={"final_test": {**state, "cfg": CFG, "shelves": SHELF_MIX,
+        checkpoint.save(model, final, parent=ARM_START.get(arm, START), meta={"final_test": {**state, "cfg": CFG, "shelves": shelf_mix,
                                                                           "pairs": ARM_PAIR_MIX.get(arm, PAIR_MIX)}})
         print(f"{arm}: finished · {final}", flush=True)
     else:
@@ -352,7 +416,7 @@ def save(model, opt, arm: str, state: dict) -> None:
     tmp, latest = CKPT / arm / "latest.tmp", CKPT / arm / "latest"
     if tmp.exists():
         shutil.rmtree(tmp)
-    checkpoint.save(model, tmp, optimizer=opt, parent=START, meta={"final_test": state})
+    checkpoint.save(model, tmp, optimizer=opt, parent=ARM_START.get(arm, START), meta={"final_test": state})
     if latest.exists():
         shutil.rmtree(latest)
     tmp.rename(latest)
@@ -410,6 +474,29 @@ def dialogue_probe(model, device, k: int) -> dict:
     return {"accuracy": sum(i["ok"] for i in items) / len(items), "items": items}
 
 
+def long_dialogue_probe(model, device, k: int) -> dict:
+    """Spec 0010: 30 held-out conversations of 4–6 turns; the last reply needs the first turn (or the student)."""
+    return _conversation_probe(model, device, k, conversations.long_dialogue_probe())
+
+
+def relation_probe(model, device, k: int) -> dict:
+    """Spec 0010: 50 held-out questions that need two facts joined, each asked alone."""
+    return _conversation_probe(model, device, k, [([q], words) for q, words in conversations.relation_probe()])
+
+
+def _conversation_probe(model, device, k: int, probe) -> dict:
+    from cerbeto.talk import Talker
+    talker = Talker(model, device, k=k, temperature=0.0, max_new_tokens=80)
+    talker.memory = True
+    items = []
+    for says, words in probe:
+        talker.history = ""
+        replies = [talker.reply(say) for say in says]
+        ok = any(w in re.findall(r"[a-z]+", replies[-1].lower()) for w in words)
+        items.append({"says": says, "replies": replies, "expected": words, "ok": ok})
+    return {"accuracy": sum(i["ok"] for i in items) / len(items), "items": items}
+
+
 def evaluate(name: str) -> dict:
     device = pick_device()
     path = START if name == "v0017" else CKPT / name / "final"
@@ -417,13 +504,18 @@ def evaluate(name: str) -> dict:
         print(f"{name}: no finished training — skipped", flush=True)
         return {}
     model = checkpoint.load(path, device).eval()
+    shelves = ("s0_speech", "s0_stories", "s3_edu_plus", "s2_textbooks", "s0_dialogue")
     valid = {s: ShelfStream(s, "valid", CFG["seq_len"]).fixed_batches(8, 8, device, seed=1)
-             for s in ("s0_speech", "s0_stories")}
+             for s in shelves if (paths.SHELVES / s / "valid.bin").exists()}
     k = ks(name)["k_eval"]
     out = {"name": name, "params": model.num_params(), "k": k, "valid": validation(model, valid, k)}
     print(name, out["valid"], flush=True)
     out["dialogue"] = dialogue_probe(model, device, k)
     print(name, "dialogue", out["dialogue"]["accuracy"], flush=True)
+    out["long_dialogue"] = long_dialogue_probe(model, device, k)
+    print(name, "long dialogue", out["long_dialogue"]["accuracy"], flush=True)
+    out["relation"] = relation_probe(model, device, k)
+    print(name, "relation", out["relation"]["accuracy"], flush=True)
     out["story"] = story_probe(model, device, k)
     print(name, "story", out["story"]["mean_score"], flush=True)
     torch.manual_seed(0)
@@ -443,7 +535,7 @@ def evaluate(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval"])
-    p.add_argument("arm", help="control | grown | deep | mid (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep | mid | bil (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     a = p.parse_args()

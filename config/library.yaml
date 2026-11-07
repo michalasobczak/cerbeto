@@ -42,3 +42,42 @@ shelves:
     min_edu_score: 3
     sources:
       - {kind: fineweb_parquet, path: fineweb_edu/sample10BT_000_00000.parquet, license: "ODC-By 1.0 (FineWeb-Edu)"}
+
+  # --- spec 0010: one billion tokens — more vocabulary, knowledge and conversations ---------------------------
+  # New shelves next to the old ones (the nursery and school keep theirs unchanged).
+  s0_dialogue:
+    stage: 0
+    description: "Social conversations of ~8 turns (SODA): first speaker <|human|>, second <|student|>"
+    fk_max: null
+    exclude_exam_prompts: true
+    sources:
+      - {kind: soda_parquet, path: soda/train.parquet, license: "CC BY 4.0 (SODA, Allen AI)"}
+  s2_textbooks:
+    stage: 2
+    # measured: Cosmopedia's young_children paragraphs have FK median ~10 (long sentences, simple words); grade 9
+    # keeps the simpler half
+    description: Synthetic stories that teach young children (Cosmopedia, audience young_children), paragraphs up to grade 9
+    fk_max: 9.0
+    exclude_exam_prompts: true
+    min_words: 12
+    sources:
+      - {kind: cosmopedia_parquet, path: "cosmopedia/stories/*.parquet", audiences: [young_children], license: "Apache 2.0 (Cosmopedia, Hugging Face)"}
+  s2_wiki_plus:
+    stage: 2
+    description: World knowledge — Simple English Wikipedia, paragraphs up to grade 8 (s2_world keeps grade 4)
+    fk_max: 8.0
+    exclude_exam_prompts: true
+    min_words: 15
+    sources:
+      - {kind: wiki_parquet, path: simplewiki/simplewiki-20231101.parquet, license: "CC BY-SA 4.0 (Wikipedia)"}
+      - {kind: babylm_wiki, path: babylm/simple_wiki.train.txt, license: "MIT (BabyLM-2026-Strict); upstream: Wikipedia CC BY-SA"}
+  s3_edu_plus:
+    stage: 3
+    # measured on shard 0: FK <= 4 ~65M, <= 6 ~330M, <= 8 ~1.06B tokens over the 14 shards
+    description: Educational web text (FineWeb-Edu, all 14 shards of the 10BT sample, edu score >= 3), paragraphs up to grade 7
+    fk_max: 7.0
+    exclude_exam_prompts: true
+    min_words: 20
+    min_edu_score: 3
+    sources:
+      - {kind: fineweb_parquet, path: "fineweb_edu/sample10BT_*.parquet", license: "ODC-By 1.0 (FineWeb-Edu)"}

@@ -107,6 +107,25 @@ def fineweb_parquet(path: Path, min_edu_score: int = 0, **_) -> Iterator[str]:
             yield row["text"]
 
 
+def cosmopedia_parquet(path: Path, audiences: list[str] | None = None, **_) -> Iterator[str]:
+    """Cosmopedia (synthetic textbooks, stories, lessons); only the given audiences, e.g. young_children."""
+    for row in _parquet_texts(path, ["text", "audience"]):
+        if not audiences or row["audience"] in audiences:
+            yield row["text"]
+
+
+def soda_parquet(path: Path, **_) -> Iterator[str]:
+    """SODA social conversations: the first speaker is `<|human|>`, the second `<|student|>` (anyone else human);
+    one turn per line, as in the speech shelf."""
+    for row in _parquet_texts(path, ["dialogue", "speakers"]):
+        names = list(dict.fromkeys(row["speakers"]))
+        student = names[1] if len(names) > 1 else None
+        turns = [f"{STUDENT if who == student else HUMAN} {text.strip()}"
+                 for who, text in zip(row["speakers"], row["dialogue"]) if text and text.strip()]
+        if len(turns) >= 2:
+            yield "\n".join(turns)
+
+
 READERS = {
     "speech": speech,
     "lines": lines,
@@ -114,4 +133,6 @@ READERS = {
     "babylm_wiki": babylm_wiki,
     "wiki_parquet": wiki_parquet,
     "fineweb_parquet": fineweb_parquet,
+    "cosmopedia_parquet": cosmopedia_parquet,
+    "soda_parquet": soda_parquet,
 }

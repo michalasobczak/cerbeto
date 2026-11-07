@@ -184,9 +184,14 @@ def final() -> dict:
         log = d / "log.jsonl"
         fresh = log.exists() and time.time() - log.stat().st_mtime < 900
         total = int(state.get("target_tokens", 0) / 4096) or None
+        target = state.get("target_tokens") or 0
+        # 0009 and earlier ended at a step count (target / 4096), 0010 at the token target
+        progress = (rows[-1]["tokens"] / target if d.name in ("bil",) else rows[-1]["step"] / total) if rows and total else 0
+        passes = [r["passes"] for r in rows if "passes" in r]
         arms.append({"name": d.name, "state": state, "total_steps": total, "rows": rows[-1500:][::max(1, len(rows[-1500:]) // 400)],
                      "last": rows[-1] if rows else None, "valid": [r for r in rows if "valid" in r],
-                     "running": fresh and (total is None or (rows and rows[-1]["step"] < total)),
+                     "progress": progress, "last_passes": passes[-1] if passes else None,
+                     "running": fresh and progress < 1,
                      "growth": _json_lines(d / "growth_log.jsonl")})
     evals = []
     for f in sorted(FINAL.glob("eval_*.json")) if FINAL.exists() else []:
@@ -196,7 +201,9 @@ def final() -> dict:
                           "story": {k: e["story"][k] for k in ("mean_score", "stories")} | {"items": e["story"]["items"]},
                           "conversation": {"fitting": e["conversation"]["fitting"],
                                            "by_category": e["conversation"]["by_category"]},
-                          "exam": e.get("exam"), "dialogue": (e.get("dialogue") or {}).get("accuracy")})
+                          "exam": e.get("exam"), "dialogue": (e.get("dialogue") or {}).get("accuracy"),
+                          "long_dialogue": (e.get("long_dialogue") or {}).get("accuracy"),
+                          "relation": (e.get("relation") or {}).get("accuracy")})
     return {"arms": arms, "evals": evals}
 
 

@@ -31,7 +31,7 @@ _JUNK = re.compile(r"<[a-zA-Z/]|https?://|www\.|@|\(Ed\.\)|\bpp\.|\bet al\.|Find
 
 def is_clean_prose(paragraph: str) -> bool:
     """Plain prose only: ends like a sentence, mostly letters, no markup, links or citations."""
-    if not paragraph.endswith((".", "!", "?", '"')) or _JUNK.search(paragraph):
+    if not paragraph.endswith((".", "!", "?", '"', "”", "’")) or _JUNK.search(paragraph):
         return False
     letters = sum(c.isalpha() or c.isspace() for c in paragraph)
     digits = sum(c.isdigit() for c in paragraph)
@@ -47,13 +47,51 @@ def filter_paragraphs(job: tuple[str, float, int]) -> tuple[list[str], int]:
     return kept, len(paragraphs)
 
 
+def source_files(pattern: str) -> list[Path]:
+    """A source path may be a glob (many shards of one dataset): its files in sorted order."""
+    if any(c in pattern for c in "*?["):
+        files = sorted(paths.LIBRARY.glob(pattern))
+        if not files:
+            raise FileNotFoundError(f"no library files match {pattern}")
+        return files
+    return [paths.LIBRARY / pattern]
+
+
+_NORM = re.compile(r"[^a-z0-9]+")
+_SENTENCES = re.compile(r"(?<=[.!?])\s+")
+
+
+def _norm(text: str) -> str:
+    return _NORM.sub(" ", text.lower()).strip()
+
+
+def exam_prompts() -> set[str]:
+    """Every exam and validation prompt (with its context), normalised; empty if the exams are not built."""
+    from cerbeto.exams.school import EXAMS
+    out = set()
+    for f in EXAMS.glob("*/*.jsonl"):
+        for line in f.read_text().splitlines():
+            task = json.loads(line)
+            for text in (task["question"], f"{task.get('context', '')} {task['question']}"):
+                if len(n := _norm(text)) >= 12:
+                    out.add(n)
+    return out
+
+
+def leaks(doc: str, prompts: set[str], longest: int = 4) -> bool:
+    """True if a run of up to `longest` consecutive sentences of the document is an exam prompt."""
+    sents = [_norm(s) for p in doc.split("\n") for s in _SENTENCES.split(p) if s.strip()]
+    return any(" ".join(sents[i:i + n]) in prompts for n in range(1, longest + 1) for i in range(len(sents)))
+
+
 def _fingerprint(name: str, shelf: dict) -> str:
     h = hashlib.sha256(json.dumps(shelf, sort_keys=True).encode())
     for src in shelf["sources"]:
         for key in ("path", "valid_path"):
             if key in src:
-                st = (paths.LIBRARY / src[key]).stat()
-                h.update(f"{name}:{src[key]}:{st.st_size}:{int(st.st_mtime)}".encode())
+                for f in source_files(src[key]):
+                    st = f.stat()
+                    h.update(f"{name}:{f.relative_to(paths.LIBRARY)}:{st.st_size}:{int(st.st_mtime)}".encode())
     return h.hexdigest()
 
 
@@ -61,7 +99,7 @@ def _docs(src: dict, shelf: dict, stats: dict, seen: set[bytes], workers: int) -
     reader = sources.READERS[src["kind"]]
     options = {k: v for k, v in src.items() if k not in ("kind", "path", "valid_path", "license")}
     options["min_edu_score"] = shelf.get("min_edu_score", 0)
-    raw = reader(paths.LIBRARY / src["path"], **options)
+    raw = (doc for f in source_files(src["path"]) for doc in reader(f, **options))
 
     if shelf.get("fk_max") is None:
         for doc in raw:
@@ -103,10 +141,18 @@ def build_shelf(name: str, shelf: dict, per_mille: int, force: bool = False) -> 
     out.mkdir(parents=True, exist_ok=True)
     stats = {"docs": {"train": 0, "valid": 0}, "words": {"train": 0, "valid": 0},
              "duplicates": 0, "paragraphs_seen": 0, "paragraphs_rejected": 0}
+    prompts = exam_prompts() if shelf.get("exclude_exam_prompts") else set()
+    if shelf.get("exclude_exam_prompts"):
+        if not prompts:
+            raise RuntimeError(f"[{name}] exclude_exam_prompts needs the exams (cerbeto exam build)")
+        stats["exam_leaks_dropped"] = 0
     seen: set[bytes] = set()
     workers = max(1, (os.cpu_count() or 2) - 1)
 
     def write(f, split: str, doc: str) -> None:
+        if prompts and leaks(doc, prompts):
+            stats["exam_leaks_dropped"] += 1
+            return
         f.write(json.dumps({"text": doc}, ensure_ascii=False) + "\n")
         stats["docs"][split] += 1
         stats["words"][split] += len(doc.split())
