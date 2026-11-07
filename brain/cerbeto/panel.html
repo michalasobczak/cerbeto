@@ -199,14 +199,16 @@ function showLesson(r){$("#l-detail").innerHTML=`<div class="kv">
 // ── final test ──
 function lineChart(series,{w=600,h=190,xlab="",fmt=v=>v.toFixed(2),marks=[]}={}){
   const pts=series.flatMap(s=>s.pts); if(!pts.length) return '<p class="mut">no data yet</p>';
-  const x0=Math.min(...pts.map(p=>p[0])),x1=Math.max(...pts.map(p=>p[0]),x0+1),lo=Math.min(...pts.map(p=>p[1])),hi=Math.max(...pts.map(p=>p[1]),lo+.01);
+  const x0=Math.min(...pts.map(p=>p[0])),x1=Math.max(...pts.map(p=>p[0]),...marks.map(m=>m.x),x0+1),lo=Math.min(...pts.map(p=>p[1])),hi=Math.max(...pts.map(p=>p[1]),lo+.01);
   const xs=x=>34+(x-x0)*(w-44)/(x1-x0),ys=v=>h-18-(v-lo)/(hi-lo)*(h-28);
   let svg=`<svg viewBox="0 0 ${w} ${h}" style="height:${h+10}px">`;
   for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4;svg+=`<line x1="34" x2="${w-10}" y1="${ys(v)}" y2="${ys(v)}" stroke="var(--line)"/><text x="30" y="${ys(v)+3}" font-size="9" text-anchor="end" fill="var(--mut)">${fmt(v)}</text>`}
   for(const s of series){ if(s.dots) s.pts.forEach(p=>svg+=`<circle cx="${xs(p[0])}" cy="${ys(p[1])}" r="3" fill="${s.color}"><title>${s.name} ${p[1].toFixed(3)}</title></circle>`);
     else svg+=`<polyline fill="none" stroke="${s.color}" stroke-width="1.5" points="${s.pts.map(p=>xs(p[0])+","+ys(p[1])).join(" ")}"/>`}
   for(const m of marks){ if(m.x<x0||m.x>x1) continue; const x=xs(m.x);   // saved checkpoints: a dashed line and its name
-    svg+=`<line x1="${x}" x2="${x}" y1="8" y2="${h-18}" stroke="#2f855a" stroke-dasharray="3 3"><title>${esc(m.title)}</title></line><text x="${x-3}" y="16" font-size="9" text-anchor="end" fill="#2f855a">${esc(m.label)}</text>`}
+    const tw=m.label.length*5.6+8;
+    svg+=`<g><title>${esc(m.title)}</title><line x1="${x}" x2="${x}" y1="6" y2="${h-18}" stroke="#38a169" stroke-width="2" stroke-dasharray="4 3"/>`+
+      `<rect x="${x-tw-2}" y="6" width="${tw}" height="14" rx="3" fill="#38a169"/><text x="${x-6}" y="16" font-size="10" text-anchor="end" fill="#fff">${esc(m.label)}</text></g>`}
   svg+=`<text x="${w-10}" y="${h-4}" font-size="9" text-anchor="end" fill="var(--mut)">${xlab}</text></svg>`;
   return svg+`<div class="mut legend">${series.map(s=>`<span style="color:${s.color}">● ${esc(s.name)}</span>`).join("")}</div>`}
 const FINAL_TABS={
