@@ -93,4 +93,11 @@ The ~107M student of 0009 (`mid`) keeps training for **1B tokens — 10 tokens p
 ## 9. Additional Information
 - **Why new data (2026-11-07):** with 0009's mix over 1B, the shelves we have would be seen: stories 0.7×, speech 3.6×, books 5×, edu 20×, Wikipedia 37×.
 - **Sources:** Chinchilla (Hoffmann et al., 2022); data-constrained scaling, up to ~4 epochs about as good as new data (Muennighoff et al., 2023); MobileLLM (Liu et al., 2024); Cosmopedia (Hugging Face, 2024); SODA (Kim et al., 2023); FineWeb-Edu (Penedo et al., 2024).
+- **Beyond 1B — the road to a proper small model (2026-11-07, plan, not in scope of this spec):**
+  - **Target:** the level of SmolLM-135M / MobileLLM-125M — fluent English, basic world knowledge, sensible conversations, simple instructions; not the reasoning of large models (the ceiling of this size).
+  - **Tokens:** small models keep gaining well past Chinchilla (SmolLM-135M: 600B, SmolLM2-135M: 2T, MobileLLM-125M: 1T). Ours: **5–10B tokens** (~3–6 weeks on the M6 at ~2,600 tokens/s), with ~3–5B unique tokens; data quality matters more than amount.
+  - **Mix for the base phase:** FineWeb-Edu ~50% (knowledge, vocabulary), Cosmopedia ~20% (textbooks in plain language), stories and speech ~15% (keep the child's language), conversations ~10% (SODA, smol-smoltalk, ours), Wikipedia ~5%; no source more than 4×.
+  - **Three phases:** (1) **base**, ~90% of tokens, the mix above; (2) **annealing**, the last ~10%: the best data (textbooks, top-scored edu, conversations) while the learning rate decays to zero — a large gain for its share; (3) **conversation tuning**, 50–200M tokens of conversations and instructions, only the student's turns learned — this makes it a partner in conversation.
+  - **Tokenizer, decide before the 5–10B run:** 8,192 tokens fit a child's language, but wide knowledge splits technical words into many pieces (slower learning, shorter effective context). Widen it to 16–32k once, before the big run; it costs embedding parameters and retraining part of the model.
+  - **Specialist data later:** possible at any time from a checkpoint, as a new shelf with its own filter and licence, mixed in at ~20–30% to avoid forgetting; best after the general knowledge base, since specialist text is written for adults.
 - **Results:** pending.
