@@ -23,7 +23,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
   - first growth in school: `v0016`, 34.6M, limit raised to 40M;
   - yes/no lessons think "claim → fact → decision" (the student knew the facts but answered "No. A dog says woof.").
 - **Night bench (2026-11-06):** the night after day 17 replayed in 13 variants (learning rate, replay, consolidation, growth, thinking formats, core passes). None beyond chance (±3 pp from the seed alone); every night trades agree/disagree and categories for clarify, and the small validation set kept the start in most nights. Now a night keeps its end unless clearly worse, the exam decides, and earlier days are replayed once per prompt. Day 18 under these rules: **60.5% → 68.5%** (`v0017`) — rare opposites 25 → 85%, clarify 10 → 52%, agree/disagree 67 → 57% while its yes/no thinking changes.
-- **Growth experiments (2026-11-06):** C — a wide 99M student, then a deep **283M** one on a new Mac mini M6 in bf16: no gain over `v0017` after 18M tokens (the unrolled blocks stayed copies, four with a dead attention). D — a deep, thin **~107M** student trained on conversations of several turns: after 69.4M tokens speech is better than `v0017` (3.09 vs 3.17), stories equal — the first growth that helps; evaluation running.
+- **Growth experiments (2026-11-06):** C — a wide 99M student, then a deep **283M** one on a new Mac mini M6 in bf16: no gain over `v0017` after 18M tokens (the unrolled blocks stayed copies, four with a dead attention). D — a deep, thin **~107M** student trained on conversations of several turns: after 69.4M tokens it **beats `v0017` on every measure** — conversation probe 2 → 8 of 10, stories on request 1.5 → 4.3 of 5, **preschool exam 68.5% → 76.3%** without a school night. Next: [0010](specs/0010-one-billion-tokens.md), 1B tokens with new data.
 - **Next:** school continues from day 18; then grade 1 and grade 2.
 
 **Specifications**
@@ -38,7 +38,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 | [0006](specs/0006-rails-admin-panel-and-chat.md) admin panel and chat (Rails) | on hold: `cerbeto panel` and `cerbeto chat` are enough for now |
 | [0007](specs/0007-offline-distribution.md) offline distribution | someday, maybe — not planned |
 | [0008](specs/0008-growth-experiment-100m.md) growth experiment, 99M → 283M (C) | closed: no gain over `v0017` |
-| [0009](specs/0009-deep-100m-conversations.md) deep 100M student with conversations (D) | **in progress**: trained (69.4M tokens), evaluation running |
+| [0009](specs/0009-deep-100m-conversations.md) deep 100M student with conversations (D) | closed: success, beats `v0017` on every measure; `/stats` analysis pending |
 | [0010](specs/0010-one-billion-tokens.md) one billion tokens: new data for vocabulary, knowledge and conversations | planned: waits for the evaluation of 0009 |
 
 <details>
@@ -51,7 +51,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 | A small local LLM is a reliable teacher when code verifies it | upheld | teacher exam: `gemma4:e4b-mlx` 97.5% correct, 94.8% consistent; unverified explanations never used |
 | Day → sleep → exam raises school skills without forgetting the nursery | partly upheld: preschool 22% → 68.5%, nursery language kept; stage not passed | `runs/school/cycles.jsonl`, [0005](specs/0005-school-day-sleep-exam.md) §9 |
 | Lessons in the training forms transfer to new forms and unseen items by themselves | refuted for this student | `id` high, `ood_hard` 10–57% on several skills; plateau days 9–16 |
-| More parameters help the school plateau | open: on the bench the grown `v0016` behaves like `v0015` (new neurons unused); growth experiment C: wide 99M and deep 283M no better than `v0017` (283M after 18M tokens); D (~100M) next | [0005](specs/0005-school-day-sleep-exam.md) §9 |
+| More parameters help the school plateau | open: on the bench the grown `v0016` behaves like `v0015` (new neurons unused); growth experiment C: wide 99M and deep 283M no better than `v0017` (283M after 18M tokens); **D: a deep, thin 107M with conversations beats it (preschool 76.3% vs 68.5%), the gain from data in the conversation format as much as from size** | [0005](specs/0005-school-day-sleep-exam.md) §9 |
 | The settings of a school night decide its result | refuted on the bench: 13 variants, all within ±3 pp of a different seed | [0005](specs/0005-school-day-sleep-exam.md) §9, `runs/bench/` |
 | Consolidation (EWC) holds what was learned | refuted as built: the nursery Fisher is almost zero; EWC on earlier lessons does not stop the trade between skills | [0005](specs/0005-school-day-sleep-exam.md) §9 |
 | More passes of the recurrent core at answer time help | not seen in school: validation 75.1 / 76.5 / 75.3 / 73.9% at K = 2 / 4 / 6 / 8 | [0005](specs/0005-school-day-sleep-exam.md) §9 |
@@ -86,7 +86,7 @@ Training tokens by source (per school night: `runs/school/cycles.jsonl`, field `
 | A. Nursery (2026-10-31 → 11-01) | 300M | `s0_speech` 142.5M (1.7 passes), `s0_stories` 157.5M (0.29 passes) | BLiMP 65.9% |
 | B. Preschool, school days 1–20 (2026-11-04 → 11-06) | 10.7M | today's lessons 2.4M, earlier days' lessons 2.5M, `s0_speech` 2.9M, `s0_stories` 2.9M | exam 22% → 68.5% (`v0017`) |
 | C. Growth experiment (2026-11-06, stopped) | wide 99M: 4.8M; deep 283M: 18.3M | shelf windows two of three steps, request → reply pairs every third | no better than `v0017`; stories on request |
-| D. ~100M with conversations (2026-11-06 → 07) | 69.4M | the same, a third of the pairs as conversations of 2–5 turns | speech better than `v0017` (3.09 vs 3.17), stories equal; evaluation running |
+| D. ~100M with conversations (2026-11-06 → 07) | 69.4M | the same, a third of the pairs as conversations of 2–5 turns | better than `v0017` on every measure; preschool exam 76.3% |
 
 Days 1–20 are estimated after the fact (hippocampus experiences × 141 night steps); from day 21 each night counts its tokens. Inputs only, padding excluded; lessons learn the student's turn only.
 
@@ -242,7 +242,7 @@ The rest are request → reply pairs. Seeing all 670M once needs a ~10× longer 
 </details>
 
 ## D. A deep, thin ~100M student that learns conversations
-**Spec:** [0009](specs/0009-deep-100m-conversations.md). **Status:** trained 2026-11-06 → 07, evaluation running (`python -m cerbeto.train.final_test train mid`, panel tab *100M*, `runs/final/mid/`, `checkpoints/final/mid/`).
+**Spec:** [0009](specs/0009-deep-100m-conversations.md). **Status:** closed 2026-11-07, success (`python -m cerbeto.train.final_test train mid`, panel tab *100M*, `runs/final/mid/`, `checkpoints/final/mid/`).
 
 **Question:** with the lessons of C — smaller and faster, copies that start apart, no dead attention, and conversations of several turns — does the student learn to keep turns apart and use what was said?
 
@@ -284,7 +284,28 @@ Deep and thin like MobileLLM-125M; ~2.7× faster than C, so a night shows severa
 - **Still falling at the end**, with the learning rate already at its minimum: the student is not saturated; 69M tokens is ~3% of ~20 tokens per parameter. More data should help.
 - **Request → reply pairs:** loss down from ~1.1 to ~0.9 (C stayed flat at ~1.25).
 
-**Evaluation** (conversation probe, stories graded by the teacher, nursery conversations, preschool exam, `/stats`): running.
+**Evaluation — `mid` beats `v0017` on every measure** (2026-11-07, same settings, M6, teacher `gemma4:e4b-mlx`; `runs/final/eval_*.json`):
+
+| Measure | `v0017` (34.6M) | **D (106.8M)** |
+|---|---|---|
+| validation loss: speech / stories | 3.17 / 1.38 | **3.09** / 1.38 |
+| conversation probe (10 held-out conversations) | 2 / 10 | **8 / 10** |
+| stories on request (teacher's grade 1–5) | 1.5 | **4.3** (90% graded ≥ 4) |
+| nursery conversation probe | 84% | **88%** |
+| **preschool exam** | 68.5% | **76.3%** |
+
+**Can do now**
+- **Keep turns apart:** "Tell me a story." → a story; "Who are you?" → *"I'm Cerbeto. I'm a little student, and I'm learning to talk."* (`v0017` and C went on with the story).
+- **Use an earlier turn:** a story about a bear named Ben, then "Is a cat an animal?", then "What was the bear's name?" → *"The bear's name was Ben."*
+- **Tell stories on request** (`v0017`: *"Thank you!"*), and know itself: "Are you a bird?" → *"No, I'm not a bird. I'm a little student."*
+- **Preschool +7.8 pp without a school night** — more than days 9–18 of school gave `v0017`: categories 66 → 100% and agree/disagree 57 → 90% as taught, opinion with a reason 90% in new combinations (was 46%).
+
+**Cannot do yet**
+- **Compose:** new combinations of facts and opposites fell (51% and 0%) — knowledge is memorised, not combined.
+- **Resist a leading question:** a story about a fox named Red, then "Was the story about a dog?" → *"Yes, it was about a dog named Red."*
+- **Unseen phrasings:** "Do you remember the cat's name?" → *"No, I do not remember the cat's name."*
+
+**Reading the result:** the conversation format gave the turns, the self and the stories; the size and depth carried them without forgetting. Validation was still falling at ~0.6 tokens per parameter, so data is the limit now → [0010](specs/0010-one-billion-tokens.md): 1B tokens with new data for vocabulary, knowledge and conversations. Details: [0009](specs/0009-deep-100m-conversations.md) §9.
 
 ## Next phases and their expected effects
 <details>

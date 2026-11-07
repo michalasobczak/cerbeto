@@ -1,6 +1,6 @@
 # 0009 — A deep, thin 100M student that learns conversations
 
-Status: in progress (2026-11-06) — the `mid` arm (106.8M) is training on the Mac mini M6 · Depends on: 0002, 0004, 0005, 0008 · Unblocks: decision on student size, growth method and conversation data for the school
+Status: closed (2026-11-07) — success: the `mid` arm (106.8M) beats `v0017` on every measure; `/stats` analysis pending · Depends on: 0002, 0004, 0005, 0008 · Unblocks: decision on student size, growth method and conversation data for the school
 
 ## 1. TL;DR
 We grow the school's best version `v0017` (34.6M) to a deep, thin **106.8M** student — width 640, 20 heads, 20 blocks without a loop — and train it on 80M tokens: shelf windows plus request → reply data in which a third are **conversations of 2–5 turns**. Unlike 0008, the unrolled copies start apart (noise) and the dead attention is renewed. Proof: a held-out conversation probe, `/stats` attention analysis and the 0008 measures, against `v0017`.
@@ -40,7 +40,7 @@ We grow the school's best version `v0017` (34.6M) to a deep, thin **106.8M** stu
 | `final_test.py`: arm `mid`, `Pairs.dialogue`, `RECALL`, `SELF` (18), `DIALOGUE_PROBE`, `dialogue_probe` | system | created |
 | `cerbeto chat`: every line separate by default, `--memory` / `/memory on` in the training format, `/stats` | system | created |
 | Panel tab *100M* (evaluation column *dialogue*) | system | created |
-| `checkpoints/final/mid/`, `runs/final/mid/` | data | in progress |
+| `checkpoints/final/mid/`, `runs/final/mid/` | data | created |
 
 ## 5. Functional Domain Changes
 **Rules:**
@@ -77,4 +77,37 @@ We grow the school's best version `v0017` (34.6M) to a deep, thin **106.8M** stu
 - **Memory:** without activation checkpointing the 106.8M student ran out of GPU memory on the 16 GB M6 at the first steps; with it, as in 0008.
 - **Next, if the MLPs turn out to be the bottleneck:** a mixture of experts grown from the existing MLP (copies as experts plus a router).
 - **Sources:** MobileLLM (Liu et al., 2024); attention sinks (Xiao et al., 2023); most heads prunable, few specialised (Voita et al., 2019); induction heads (Olsson et al., 2022); function-preserving growth (0002).
-- **Results:** pending.
+- **Training (2026-11-06 21:40 → 11-07 05:00, M6, bf16):** 19,531 steps, **69.4M tokens** (the step count was planned for 80M; request → reply steps carry fewer tokens than shelf windows), ~2,630 tokens/s. Validation after growth rose to 1.50 on stories and came back over the whole run; still falling at the end with the learning rate at its minimum. Pair loss ~1.1 → ~0.9.
+- **Results (2026-11-07, `runs/final/eval_v0017.json`, `eval_mid.json`, same settings, M6, teacher `gemma4:e4b-mlx`):**
+
+| Measure | `v0017` (34.6M) | **`mid` (106.8M)** |
+|---|---|---|
+| validation loss: speech / stories | 3.17 / 1.38 | **3.09** / 1.38 |
+| conversation probe (10 held-out) | 2 / 10 | **8 / 10** |
+| stories on request: teacher's mean grade (1–5) / share graded ≥ 4 | 1.5 / 0% | **4.3 / 90%** |
+| nursery conversation probe (fitting) | 84% | **88%** |
+| preschool exam | 68.5% | **76.3%** |
+
+  Preschool exam per skill, `id` / `ood_hard` / `ood_combo`:
+
+| Skill | `v0017` | `mid` |
+|---|---|---|
+| polite routines | 97 / 77 / 74 | 100 / 69 / 83 |
+| agree / disagree | 57 / 56 / 57 | **90 / 79** / 42 |
+| opinion with a reason | 90 / 73 / 46 | **100 / 100 / 90** |
+| asking for clarification | 100 / 52 / 45 | 100 / **77 / 67** |
+| facts | 95 / 57 / 69 | 90 / 50 / **51** |
+| opposites | 94 / 85 / 13 | 100 / 85 / **0** |
+| sizes | 97 / 69 / 50 | 100 / **90** / 52 |
+| categories | 66 / 74 / 53 | **100 / 100 / 77** |
+
+  Conversation probe, last reply of `mid`:
+  - passed: "Tell me a story. / Who are you?" → *"I'm Cerbeto. I'm a little student, and I'm learning to talk."* (`v0017`: went on with a story); "…a bear named Ben. / Is a cat an animal? / What was the bear's name?" → *"The bear's name was Ben."* (three turns, the subject changed in between); "…a boy named Sam. / Who was that story about?" → *"It was about a boy named Sam."*; "…a bird named Pip. / Are you a bird?" → *"No, I'm not a bird. I'm a little student."*
+  - failed: "…a cat named Luna. / Do you remember the cat's name?" → *"No, I do not remember the cat's name."* (a phrasing never trained); "…a fox named Red. / Was the story about a dog?" → *"Yes, it was about a dog named Red."* (keeps the name, loses the kind; it agrees with the question).
+- **Reading the result:**
+  - **Success on every criterion measured:** growth accepted at every step; conversation probe 8/10 (target ≥ 7); preschool exam +7.8 pp and nursery language better, not worse.
+  - **The data format did most of it:** turns, who the student is, and stories on request come from the conversations and pairs; 283M (0008) on single turns did not get them.
+  - **The preschool exam rose without a single school night:** +7.8 pp, more than days 9–18 of school gave `v0017`. The gain is in `id` and in the social skills, which the request → reply data practised; categories and agree/disagree reached 100% and 90% `id`.
+  - **Weak spots:** new combinations of facts and opposites (`ood_combo` 51% and 0%) went down — the knowledge is memorised, not composed; it agrees with leading questions ("Was the story about a dog?" → "Yes").
+  - **Data, not capacity, is the limit now:** validation was still falling at 69M tokens (~0.6 tokens per parameter). Next: [0010](0010-one-billion-tokens.md), 1B tokens with new data.
+- **Not done yet:** the `/stats` attention analysis (content-pointing heads, no spread 1.00) on the probe questions.
