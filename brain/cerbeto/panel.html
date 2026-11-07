@@ -218,7 +218,7 @@ const FINAL_TABS={
       the dead attention (core 3 and its copies: q, k ~3.5× small) renewed: 2 + 16 + 2 = 20 blocks, K = 1, bf16 on the Mac mini M6.
       Two of three steps are shelf windows as for 300M; every third step: a story on request 30%, preschool lessons 25%, who the student is 15%,
       conversations of 2–5 turns 30% (a story, a question about it, about the student or a lesson; every student turn learned).`},
-  bil:{arms:n=>n==="bil"||n==="mid",title:"1B — the 100M student trained on one billion tokens of new data (spec 0010)",
+  bil:{arms:n=>n==="bil",evals:n=>n==="bil"||n==="mid",title:"1B — the 100M student trained on one billion tokens of new data (spec 0010)",
     note:`Start: the 100M student (0009, 106.8M, K = 1, bf16 on the Mac mini M6). Two of three steps are shelf windows: educational text (FineWeb-Edu, up to grade 7) 32%,
       Cosmopedia stories for young children 22%, SODA conversations 15%, TinyStories 15%, speech 8%, books 5%, Simple Wikipedia 3% — no shelf more than 4 passes.
       Every third step: conversations of 2–8 turns 45% (facts the human tells and asks back later, stories and questions about them), preschool lessons 20%,
@@ -226,7 +226,7 @@ const FINAL_TABS={
 async function loadFinal(){
   const T=FINAL_TABS[tab]; $("#f-title").textContent=T.title; $("#f-note").textContent=T.note;
   const d=await (await fetch("/api/final")).json(); if(d.error){$("#f-arms").textContent=d.error;return}
-  d.arms=d.arms.filter(a=>T.arms(a.name)); d.evals=d.evals.filter(e=>e.name==="v0017"||T.arms(e.name));
+  d.arms=d.arms.filter(a=>T.arms(a.name)); d.evals=d.evals.filter(e=>e.name==="v0017"||(T.evals||T.arms)(e.name));
   $("#f-arms").innerHTML=d.arms.length?d.arms.map(a=>{const l=a.last,st=a.state,tot=a.total_steps,step=l?.step??0,
       prog=a.progress??(tot?step/tot:0),
       eta=l&&l.tok_s&&st.target_tokens?(st.target_tokens-(l.tokens??0))/l.tok_s:null, M=x=>(x/1e6).toFixed(1)+"M";
