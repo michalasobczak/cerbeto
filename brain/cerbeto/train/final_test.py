@@ -532,14 +532,35 @@ def evaluate(name: str) -> dict:
     return out
 
 
+def add_probes(name: str) -> dict:
+    """Spec 0010: the two new probes for a model evaluated before they existed, merged into its eval file."""
+    device = pick_device()
+    path = START if name == "v0017" else CKPT / name / "final"
+    model = checkpoint.load(path, device).eval()
+    k = ks(name)["k_eval"]
+    f = RUN / f"eval_{name}.json"
+    out = json.loads(f.read_text()) if f.exists() else {"name": name, "params": model.num_params(), "k": k}
+    out["long_dialogue"] = long_dialogue_probe(model, device, k)
+    out["relation"] = relation_probe(model, device, k)
+    print(name, "long dialogue", out["long_dialogue"]["accuracy"], "relation", out["relation"]["accuracy"], flush=True)
+    RUN.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps(out, indent=1))
+    return out
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("what", choices=["train", "eval"])
+    p.add_argument("what", choices=["train", "eval", "probes"])
     p.add_argument("arm", help="control | grown | deep | mid | bil (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     a = p.parse_args()
-    train(a.arm, a.tokens, bf16=not a.fp32) if a.what == "train" else evaluate(a.arm)
+    if a.what == "train":
+        train(a.arm, a.tokens, bf16=not a.fp32)
+    elif a.what == "probes":
+        add_probes(a.arm)
+    else:
+        evaluate(a.arm)
 
 
 if __name__ == "__main__":
