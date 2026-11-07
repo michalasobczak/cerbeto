@@ -13,7 +13,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 - [MANIFESTO.md](MANIFESTO.md): implementation principles for every specification.
 
 ## Current state (2026-11-07)
-**Where we are:** the student is **in preschool** (stage 1 of 3), not passed yet.
+**Where we are:** the deep, thin D student (106.8M) **passed preschool** on 2026-11-07 (stage 1 of 3) — trained outside the school, judged by the school's passing rule; the school student `v0017` (34.6M) is still in preschool.
 - **Nursery done:** 300M tokens, 6.9M → 29.9M parameters, BLiMP 65.9%.
 - **School running** (LLM teacher → sleep → exam, on a laptop, offline): preschool ~22% after the nursery → **60.5%** by day 7, flat on days 9–16, **68.5%** after day 18.
 - **Plateau cause:** lessons were 97% right; the missing points were knowledge and question forms the lessons never gave.
@@ -23,8 +23,8 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
   - first growth in school: `v0016`, 34.6M, limit raised to 40M;
   - yes/no lessons think "claim → fact → decision" (the student knew the facts but answered "No. A dog says woof.").
 - **Night bench (2026-11-06):** the night after day 17 replayed in 13 variants (learning rate, replay, consolidation, growth, thinking formats, core passes). None beyond chance (±3 pp from the seed alone); every night trades agree/disagree and categories for clarify, and the small validation set kept the start in most nights. Now a night keeps its end unless clearly worse, the exam decides, and earlier days are replayed once per prompt. Day 18 under these rules: **60.5% → 68.5%** (`v0017`) — rare opposites 25 → 85%, clarify 10 → 52%, agree/disagree 67 → 57% while its yes/no thinking changes.
-- **Growth experiments (2026-11-06):** C — a wide 99M student, then a deep **283M** one on a new Mac mini M6 in bf16: no gain over `v0017` after 18M tokens (the unrolled blocks stayed copies, four with a dead attention). D — a deep, thin **~107M** student trained on conversations of several turns: after 69.4M tokens it **beats `v0017` on every measure** — conversation probe 2 → 8 of 10, stories on request 1.5 → 4.3 of 5, **preschool exam 68.5% → 76.3%** without a school night. Next: [0010](specs/0010-one-billion-tokens.md), 1B tokens with new data.
-- **Next:** school continues from day 18; then grade 1 and grade 2.
+- **Growth experiments (2026-11-06):** C — a wide 99M student, then a deep **283M** one on a new Mac mini M6 in bf16: no gain over `v0017` after 18M tokens (the unrolled blocks stayed copies, four with a dead attention). D — a deep, thin **~107M** student trained on conversations of several turns: after 69.4M tokens it **beats `v0017` on every measure** — conversation probe 2 → 8 of 10, stories on request 1.5 → 4.3 of 5, **preschool exam 68.5% → 76.3%, preschool passed** without a school night. Next: [0010](specs/0010-one-billion-tokens.md), 1B tokens with new data.
+- **Next:** [0010](specs/0010-one-billion-tokens.md) trains D on 1B tokens (started 2026-11-07, ends ~11-12); then D goes to school for grade 1 and grade 2, with its own hippocampus.
 
 **Specifications**
 
@@ -39,7 +39,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 | [0007](specs/0007-offline-distribution.md) offline distribution | someday, maybe — not planned |
 | [0008](specs/0008-growth-experiment-100m.md) growth experiment, 99M → 283M (C) | closed: no gain over `v0017` |
 | [0009](specs/0009-deep-100m-conversations.md) deep 100M student with conversations (D) | closed: success, beats `v0017` on every measure; `/stats` analysis pending |
-| [0010](specs/0010-one-billion-tokens.md) one billion tokens: new data for vocabulary, knowledge and conversations | planned: waits for the evaluation of 0009 |
+| [0010](specs/0010-one-billion-tokens.md) one billion tokens: new data for vocabulary, knowledge and conversations | **in progress:** training since 2026-11-07, ends ~11-12 |
 
 <details>
 <summary><b>Hypotheses</b></summary>
@@ -51,7 +51,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 | A small local LLM is a reliable teacher when code verifies it | upheld | teacher exam: `gemma4:e4b-mlx` 97.5% correct, 94.8% consistent; unverified explanations never used |
 | Day → sleep → exam raises school skills without forgetting the nursery | partly upheld: preschool 22% → 68.5%, nursery language kept; stage not passed | `runs/school/cycles.jsonl`, [0005](specs/0005-school-day-sleep-exam.md) §9 |
 | Lessons in the training forms transfer to new forms and unseen items by themselves | refuted for this student | `id` high, `ood_hard` 10–57% on several skills; plateau days 9–16 |
-| More parameters help the school plateau | open: on the bench the grown `v0016` behaves like `v0015` (new neurons unused); growth experiment C: wide 99M and deep 283M no better than `v0017` (283M after 18M tokens); **D: a deep, thin 107M with conversations beats it (preschool 76.3% vs 68.5%), the gain from data in the conversation format as much as from size** | [0005](specs/0005-school-day-sleep-exam.md) §9 |
+| More parameters help the school plateau | open: on the bench the grown `v0016` behaves like `v0015` (new neurons unused); growth experiment C: wide 99M and deep 283M no better than `v0017` (283M after 18M tokens); **D: a deep, thin 107M with conversations beats it and passes preschool (76.3% vs 68.5%), the gain from data in the conversation format as much as from size** | [0005](specs/0005-school-day-sleep-exam.md) §9 |
 | The settings of a school night decide its result | refuted on the bench: 13 variants, all within ±3 pp of a different seed | [0005](specs/0005-school-day-sleep-exam.md) §9, `runs/bench/` |
 | Consolidation (EWC) holds what was learned | refuted as built: the nursery Fisher is almost zero; EWC on earlier lessons does not stop the trade between skills | [0005](specs/0005-school-day-sleep-exam.md) §9 |
 | More passes of the recurrent core at answer time help | not seen in school: validation 75.1 / 76.5 / 75.3 / 73.9% at K = 2 / 4 / 6 / 8 | [0005](specs/0005-school-day-sleep-exam.md) §9 |
@@ -173,7 +173,7 @@ Details: `runs/school/exams/v0017.json`, [specs/0005](specs/0005-school-day-slee
 <details>
 <summary>Details</summary>
 
-**Spec:** [0008](specs/0008-growth-experiment-100m.md). **Status:** stopped on 2026-11-06 at step 5,243 (18.3M tokens): no gain over `v0017`; replaced by **D** (`runs/final/deep/`, `checkpoints/final/deep/`, panel tab *300M*). Outside the school; its 40M limit stays.
+**Spec:** [0008](specs/0008-growth-experiment-100m.md). **Status:** stopped on 2026-11-06 at step 5,243 (18.3M tokens): no gain over `v0017`; replaced by **D** (`runs/final/deep/`, panel tab *C:300Mp*; checkpoint deleted 2026-11-07). Outside the school; its 40M limit stays.
 
 **Question:** preschool sits at ~68% and no night setting moves it. Is the student short of **capacity** or of **data** (300M tokens, mostly stories, plus 10.7M in school)? Do request → reply pairs make it usable in a talk?
 
@@ -242,7 +242,7 @@ The rest are request → reply pairs. Seeing all 670M once needs a ~10× longer 
 </details>
 
 ## D. A deep, thin ~100M student that learns conversations
-**Spec:** [0009](specs/0009-deep-100m-conversations.md). **Status:** closed 2026-11-07, success (`python -m cerbeto.train.final_test train mid`, panel tab *100M*, `runs/final/mid/`, `checkpoints/final/mid/`).
+**Spec:** [0009](specs/0009-deep-100m-conversations.md). **Status:** closed 2026-11-07, success (`python -m cerbeto.train.final_test train mid`, panel tab *D:80Mt run*, `runs/final/mid/`, `checkpoints/final/mid/`).
 
 **Question:** with the lessons of C — smaller and faster, copies that start apart, no dead attention, and conversations of several turns — does the student learn to keep turns apart and use what was said?
 
@@ -293,6 +293,9 @@ Deep and thin like MobileLLM-125M; ~2.7× faster than C, so a night shows severa
 | stories on request (teacher's grade 1–5) | 1.5 | **4.3** (90% graded ≥ 4) |
 | nursery conversation probe | 84% | **88%** |
 | **preschool exam** | 68.5% | **76.3%** |
+| **preschool passed** (rule of [0004](specs/0004-curriculum-and-exams.md)) | no | **yes** |
+
+**Preschool passed.** The rule for moving to the next grade: every code-graded skill ≥ 85% `id`, mean `ood_hard` ≥ 70%, no skill below 50% `ood_hard`. D: `id` 89.7–100% in all seven code-graded skills, mean `ood_hard` **78.5%**, lowest `ood_hard` **50.0%** (facts — exactly at the floor). `v0017` failed it on agree/disagree (57% `id`). The rule does not count new combinations (`ood_combo`), where D is weak (opposites 0%, agree/disagree 42%) — see *Cannot do yet*.
 
 **Can do now**
 - **Keep turns apart:** "Tell me a story." → a story; "Who are you?" → *"I'm Cerbeto. I'm a little student, and I'm learning to talk."* (`v0017` and C went on with the story).

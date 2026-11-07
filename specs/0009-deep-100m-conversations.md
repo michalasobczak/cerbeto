@@ -1,6 +1,6 @@
 # 0009 — A deep, thin 100M student that learns conversations
 
-Status: closed (2026-11-07) — success: the `mid` arm (106.8M) beats `v0017` on every measure; `/stats` analysis pending · Depends on: 0002, 0004, 0005, 0008 · Unblocks: decision on student size, growth method and conversation data for the school
+Status: closed (2026-11-07) — success: the `mid` arm (106.8M) beats `v0017` on every measure and passes preschool by the rule of 0004; `/stats` analysis pending · Depends on: 0002, 0004, 0005, 0008 · Unblocks: decision on student size, growth method and conversation data for the school
 
 ## 1. TL;DR
 We grow the school's best version `v0017` (34.6M) to a deep, thin **106.8M** student — width 640, 20 heads, 20 blocks without a loop — and train it on 80M tokens: shelf windows plus request → reply data in which a third are **conversations of 2–5 turns**. Unlike 0008, the unrolled copies start apart (noise) and the dead attention is renewed. Proof: a held-out conversation probe, `/stats` attention analysis and the 0008 measures, against `v0017`.
@@ -87,6 +87,9 @@ We grow the school's best version `v0017` (34.6M) to a deep, thin **106.8M** stu
 | stories on request: teacher's mean grade (1–5) / share graded ≥ 4 | 1.5 / 0% | **4.3 / 90%** |
 | nursery conversation probe (fitting) | 84% | **88%** |
 | preschool exam | 68.5% | **76.3%** |
+| preschool passed (rule of 0004) | no | **yes** |
+
+  Passing rule of 0004 (code-graded skills): `id` ≥ 85% in each — `mid` 89.7–100%; mean `ood_hard` ≥ 70% — **78.5%**; every `ood_hard` ≥ 50% — lowest **50.0%** (facts, exactly at the floor). `v0017` fails on agree/disagree `id` 57%. `ood_combo` is not part of the rule (opposites 0%).
 
   Preschool exam per skill, `id` / `ood_hard` / `ood_combo`:
 
