@@ -39,6 +39,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 | [0007](specs/0007-offline-distribution.md) offline distribution | someday, maybe — not planned |
 | [0008](specs/0008-growth-experiment-100m.md) growth experiment, 99M → 283M (C) | closed: no gain over `v0017` |
 | [0009](specs/0009-deep-100m-conversations.md) deep 100M student with conversations (D) | **in progress**: trained (69.4M tokens), evaluation running |
+| [0010](specs/0010-one-billion-tokens.md) one billion tokens: new data for vocabulary, knowledge and conversations | planned: waits for the evaluation of 0009 |
 
 <details>
 <summary><b>Hypotheses</b></summary>
