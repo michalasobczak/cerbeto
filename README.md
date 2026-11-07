@@ -173,7 +173,7 @@ Details: `runs/school/exams/v0017.json`, [specs/0005](specs/0005-school-day-slee
 <details>
 <summary>Details</summary>
 
-**Spec:** [0008](specs/0008-growth-experiment-100m.md). **Status:** stopped on 2026-11-06 at step 5,243 (18.3M tokens): no gain over `v0017`; replaced by **D** (`runs/final/deep/`, panel tab *C:300Mp*; checkpoint deleted 2026-11-07). Outside the school; its 40M limit stays.
+**Spec:** [0008](specs/0008-growth-experiment-100m.md). **Status:** stopped on 2026-11-06 at step 5,243 (18.3M tokens): no gain over `v0017`; replaced by **D** (`runs/final/deep/`, panel tab *C:300Mp fail*; checkpoint deleted 2026-11-07). Outside the school; its 40M limit stays.
 
 **Question:** preschool sits at ~68% and no night setting moves it. Is the student short of **capacity** or of **data** (300M tokens, mostly stories, plus 10.7M in school)? Do request → reply pairs make it usable in a talk?
 
