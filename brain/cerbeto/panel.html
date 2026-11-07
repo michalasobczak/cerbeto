@@ -233,7 +233,7 @@ async function loadFinal(){
       prog=a.progress??(tot?step/tot:0),
       eta=l&&l.tok_s&&st.target_tokens?(st.target_tokens-(l.tokens??0))/l.tok_s:null, M=x=>(x/1e6).toFixed(1)+"M";
     const sm=(rows,k)=>rows.filter(r=>r[k]>0).map(r=>[r.tokens/1e6,r[k]]);
-    const marks=(a.checkpoints||[]).map(c=>({x:c.tokens/1e6,label:`💾 ${c.name}`,title:`checkpoints/final/${a.name}/${c.name} · step ${c.step} · ${M(c.tokens)} tokens · saved ${c.saved}`}));
+    const marks=(a.checkpoints||[]).map(c=>({x:c.tokens/1e6,label:`💾 ${c.name} ${c.saved.slice(5)}`,title:`checkpoints/final/${a.name}/${c.name} · step ${c.step} · ${M(c.tokens)} tokens · saved ${c.saved}`}));
     return `<div style="margin-bottom:14px"><div><b>${esc(a.name)}</b> · ${(st.params||a.growth.at(-1)?.params_after||0).toLocaleString()} parameters ·
       <span class="${a.running?"warn":"mut"}">${a.running?"training":prog>=1?"finished":"stopped"}</span></div>
       <div class="bar"><i style="width:${100*Math.min(1,prog)}%"></i></div>
