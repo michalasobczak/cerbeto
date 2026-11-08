@@ -201,7 +201,7 @@ function lineChart(series,{w=600,h=190,xlab="",fmt=v=>v.toFixed(2),marks=[]}={})
   const pts=series.flatMap(s=>s.pts); if(!pts.length) return '<p class="mut">no data yet</p>';
   const x0=Math.min(...pts.map(p=>p[0])),x1=Math.max(...pts.map(p=>p[0]),...marks.map(m=>m.x),x0+1),lo=Math.min(...pts.map(p=>p[1])),hi=Math.max(...pts.map(p=>p[1]),lo+.01);
   const xs=x=>34+(x-x0)*(w-44)/(x1-x0),ys=v=>h-18-(v-lo)/(hi-lo)*(h-28);
-  let svg=`<svg viewBox="0 0 ${w} ${h}" style="height:${h+10}px">`;
+  let svg=`<svg class="lc" data-lo="${lo}" data-hi="${hi}" data-h="${h}" data-w="${w}" viewBox="0 0 ${w} ${h}" style="height:${h+10}px">`;
   for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4;svg+=`<line x1="34" x2="${w-10}" y1="${ys(v)}" y2="${ys(v)}" stroke="var(--line)"/><text x="30" y="${ys(v)+3}" font-size="9" text-anchor="end" fill="var(--mut)">${fmt(v)}</text>`}
   for(const s of series){ if(s.dots) s.pts.forEach(p=>svg+=`<circle cx="${xs(p[0])}" cy="${ys(p[1])}" r="3" fill="${s.color}"><title>${s.name} ${p[1].toFixed(3)}</title></circle>`);
     else svg+=`<polyline fill="none" stroke="${s.color}" stroke-width="1.5" points="${s.pts.map(p=>xs(p[0])+","+ys(p[1])).join(" ")}"/>`}
@@ -209,8 +209,32 @@ function lineChart(series,{w=600,h=190,xlab="",fmt=v=>v.toFixed(2),marks=[]}={})
     const tw=m.label.length*5.6+8;
     svg+=`<g><title>${esc(m.title)}</title><line x1="${x}" x2="${x}" y1="6" y2="${h-18}" stroke="#38a169" stroke-width="2" stroke-dasharray="4 3"/>`+
       `<rect x="${x-tw-2}" y="6" width="${tw}" height="14" rx="3" fill="#38a169"/><text x="${x-6}" y="16" font-size="10" text-anchor="end" fill="#fff">${esc(m.label)}</text></g>`}
-  svg+=`<text x="${w-10}" y="${h-4}" font-size="9" text-anchor="end" fill="var(--mut)">${xlab}</text></svg>`;
+  svg+=`<text x="${w-10}" y="${h-4}" font-size="9" text-anchor="end" fill="var(--mut)">${xlab}</text>`+
+    `<g class="guide" pointer-events="none" style="display:none"><line x1="34" x2="${w-10}" stroke="var(--fg,#333)" stroke-width="1" stroke-dasharray="3 3"/>`+
+    `<rect x="${w-58}" width="48" height="13" rx="3" fill="var(--fg,#333)"/><text x="${w-34}" font-size="10" text-anchor="middle" fill="var(--bg,#fff)"></text></g></svg>`;
   return svg+`<div class="mut legend">${series.map(s=>`<span style="color:${s.color}">● ${esc(s.name)}</span>`).join("")}</div>`}
+// hover a chart: a horizontal guide line with its value, to compare the level now with earlier; click pins one, click a pin to drop it
+function guideAt(svg,e){const r=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal,y=(e.clientY-r.top)*vb.height/r.height,
+  h=+svg.dataset.h,lo=+svg.dataset.lo,hi=+svg.dataset.hi;
+  return y<6||y>h-18?null:{y,v:lo+(h-18-y)/(h-28)*(hi-lo)}}
+function placeGuide(g,y,v){g.style.display="";const[l,r,t]=g.children;l.setAttribute("y1",y);l.setAttribute("y2",y);
+  r.setAttribute("y",y-14);t.setAttribute("y",y-4);t.textContent=v.toFixed(3)}
+document.addEventListener("mousemove",e=>{for(const g of document.querySelectorAll("svg.lc>g.guide"))if(!g.closest("svg").contains(e.target))g.style.display="none";
+  const svg=e.target.closest?.("svg.lc"); if(!svg) return; const p=guideAt(svg,e),g=svg.querySelector(":scope>g.guide");
+  if(p) placeGuide(g,p.y,p.v); else g.style.display="none"});
+const PINS={};   // pinned levels per chart (tab:index), kept across the 5 s refresh
+const pinKey=svg=>tab+":"+[...document.querySelectorAll("svg.lc")].indexOf(svg);
+function drawPins(){document.querySelectorAll("svg.lc").forEach(svg=>{svg.querySelectorAll(":scope>g.pin").forEach(x=>x.remove());
+  const h=+svg.dataset.h,lo=+svg.dataset.lo,hi=+svg.dataset.hi;
+  for(const v of PINS[pinKey(svg)]||[]){const y=h-18-(v-lo)/(hi-lo)*(h-28); if(y<6||y>h-18) continue;
+    const g=svg.querySelector(":scope>g.guide").cloneNode(true); g.setAttribute("class","pin"); g.dataset.v=v;
+    g.removeAttribute("pointer-events"); g.style.cursor="pointer"; g.children[0].setAttribute("stroke","#d64545");
+    g.children[1].setAttribute("fill","#d64545"); g.children[2].setAttribute("fill","#fff"); placeGuide(g,y,v);
+    g.insertAdjacentHTML("afterbegin",`<title>pinned level ${v.toFixed(3)} — click to remove</title>`); svg.appendChild(g)}})}
+document.addEventListener("click",e=>{const svg=e.target.closest?.("svg.lc"); if(!svg) return; const k=pinKey(svg),pin=e.target.closest("g.pin");
+  if(pin) PINS[k]=(PINS[k]||[]).filter(v=>v!==+pin.dataset.v);
+  else {const p=guideAt(svg,e); if(!p) return; (PINS[k]=PINS[k]||[]).push(p.v)}
+  drawPins()});
 const FINAL_TABS={
   final:{arms:n=>n!=="mid"&&n!=="bil",title:"300M — v0017 grown to a deep 283M student, trained on request → reply data",
     note:`Start: school v0017 (34.6M), grown function-preservingly to 282.6M: d 512→896, 28 heads, MLP 3072, 24 blocks with no loop (K = 1); bf16 on the Mac mini M6.
@@ -249,6 +273,7 @@ async function loadFinal(){
       ${a.checkpoints?.length?`<p class="note">💾 checkpoints on disk: ${a.checkpoints.map(c=>`<b>${esc(c.name)}</b> at ${M(c.tokens)} tokens (step ${c.step.toLocaleString()}, saved ${esc(c.saved)})`).join(" · ")}${a.running?" — <i>latest</i> is overwritten every 30 minutes":""}</p>`:a.checkpoints?'<p class="note">💾 no checkpoint on disk</p>':""}
       ${l&&a.last_passes?`<p class="note">passes over each shelf: ${Object.entries(a.last_passes).map(([s,p])=>`${esc(s)} ${p.toFixed(2)}×`).join(" · ")}</p>`:""}
       ${a.growth.length?`<p class="note">growth: ${a.growth.map(g=>`${esc(g.op)} ${(g.params_before/1e6).toFixed(1)}M → ${(g.params_after/1e6).toFixed(1)}M (Δ loss ${g.delta_loss})`).join(" · ")}</p>`:""}</div>`}).join(""):'<p class="mut">no run yet</p>';
+  drawPins();
   const E=d.evals; if(!E.length){$("#f-eval").innerHTML='<p class="mut">Measured when training finishes: shelf validation loss, stories on request (10 held-out phrasings, graded 1–5 by the teacher), the nursery conversation probe (50 situations, teacher) and the preschool exam.</p>';return}
   const f=x=>x==null?"–":x.toFixed(3);
   let h=`<table><tr><th>model</th><th class="n">params</th><th class="n">speech loss</th><th class="n">stories loss</th><th class="n">story score</th><th class="n">stories ≥4</th><th class="n">conversation</th><th class="n">dialogue</th><th class="n">long dialogue</th><th class="n">relations</th><th class="n">preschool</th></tr>`+
