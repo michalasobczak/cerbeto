@@ -221,7 +221,7 @@ function logFit(pts){const q=pts.filter(p=>p[0]>0).slice(Math.floor(pts.length/2
     sxx=X.reduce((s,x)=>s+(x-mx)**2,0); if(!sxx) return null;
   const b=X.reduce((s,x,i)=>s+(x-mx)*(Y[i]-my),0)/sxx; return x=>my+b*(Math.log(x)-mx)}
 const quant=(a,q)=>{const s=a.slice().sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.max(0,Math.round(q*(s.length-1))))]};
-function lineChart(series,{w=600,h=200,xlab="",marks=[],target=null,smooth=15}={}){
+function lineChart(series,{w=600,h=200,xlab="",marks=[],target=null,smooth=null}={}){
   const pts=series.flatMap(s=>s.pts); if(!pts.length) return '<p class="mut">no data yet</p>';
   const L=46,R=14,T=10,B=26, ys_=pts.map(p=>p[1]);
   let lo=quant(ys_,.005),hi=quant(ys_,.995); if(hi-lo<.01) hi=lo+.01; const pad=(hi-lo)*.06; lo-=pad; hi+=pad;    // rare spikes do not squash the rest
@@ -236,7 +236,7 @@ function lineChart(series,{w=600,h=200,xlab="",marks=[],target=null,smooth=15}={
   const line=(p,attrs)=>`<polyline fill="none" stroke-linejoin="round" ${attrs} points="${p.map(q=>xs(q[0]).toFixed(1)+","+ys(q[1]).toFixed(1)).join(" ")}"/>`;
   const legend=[];
   for(const s of series){ if(!s.pts.length) continue;
-    const tr=movAvg(s.pts,s.dots?2:smooth), last=tr.at(-1)[1], fit=target&&s.pts.at(-1)[0]<target?logFit(s.pts):null;
+    const tr=movAvg(s.pts,s.dots?2:smooth??Math.max(10,Math.round(s.pts.length/25))), last=tr.at(-1)[1], fit=target&&s.pts.at(-1)[0]<target?logFit(s.pts):null;
     if(s.dots) s.pts.forEach(p=>svg+=`<circle cx="${xs(p[0])}" cy="${ys(p[1])}" r="2.6" fill="${s.color}" fill-opacity=".55"><title>${esc(s.name)} ${p[1].toFixed(3)} at ${p[0].toFixed(1)}M</title></circle>`);
     else svg+=line(s.pts,`stroke="${s.color}" stroke-opacity=".28" stroke-width="1"`);
     svg+=line(tr,`stroke="${s.color}" stroke-width="2.2"`);
@@ -305,7 +305,8 @@ async function loadFinal(){
       <div class="bar"><i style="width:${100*Math.min(1,prog)}%"></i></div>
       <div class="mut">step ${step.toLocaleString()} · ${M(l?.tokens??0)} / ${M(st.target_tokens??0)} tokens (${(100*prog).toFixed(1)}%) · ${l?.tok_s??"–"} tok/s · lr ${l?.lr??"–"}${eta!=null&&a.running?` · about ${dur(eta)} left`:""}</div>
       <h2 style="margin-top:10px">training loss (mean of the last 100 steps)</h2>
-      ${lineChart([{name:"shelf windows",color:"#3b6fd8",pts:sm(a.rows,"shelf_loss")},{name:"request → reply pairs",color:"#d64545",pts:sm(a.rows,"pair_loss")}],{xlab:"x: million tokens · thin = raw, thick = trend",marks,w:W,h:H,target:tgt})}
+      ${lineChart([{name:"shelf windows",color:"#3b6fd8",pts:sm(a.rows,"shelf_loss")}],{xlab:"x: million tokens · thin = raw, thick = trend",marks,w:W,h:H,target:tgt})}
+      ${sm(a.rows,"pair_loss").length?lineChart([{name:"request → reply pairs (only the student's turn)",color:"#d64545",pts:sm(a.rows,"pair_loss")}],{xlab:"x: million tokens",marks,w:W,h:Math.round(H*.6),target:tgt}):""}
       <h2 style="margin-top:10px">validation loss (every 1000 steps)</h2>
       ${lineChart([{name:"speech",color:"#1f9d55",dots:1,pts:a.valid.map(r=>[r.tokens/1e6,r.valid.s0_speech])},{name:"stories",color:"#b7800f",dots:1,pts:a.valid.map(r=>[r.tokens/1e6,r.valid.s0_stories])},
         ...[["s3_edu_plus","edu","#7a4fd0"],["s2_textbooks","textbooks","#d6457f"],["s0_dialogue","dialogue","#2a9bb0"]].filter(([k])=>a.valid.some(r=>r.valid[k]!=null))
