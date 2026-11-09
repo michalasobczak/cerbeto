@@ -15,11 +15,11 @@ header{grid-column:1/4;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14
 header h1{font-size:21px;margin:0}header .sub{color:var(--mut);font-size:13.5px;flex:1 1 380px}
 .badges{display:flex;flex-wrap:wrap;gap:6px}.badge{font-size:12px;padding:2px 9px;border-radius:99px;background:var(--accSoft);color:var(--acc);white-space:nowrap}
 aside{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;overflow-y:auto;min-height:0}
-aside h2{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:14px 0 6px}aside h2:first-child{margin-top:0}
+aside h2{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:9px 0 4px}aside h2:first-child{margin-top:0}
 aside .hint{font-size:12.5px;color:var(--mut);margin:0 0 8px}aside.hard{border-color:var(--warnBg)}aside.hard h2{color:var(--warn)}
-.ex{display:block;width:100%;text-align:left;font:inherit;font-size:13.5px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:7px 10px;margin:0 0 6px;cursor:pointer}
+.ex{display:block;width:100%;text-align:left;font:inherit;font-size:13.5px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:5px 10px;margin:0 0 4px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ex:hover:not(:disabled){border-color:var(--acc)}.ex:disabled{opacity:.5;cursor:default}
-.ex small{display:block;color:var(--mut);font-size:11.5px;margin-top:2px}.ex .steps{margin:0;padding-left:16px}
+.ex small{color:var(--mut);font-size:12px}
 main{display:flex;flex-direction:column;min-height:0}
 #log{flex:1;min-height:0;overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:9px}
 .msg{max-width:82%;padding:8px 12px;border-radius:15px;white-space:pre-wrap;word-wrap:break-word}
@@ -52,7 +52,7 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}
 </header>
 
 <aside>
-  <p class="hint">Click an example: it is typed into the chat box and sent. Or write your own — in English.
+  <p class="hint">Click an example — it is typed into the chat and sent. Or write your own, in English.
     <button class="link" id="shuffle" type="button">🎲 other examples</button></p>
   <div id="examples"></div>
 </aside>
@@ -73,8 +73,7 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}
 
 <aside class="hard">
   <h2>Still learning</h2>
-  <p class="hint">Cerbeto knows very little about the world yet: it often answers a question about the world with a preschool pattern
-    ("The moon is blue", "A bee says buzz"). Try these to see where it fails — the next training stage adds question-and-answer data.</p>
+  <p class="hint">It knows little about the world yet and often answers with a preschool pattern ("A bee says buzz"). Try these to see where it fails.</p>
   <div id="examples-hard"></div>
 </aside>
 </div>
@@ -112,7 +111,8 @@ function examples() {
     for (const item of pick(POOL[key], n)) {
       const steps = key === "memory" ? scenario(item) : [item];
       const b = document.createElement("button"); b.className = "ex"; b.disabled = busy || !model;
-      b.innerHTML = steps.length === 1 ? esc(steps[0]) : `<ol class="steps">${steps.map(s => `<li>${esc(s)}</li>`).join("")}</ol><small>${steps.length} messages, one after another</small>`;
+      b.innerHTML = key === "memory" ? `${esc(item[0])} · ${esc(item[1])} ${esc(item[2])} <small>· ${steps.length} messages</small>` : esc(steps[0]);
+      b.title = steps.join("\n");     // the full text (and every message of a scenario) on hover
       b.onclick = () => play(steps); box.appendChild(b);
     }
   }
