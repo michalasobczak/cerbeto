@@ -44,3 +44,34 @@ def test_probes_do_not_touch_the_conversation(talker):
 @needs_tokenizer
 def test_story_runs_past_speaker_tokens_until_eos(talker):
     assert talker.story("Once upon a time").startswith("hi there!")
+
+
+def test_printer_streams_the_thought_then_the_answer_word_by_word():
+    import io
+    from cerbeto.talk import Printer
+    out = io.StringIO()
+    p = Printer(out)
+    for raw in ["<|think|> The sun", "<|think|> The sun is hot.<|/think|>", "<|think|> The sun is hot.<|/think|><|answer|> Yes",
+                "<|think|> The sun is hot.<|/think|><|answer|> Yes,", "<|think|> The sun is hot.<|/think|><|answer|> Yes, it is."]:
+        p(raw)
+    p.end(type("T", (), {"last_thought": "The sun is hot."})(), "Yes, it is.")
+    assert out.getvalue() == "\033[2m  (thinks: The sun is hot.)\033[0m\nstudent> Yes, it is.\n"
+
+
+@needs_tokenizer
+def test_streamed_reply_is_the_same_reply_token_by_token(talker, monkeypatch):
+    tok = talker.tok
+    script = tok.encode("<|answer|> Yes, it is.<|eos|> never").ids
+    start = {}
+
+    def scripted_forward(self, idx, k=4):        # always puts the next scripted token on top
+        n = start.setdefault("n", idx.shape[1])
+        logits = torch.zeros(1, idx.shape[1], self.cfg.vocab_size)
+        logits[0, -1, script[idx.shape[1] - n]] = 1.0
+        return logits
+
+    monkeypatch.setattr(Student, "forward", scripted_forward)
+    seen = []
+    assert talker.reply("Is the sun hot?", temperature=0.0, on_raw=seen.append) == "Yes, it is."
+    assert len(seen) > 2 and all(b.startswith(a) for a, b in zip(seen, seen[1:]))     # the text only grows
+    assert "never" not in seen[-1]                                                     # stopped at <|eos|>

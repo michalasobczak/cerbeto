@@ -94,8 +94,36 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}
 </div>
 
 <script type="module">
+// The model runs in a Web Worker: generation does not block the page, so the reply appears word by word.
+const WORKER = `
 import { AutoTokenizer, AutoModelForCausalLM, TextStreamer, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1";
-env.allowRemoteModels = false; env.allowLocalModels = true; env.localModelPath = new URL("./", location.href).href;
+let tok, model, STOPS;
+self.onmessage = async ({ data }) => {
+  try {
+    if (data.type === "load") {
+      env.allowRemoteModels = false; env.allowLocalModels = true; env.localModelPath = data.base;
+      tok = await AutoTokenizer.from_pretrained("model");
+      model = await AutoModelForCausalLM.from_pretrained("model", { dtype: "q8", device: "wasm",
+        progress_callback: p => { if (p.status === "progress" && p.total) self.postMessage({ type: "progress", file: p.file, loaded: p.loaded, total: p.total }); } });
+      STOPS = ["<|eos|>", "<|human|>", "<|student|>"].map(t => tok.model.tokens_to_ids.get(t));
+      self.postMessage({ type: "ready" });
+    } else if (data.type === "generate") {
+      const { turns, text, maxNew, temp } = data;
+      let t = turns.slice(), ids;
+      for (;;) {     // training format; the oldest turns drop out when the 512-token context is full
+        const ctx = "<|eos|>" + t.map(([u, a]) => \`<|human|> \${u}\\n<|student|><|answer|> \${a}<|eos|>\`).join("") + \`<|human|> \${text}\\n<|student|>\`;
+        ids = tok(ctx, { add_special_tokens: false });
+        if (ids.input_ids.dims[1] <= 512 - maxNew || !t.length) break;
+        t.shift();
+      }
+      const streamer = new TextStreamer(tok, { skip_prompt: true, skip_special_tokens: false, callback_function: s => self.postMessage({ type: "token", s }) });
+      await model.generate({ ...ids, max_new_tokens: maxNew, do_sample: temp > 0, temperature: Math.max(temp, 0.01), top_k: 40, eos_token_id: STOPS, streamer });
+      self.postMessage({ type: "done" });
+    }
+  } catch (e) { self.postMessage({ type: data.type === "load" ? "failed" : "done", error: e.message }); }
+};`;
+const worker = new Worker(URL.createObjectURL(new Blob([WORKER], { type: "text/javascript" })), { type: "module" });
+let ready = false, onToken = null, onDone = null;
 
 const $ = s => document.querySelector(s);
 const log = $("#log"), q = $("#q"), send = $("#send");
@@ -106,7 +134,7 @@ const DRAW = [["Small talk", "Small talk", 3], ["Remembering what you said", "me
               ["Stories", "Stories", 3], [null, "Still learning — world knowledge", 6]];
 const pick = (a, n) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, n); };
 const scenario = ([name, pet, pn]) => [`My name is ${name}.`, `I have a ${pet} called ${pn}.`, `What is my ${pet} called?`, "What is my name?"];
-let history = [], busy = false, tok, model, STOPS;
+let history = [], busy = false;
 const files = {};
 
 function add(cls, text) { const d = document.createElement("div"); d.className = "msg " + cls; d.textContent = text; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; }
@@ -125,7 +153,7 @@ function examples() {
     if (title) { const h = document.createElement("h2"); h.textContent = title; box.appendChild(h); }
     for (const item of pick(POOL[key], n)) {
       const steps = key === "memory" ? scenario(item) : [item];
-      const b = document.createElement("button"); b.className = "ex"; b.disabled = busy || !model;
+      const b = document.createElement("button"); b.className = "ex"; b.disabled = busy || !ready;
       b.innerHTML = key === "memory" ? `${esc(item[0])} · ${esc(item[1])} ${esc(item[2])} <small>· ${steps.length} messages</small>` : esc(steps[0]);
       b.title = steps.join("\n");     // the full text (and every message of a scenario) on hover
       b.onclick = () => play(steps); box.appendChild(b);
@@ -147,17 +175,15 @@ async function play(steps) {
   lock(false); q.focus();
 }
 
-async function load() {
-  tok = await AutoTokenizer.from_pretrained("model");
-  model = await AutoModelForCausalLM.from_pretrained("model", { dtype: "q8", device: "wasm", progress_callback: p => {
-    if (p.status === "progress" && p.total) { files[p.file] = [p.loaded, p.total];
-      const [l, t] = Object.values(files).reduce((a, [x, y]) => [a[0] + x, a[1] + y], [0, 0]); $("#prog").style.width = (100 * l / t).toFixed(1) + "%"; }
-  }});
-  STOPS = ["<|eos|>", "<|human|>", "<|student|>"].map(t => tok.model.tokens_to_ids.get(t));
-  $("#status").remove();
-  add("sys", "Ready. Pick an example, or say hello, ask a simple question, or ask for a story.");
-  lock(false); q.focus();
-}
+worker.onmessage = ({ data: d }) => {
+  if (d.type === "progress") { files[d.file] = [d.loaded, d.total];
+    const [l, t] = Object.values(files).reduce((a, [x, y]) => [a[0] + x, a[1] + y], [0, 0]); $("#prog").style.width = (100 * l / t).toFixed(1) + "%"; }
+  else if (d.type === "ready") { ready = true; $("#status").remove();
+    add("sys", "Ready. Pick an example, or say hello, ask a simple question, or ask for a story."); lock(false); q.focus(); }
+  else if (d.type === "failed") $("#status").textContent = "Could not load the model: " + d.error;
+  else if (d.type === "token") onToken?.(d.s);
+  else if (d.type === "done") onDone?.(d.error);
+};
 
 async function answer(text) {
   text = text.trim(); if (!text) return;
@@ -165,19 +191,13 @@ async function answer(text) {
   add("me", text);
   const bot = add("bot typing", "");
   const maxNew = /story/i.test(text) ? 160 : 60;
-  let turns = $("#mem").checked ? history.slice() : [], ids;
-  for (;;) {     // training format; the oldest turns drop out when the 512-token context is full
-    const ctx = "<|eos|>" + turns.map(([u, a]) => `<|human|> ${u}\n<|student|><|answer|> ${a}<|eos|>`).join("") + `<|human|> ${text}\n<|student|>`;
-    ids = tok(ctx, { add_special_tokens: false });
-    if (ids.input_ids.dims[1] <= 512 - maxNew || !turns.length) break;
-    turns.shift();
-  }
   let raw = "";
-  const streamer = new TextStreamer(tok, { skip_prompt: true, skip_special_tokens: false, callback_function: t => { raw += t; bot.textContent = clean(raw); log.scrollTop = log.scrollHeight; } });
-  const temp = +$("#temp").value;
-  try {
-    await model.generate({ ...ids, max_new_tokens: maxNew, do_sample: temp > 0, temperature: Math.max(temp, 0.01), top_k: 40, eos_token_id: STOPS, streamer });
-  } catch (e) { raw = "(error: " + e.message + ")"; }
+  onToken = s => { raw += s; bot.textContent = clean(raw); log.scrollTop = log.scrollHeight; };
+  const error = await new Promise(resolve => {
+    onDone = resolve;
+    worker.postMessage({ type: "generate", turns: $("#mem").checked ? history : [], text, maxNew, temp: +$("#temp").value });
+  });
+  if (error) raw = "(error: " + error + ")";
   const reply = clean(raw) || "…";
   bot.textContent = reply; bot.classList.remove("typing");
   history.push([text, reply]);
@@ -213,7 +233,8 @@ stage(1);
 $("#temp").oninput = e => $("#tv").textContent = e.target.value;
 $("#reset").onclick = () => { if (busy) return; history = []; [...log.querySelectorAll(".msg:not(.lang)")].forEach(m => m.remove()); add("sys", "New conversation."); };
 examples();
-load().catch(e => { $("#status").textContent = "Could not load the model: " + e.message; });
+worker.onerror = e => { $("#status") && ($("#status").textContent = "Could not start the model: " + e.message); };
+worker.postMessage({ type: "load", base: new URL("./", location.href).href });
 </script>
 </body>
 </html>

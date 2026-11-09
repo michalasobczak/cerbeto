@@ -3,12 +3,15 @@
 Every line is a separate question by default: the student was trained on single request → reply pairs and
 does not yet tell turns apart in a longer context (2026-11-06). `/memory on` keeps the conversation as context
 in the form of the training conversations: `<|human|> …\n<|student|><|answer|> …<|eos|>` per turn. Slash commands probe single skills without the history.
+In the terminal the reply appears token by token, as in other chats.
 """
 import re
+import sys
 import time
 from pathlib import Path
 
 import torch
+import torch.nn.functional as F
 
 from cerbeto import paths
 from cerbeto.model import checkpoint
@@ -43,11 +46,34 @@ class Talker:
         self.last = None                # the last exchange, for /stats
 
     @torch.no_grad()
-    def _continue(self, text: str, k: int, temperature: float, max_new_tokens: int, stops: set[int]) -> str:
+    def _stream(self, idx: torch.Tensor, k: int, temperature: float, max_new_tokens: int, stops: set[int], on_raw) -> list[int]:
+        """Student.generate one token at a time (same sampling: greedy at 0, else top-40), stopping at a stop token;
+        `on_raw` gets the text so far after every token."""
+        out = []
+        for _ in range(max_new_tokens):
+            logits = self.model(idx[:, -self.model.cfg.max_seq_len:], k)[:, -1, :].float()
+            if temperature <= 0:
+                nxt = logits.argmax(-1, keepdim=True)
+            else:
+                logits = logits / temperature
+                kth = torch.topk(logits, min(40, logits.size(-1))).values[:, -1:]
+                nxt = torch.multinomial(F.softmax(logits.masked_fill(logits < kth, float("-inf")), -1), 1)
+            out.append(int(nxt))
+            if out[-1] in stops:
+                break
+            idx = torch.cat((idx, nxt), dim=1)
+            on_raw(self.tok.decode(out, skip_special_tokens=False))
+        return out
+
+    @torch.no_grad()
+    def _continue(self, text: str, k: int, temperature: float, max_new_tokens: int, stops: set[int], on_raw=None) -> str:
         ids = [self.eos] + self.tok.encode(text).ids
         idx = torch.tensor([ids], device=self.device)
         t0 = time.perf_counter()
-        out = self.model.generate(idx, max_new_tokens, k=k, temperature=temperature, top_k=40)[0, len(ids):].tolist()
+        if on_raw is None:
+            out = self.model.generate(idx, max_new_tokens, k=k, temperature=temperature, top_k=40)[0, len(ids):].tolist()
+        else:
+            out = self._stream(idx, k, temperature, max_new_tokens, stops, on_raw)
         seconds = time.perf_counter() - t0
         cut = next((i for i, t in enumerate(out) if t in stops), len(out))
         self.last = {"ids": ids + out[:cut + 1], "n_ctx": len(ids), "n_hist": 1, "k": k,     # + the stop token
@@ -55,18 +81,23 @@ class Talker:
                                 "device": str(self.device)}}
         return self.tok.decode(out[:cut], skip_special_tokens=False)
 
+    @staticmethod
+    def parts(raw: str) -> tuple[str, str]:
+        """(what the student thought, what it said) from the raw continuation — also from a partial one while streaming."""
+        thought = re.search(r"<\|think\|>(.*?)(?:<\|/think\|>|<\|answer\|>|$)", raw, re.S)
+        answer = raw.rsplit("<|answer|>", 1)[1] if "<|answer|>" in raw else re.sub(r"<\|think\|>.*?(<\|/think\|>|$)", "", raw, flags=re.S)
+        return (thought[1].strip() if thought else ""), re.sub(r"<\|[^|]*\|>", "", answer).split("\n")[0].strip()
+
     def reply(self, say: str, remember: bool | None = None, k: int | None = None,
-              temperature: float | None = None) -> str:
+              temperature: float | None = None, on_raw=None) -> str:
+        """The student's answer; `on_raw(text so far)` is called after every generated token (streaming)."""
         remember = self.memory if remember is None else remember
         context = (self.history if remember else "") + f"<|human|> {say}\n<|student|>"
         raw = self._continue(context, k or self.k, self.temperature if temperature is None else temperature,
-                             self.max_new_tokens, self.stops)
+                             self.max_new_tokens, self.stops, on_raw)
         if remember and self.history:
             self.last["n_hist"] = 1 + len(self.tok.encode(self.history).ids)
-        thought = re.search(r"<\|think\|>(.*?)(?:<\|/think\|>|<\|answer\|>|$)", raw, re.S)
-        self.last_thought = thought[1].strip() if thought else ""
-        answer = raw.rsplit("<|answer|>", 1)[1] if "<|answer|>" in raw else re.sub(r"<\|think\|>.*?(<\|/think\|>|$)", "", raw, flags=re.S)
-        answer = re.sub(r"<\|[^|]*\|>", "", answer).split("\n")[0].strip()
+        self.last_thought, answer = self.parts(raw)
         if remember:      # as in training (encode_dialogues): the student's turn as generated, closed by <|eos|>
             self.history = f"{context}{raw.rstrip()}<|eos|>"
         return answer
@@ -119,6 +150,32 @@ def _thought(talker: Talker) -> str:
     return f"\033[2m  (thinks: {talker.last_thought})\033[0m\n" if talker.last_thought else ""
 
 
+class Printer:
+    """Prints the student's reply while it is generated: the thought first (dimmed), then the answer word by word."""
+
+    def __init__(self, out=None):
+        self.out, self.shown = out or sys.stdout, None
+
+    def __call__(self, raw: str) -> None:
+        thought, answer = Talker.parts(raw)
+        if not answer:
+            return
+        if self.shown is None:
+            self.out.write((f"\033[2m  (thinks: {thought})\033[0m\n" if thought else "") + "student> ")
+            self.shown = ""
+        if answer.startswith(self.shown):
+            self.out.write(answer[len(self.shown):])
+            self.shown = answer
+        self.out.flush()
+
+    def end(self, talker: Talker, answer: str) -> None:
+        if self.shown is None:                  # nothing streamed (empty answer): print it whole
+            self.out.write(f"{_thought(talker)}student> {answer}\n")
+        else:
+            self.out.write((answer[len(self.shown):] if answer.startswith(self.shown) else "") + "\n")
+        self.out.flush()
+
+
 def run(student: str, version: str | None, device: str | None, k: int, temperature: float,
         says: list[str] | None = None, stats: bool = False,
         memory: bool = False) -> None:
@@ -144,8 +201,9 @@ def run(student: str, version: str | None, device: str | None, k: int, temperatu
         if not line:
             continue
         if not line.startswith("/"):
-            answer = talker.reply(line)
-            print(f"{_thought(talker)}student> {answer}")
+            printer = Printer()
+            answer = talker.reply(line, on_raw=printer)
+            printer.end(talker, answer)
             if stats:
                 print(talker.stats())
             continue
