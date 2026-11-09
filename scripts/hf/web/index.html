@@ -102,8 +102,8 @@ self.onmessage = async ({ data }) => {
   try {
     if (data.type === "load") {
       env.allowRemoteModels = false; env.allowLocalModels = true; env.localModelPath = data.base;
-      tok = await AutoTokenizer.from_pretrained("model");
-      model = await AutoModelForCausalLM.from_pretrained("model", { dtype: "q8", device: "wasm",
+      tok = await AutoTokenizer.from_pretrained("models/{TAG}");
+      model = await AutoModelForCausalLM.from_pretrained("models/{TAG}", { dtype: "q8", device: "wasm",
         progress_callback: p => { if (p.status === "progress" && p.total) self.postMessage({ type: "progress", file: p.file, loaded: p.loaded, total: p.total }); } });
       STOPS = ["<|eos|>", "<|human|>", "<|student|>"].map(t => tok.model.tokens_to_ids.get(t));
       self.postMessage({ type: "ready" });

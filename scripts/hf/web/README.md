@@ -16,5 +16,5 @@ short_description: Chat with a 107M model trained from scratch like a child
 
 Chat with [Cerbeto](https://huggingface.co/michalasobczak/cerbeto), a small language model trained from scratch on one Mac mini and raised
 like a child (nursery → preschool → school). The model runs entirely in your browser (transformers.js, ONNX int8, ~110 MB, downloaded once).
-`model/` holds the checkpoint `{TAG}` converted to the Llama layout (identical logits) and exported to ONNX.
+`models/{TAG}/` holds the checkpoint `{TAG}` converted to the Llama layout (identical logits) and exported to ONNX.
 Code and story: [github.com/michalasobczak/cerbeto](https://github.com/michalasobczak/cerbeto).
