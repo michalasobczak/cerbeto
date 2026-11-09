@@ -37,7 +37,8 @@ button.send{font:inherit;font-weight:600;padding:10px 18px;border:0;border-radiu
 footer{color:var(--mut);font-size:12px;margin-top:6px}
 .tok{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:9px 12px;margin-bottom:10px}
 .tok .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between}
-.tok .stages{display:flex;flex-wrap:wrap;gap:5px}.tok .stages button{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:99px;padding:2px 10px;cursor:pointer}
+.tok .stages{display:flex;flex-wrap:wrap;gap:8px}.tok .grp{display:flex;gap:5px;position:relative;border:1px solid var(--line);border-radius:10px;padding:6px 6px 4px;margin-top:6px}
+.tok .grp>span{position:absolute;top:-8px;left:9px;white-space:nowrap;background:var(--card);padding:0 5px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);line-height:14px}.tok .stages button{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:99px;padding:2px 10px;cursor:pointer}
 .tok .stages button.on{background:var(--acc);border-color:var(--acc);color:#fff}
 .tok .scale{font-size:12px;color:var(--mut)}
 .tbar{position:relative;height:12px;background:var(--line);border-radius:99px;margin:8px 0 4px}
@@ -190,9 +191,10 @@ $("#shuffle").onclick = examples;
 const BASE = 391e6, RUN = parseFloat("{TOKENS}") * 1e6, NOW = BASE + RUN, END = BASE + 1e9;
 const M = x => x >= 1e12 ? x / 1e12 + "T" : x >= 1e9 ? (x / 1e9).toFixed(2).replace(/\.?0+$/, "") + "B" : Math.round(x / 1e6) + "M";
 const STAGES = [
-  ["Nursery + preschool", BASE, 0, 2e9, `<b>${M(BASE)} tokens</b> — nursery 300M (child speech, stories), preschool 11M (school days), first conversations 80M.`],
-  ["1B run", NOW, 0, 2e9, `<b>${M(NOW)} tokens</b> so far: ${M(BASE)} before + ${M(RUN)} of the 1B-token run, which ends at ${M(END)}.`],
-  ["1000B", NOW, 0, 1e12, `<b>1000B tokens</b> — what big labs give models of this size (SmolLM2-135M: 2T, MobileLLM-125M: 1T). Cerbeto (${M(NOW)}) is the tick at the very left.`]];
+  ["Nursery + preschool", BASE, 0, 2e9, `<b>${M(BASE)} tokens</b> — nursery 300M, preschool 11M, first conversations 80M.`],
+  ["1B run", NOW, 0, 2e9, `<b>${M(NOW)} tokens</b> so far: ${M(BASE)} before + ${M(RUN)} of the 1B run (ends at ${M(END)}).`],
+  ["Next stages", NOW, 0, 20e9, `<b>20B tokens</b> — realistic on one Mac mini (~3 months at today's speed).`],
+  ["Big labs", NOW, 0, 1e12, `Big labs train models this size on <b>1–2T tokens</b>; Cerbeto is the tick at the left.`]];
 function stage(i) {
   const [, v, , scale, text] = STAGES[i];
   $("#fill").style.width = (100 * v / scale) + "%";
@@ -201,7 +203,12 @@ function stage(i) {
   $("#what").innerHTML = text;
   document.querySelectorAll("#stages button").forEach((b, j) => b.classList.toggle("on", j === i));
 }
-STAGES.forEach(([name], i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = name; b.onclick = () => stage(i); $("#stages").appendChild(b); });
+for (const [goal, idx] of [["2B goal", [0, 1]], ["20B goal", [2]], ["1000B reference", [3]]]) {     // a bracket per goal
+  const g = document.createElement("div"); g.className = "grp"; g.innerHTML = `<span>${goal}</span>`;
+  for (const i of idx) { const b = document.createElement("button"); b.type = "button"; b.textContent = STAGES[i][0]; b.onclick = () => stage(i); g.appendChild(b); }
+  $("#stages").appendChild(g);
+  g.style.minWidth = (g.firstChild.offsetWidth + 20) + "px";     // the bracket at least as wide as its label
+}
 stage(1);
 $("#temp").oninput = e => $("#tv").textContent = e.target.value;
 $("#reset").onclick = () => { if (busy) return; history = []; [...log.querySelectorAll(".msg:not(.lang)")].forEach(m => m.remove()); add("sys", "New conversation."); };
