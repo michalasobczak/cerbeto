@@ -190,15 +190,18 @@ async function answer(text) {
   q.value = ""; q.disabled = send.disabled = true;
   add("me", text);
   const bot = add("bot typing", "");
-  const maxNew = /story/i.test(text) ? 160 : 60;
+  const story = /story/i.test(text), maxNew = story ? 160 : 60;
   let raw = "";
   onToken = s => { raw += s; bot.textContent = clean(raw); log.scrollTop = log.scrollHeight; };
   const error = await new Promise(resolve => {
     onDone = resolve;
-    worker.postMessage({ type: "generate", turns: $("#mem").checked ? history : [], text, maxNew, temp: +$("#temp").value });
+    // a story request starts from a clean context: after a story in the history the student answers about that story
+    // (its training talks ask questions about a story); the story itself stays in the history for such questions
+    worker.postMessage({ type: "generate", turns: $("#mem").checked && !story ? history : [], text, maxNew, temp: +$("#temp").value });
   });
   if (error) raw = "(error: " + error + ")";
-  const reply = clean(raw) || "…";
+  let reply = clean(raw) || "…";
+  if (story && !/[.!?"”]$/.test(reply)) reply = reply.replace(/^([\s\S]*[.!?]["”]?)[\s\S]*$/, "$1");   // cut at the token limit: end at the last full sentence
   bot.textContent = reply; bot.classList.remove("typing");
   history.push([text, reply]);
 }
