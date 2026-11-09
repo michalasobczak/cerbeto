@@ -33,6 +33,8 @@ input[type=text]{flex:1;min-width:0;font:inherit;padding:11px 13px;border:1px so
 input[type=text]:focus,input[type=text].typing{border-color:var(--acc);box-shadow:0 0 0 3px var(--accSoft)}
 button.send{font:inherit;font-weight:600;padding:10px 18px;border:0;border-radius:11px;background:var(--acc);color:#fff;cursor:pointer}button:disabled{opacity:.5;cursor:default}
 .opts{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;color:var(--mut);font-size:13px;margin-top:8px}.opts label{display:flex;gap:6px;align-items:center}
+.mode{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}.mode button{font:inherit;font-size:12.5px;border:0;background:var(--card);color:var(--mut);padding:3px 10px;cursor:pointer}
+.mode button.on{background:var(--acc);color:#fff}.bot .start{color:var(--mut)}
 .link{border:0;background:none;color:var(--acc);cursor:pointer;font:inherit;font-size:13px;padding:0}
 footer{color:var(--mut);font-size:12px;margin-top:6px}
 .tok{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:9px 12px;margin-bottom:10px}
@@ -79,6 +81,7 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}
   </div>
   <form id="f"><input type="text" id="q" placeholder="Write in English… e.g. Tell me a story about a cat." autocomplete="off" disabled><button class="send" id="send" disabled>Send</button></form>
   <div class="opts">
+    <span class="mode" id="mode"><button type="button" data-m="chat" class="on">Chat</button><button type="button" data-m="complete" title="the model continues your text, as it read texts in training">Complete a sentence</button></span>
     <label>temperature <input type="range" id="temp" min="0" max="1.2" step="0.1" value="0.7"><span id="tv">0.7</span></label>
     <label><input type="checkbox" id="mem" checked> remember the conversation</label>
     <button class="link" id="reset" type="button">new conversation</button>
@@ -90,6 +93,9 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}
   <h2>Still learning</h2>
   <p class="hint">It knows little about the world yet and often answers with a preschool pattern ("A bee says buzz"). Try these to see where it fails.</p>
   <div id="examples-hard"></div>
+  <h2>Complete a sentence</h2>
+  <p class="hint">Often it knows a fact when it finishes a sentence, but not when you ask about it.</p>
+  <div id="examples-complete"></div>
 </aside>
 </div>
 
@@ -119,6 +125,11 @@ self.onmessage = async ({ data }) => {
       const streamer = new TextStreamer(tok, { skip_prompt: true, skip_special_tokens: false, callback_function: s => self.postMessage({ type: "token", s }) });
       await model.generate({ ...ids, max_new_tokens: maxNew, do_sample: temp > 0, temperature: Math.max(temp, 0.01), top_k: 40, eos_token_id: STOPS, streamer });
       self.postMessage({ type: "done" });
+    } else if (data.type === "complete") {      // plain continuation of the text, no conversation format
+      const ids = tok("<|eos|>" + data.text, { add_special_tokens: false });
+      const streamer = new TextStreamer(tok, { skip_prompt: true, skip_special_tokens: false, callback_function: s => self.postMessage({ type: "token", s }) });
+      await model.generate({ ...ids, max_new_tokens: data.maxNew, do_sample: data.temp > 0, temperature: Math.max(data.temp, 0.01), top_k: 40, eos_token_id: STOPS, streamer });
+      self.postMessage({ type: "done" });
     }
   } catch (e) { self.postMessage({ type: data.type === "load" ? "failed" : "done", error: e.message }); }
 };`;
@@ -130,11 +141,16 @@ const log = $("#log"), q = $("#q"), send = $("#send");
 // example pools, checked against the model (scripts/hf/web/README: questions that work; "Still learning" shows what it cannot do yet);
 // each visit (and the 🎲 button) draws a few from every group. Memory scenarios: name, pet, pet name — the pairs it got right.
 const POOL = {"Small talk": ["Hi! How are you?", "What is your name?", "What can you do?", "Thank you for your help!", "Hello!", "Good morning!", "How old are you?", "Who are you?", "Do you like stories?", "Can you help me?", "Are you a robot?", "Goodbye!", "Thank you!", "Do you go to school?", "Are you happy?", "What do you like?", "Can you talk?", "Where do you live?"], "memory": [["Leo", "dog", "Bella"], ["Kasia", "bird", "Coco"], ["Mia", "horse", "Luna"], ["Kasia", "dog", "Max"], ["Zoe", "rabbit", "Max"], ["Lily", "fish", "Bella"], ["Max", "rabbit", "Luna"], ["Tom", "fish", "Luna"], ["Max", "cat", "Max"], ["Anna", "horse", "Kiwi"], ["Sam", "horse", "Spot"], ["Jack", "horse", "Sunny"], ["Mia", "cat", "Fluffy"], ["Leo", "horse", "Coco"], ["Sam", "fish", "Sunny"], ["Jack", "dog", "Bella"], ["Kasia", "cat", "Fluffy"], ["Zoe", "fish", "Bubbles"], ["Lily", "fish", "Max"], ["Leo", "bird", "Sunny"]], "Preschool skills": ["What is the opposite of hot?", "What is the opposite of big?", "What is the opposite of up?", "What is the opposite of happy?", "What is the opposite of fast?", "What is the opposite of day?", "What is the opposite of open?", "What is the opposite of old?", "What is the opposite of wet?", "What is the opposite of full?", "Which is bigger, an elephant or a mouse?", "Which is bigger, a house or a cup?", "Which is smaller, an ant or a horse?", "Which is smaller, a car or a bus?", "Is a cat an animal or a plant?", "Is a dog an animal?", "Is an apple a fruit?", "Is a car a toy or a vehicle?", "Tom is taller than Ann. Ann is taller than Bob. Who is the tallest?", "Mia is older than Leo. Leo is older than Sam. Who is the youngest?", "Max is faster than Kim. Kim is faster than Joe. Who is the fastest?", "What color is the sky?", "What color is grass?", "What color is snow?", "What color is a banana?", "What color is a tomato?", "What does a cow say?", "What does a dog say?", "What does a cat say?", "What does a duck say?", "Is the sun yellow?"], "Stories": ["Tell me a story about a cat.", "Tell me a story about a little dragon.", "Tell me a story about a girl and her dog.", "Tell me a story about a brave mouse.", "Tell me a story about a big red ball.", "Tell me a story about a boy who wanted to fly.", "Tell me a story about a little bird.", "Tell me a story about a friendly bear.", "Tell me a story about a magic tree.", "Tell me a story about a fish in the sea.", "Tell me a story about a lost puppy.", "Tell me a story about a rainy day.", "Tell me a story about two friends.", "Tell me a story about a princess and a frog.", "Tell me a story about a little robot.", "Tell me a story about a birthday party.", "Tell me a story about the moon.", "Tell me a story about a farm.", "Tell me a story about a sleepy owl.", "Tell me a story about a funny monkey.", "Can you tell me a bedtime story?", "Tell me a story about a car that could talk.", "Tell me a story about snow.", "Tell me a story about a park.", "Tell me a story about a kind girl."], "Still learning — world knowledge": ["What do bees make?", "What is the moon?", "How many legs does a dog have?", "Where do fish live?", "What do cows eat?", "What is rain?", "What do plants need to grow?", "What is the sun?", "Why is the sky blue?", "What is water made of?", "What does the heart do?", "What is a volcano?", "How many days are in a week?", "What is the capital of France?", "Who was Albert Einstein?", "What is a planet?", "Why do we sleep?", "What do birds eat?", "What is ice?", "What is two plus three?", "Which is bigger, the sun or a ball?", "Is a carrot a fruit or a vegetable?", "Can a bird fly?", "How many legs does a bird have?", "Is a rose an animal or a plant?"]};
+const COMPLETE = ["The Moon goes around the", "Plants need sunlight, water and", "A dog has four", "Rain is water that falls from the",
+  "When water freezes, it turns into", "The heart pumps", "Bees make", "Fish live in water and breathe through their", "The Sun is a",
+  "Painting is using colors to", "London is the capital city of", "France is a country in", "An astronaut is a person who",
+  "A snail is an animal that", "A volcano is a mountain that", "The Earth goes around the", "A college is a place where",
+  "Birds have feathers and", "A river is a", "Aubigny-en-Artois is a commune. It is found in the region"];
 const DRAW = [["Small talk", "Small talk", 3], ["Remembering what you said", "memory", 2], ["Preschool skills", "Preschool skills", 4],
-              ["Stories", "Stories", 3], [null, "Still learning — world knowledge", 6]];
+              ["Stories", "Stories", 3], [null, "Still learning — world knowledge", 4]];
 const pick = (a, n) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, n); };
 const scenario = ([name, pet, pn]) => [`My name is ${name}.`, `I have a ${pet} called ${pn}.`, `What is my ${pet} called?`, "What is my name?"];
-let history = [], busy = false;
+let history = [], busy = false, mode = "chat";
 const files = {};
 
 function add(cls, text) { const d = document.createElement("div"); d.className = "msg " + cls; d.textContent = text; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; }
@@ -156,10 +172,20 @@ function examples() {
       const b = document.createElement("button"); b.className = "ex"; b.disabled = busy || !ready;
       b.innerHTML = key === "memory" ? `${esc(item[0])} · ${esc(item[1])} ${esc(item[2])} <small>· ${steps.length} messages</small>` : esc(steps[0]);
       b.title = steps.join("\n");     // the full text (and every message of a scenario) on hover
-      b.onclick = () => play(steps); box.appendChild(b);
+      b.onclick = () => play(steps, "chat"); box.appendChild(b);
     }
   }
+  $("#examples-complete").innerHTML = "";
+  for (const item of pick(COMPLETE, 4)) {
+    const b = document.createElement("button"); b.className = "ex"; b.disabled = busy || !ready;
+    b.textContent = item + " …"; b.title = item; b.onclick = () => play([item], "complete"); $("#examples-complete").appendChild(b);
+  }
 }
+function setMode(m) {
+  mode = m; document.querySelectorAll("#mode button").forEach(b => b.classList.toggle("on", b.dataset.m === m));
+  q.placeholder = m === "chat" ? "Write in English… e.g. Tell me a story about a cat." : "Start a sentence… e.g. The Moon goes around the";
+}
+document.querySelectorAll("#mode button").forEach(b => b.onclick = () => setMode(b.dataset.m));
 const esc = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 
 async function typeIn(text) {      // show the example being typed into the chat box
@@ -167,8 +193,9 @@ async function typeIn(text) {      // show the example being typed into the chat
   for (const ch of text) { q.value += ch; await sleep(22); }
   await sleep(250); q.classList.remove("typing");
 }
-async function play(steps) {
+async function play(steps, m) {
   if (busy) return;
+  setMode(m);
   if (steps.length > 1) { history = []; add("sys", "New conversation."); $("#mem").checked = true; }
   lock(true);
   for (const s of steps) { await typeIn(s); await answer(q.value); }
@@ -185,8 +212,24 @@ worker.onmessage = ({ data: d }) => {
   else if (d.type === "done") onDone?.(d.error);
 };
 
+async function complete(text) {     // the model continues the user's text; shown as the beginning (dimmed) + its continuation
+  q.value = ""; q.disabled = send.disabled = true;
+  add("me", text + " …");
+  const bot = add("bot typing", "");
+  let raw = "";
+  const show = () => { let c = raw.split("<|eos|>")[0].split("<|human|>")[0].replace(/<\|[^|]*\|>/g, "");
+    bot.innerHTML = `<span class="start">${esc(text)}</span>${esc(c)}`; return c; };
+  onToken = s => { raw += s; show(); log.scrollTop = log.scrollHeight; };
+  const error = await new Promise(resolve => { onDone = resolve; worker.postMessage({ type: "complete", text, maxNew: 50, temp: +$("#temp").value }); });
+  if (error) raw = "(error: " + error + ")";
+  const c = show();
+  const cut = c.match(/^[\s\S]*?[.!?](?=\s|$)/);       // up to the end of the sentence it was finishing
+  bot.innerHTML = `<span class="start">${esc(text)}</span>${esc(cut ? cut[0] : c.trimEnd())}`; bot.classList.remove("typing");
+}
+
 async function answer(text) {
   text = text.trim(); if (!text) return;
+  if (mode === "complete") return complete(text);
   q.value = ""; q.disabled = send.disabled = true;
   add("me", text);
   const bot = add("bot typing", "");
