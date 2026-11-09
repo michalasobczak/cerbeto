@@ -10,13 +10,13 @@
 *{box-sizing:border-box}html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 a{color:var(--acc)}
-.wrap{max-width:1180px;height:100%;margin:0 auto;padding:14px 16px;display:grid;gap:14px;grid-template-columns:300px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
-header{grid-column:1/3;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
+.wrap{max-width:1380px;height:100%;margin:0 auto;padding:14px 16px;display:grid;gap:14px;grid-template-columns:290px minmax(0,1fr) 270px;grid-template-rows:auto minmax(0,1fr)}
+header{grid-column:1/4;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
 header h1{font-size:21px;margin:0}header .sub{color:var(--mut);font-size:13.5px;flex:1 1 380px}
 .badges{display:flex;flex-wrap:wrap;gap:6px}.badge{font-size:12px;padding:2px 9px;border-radius:99px;background:var(--accSoft);color:var(--acc);white-space:nowrap}
 aside{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;overflow-y:auto;min-height:0}
 aside h2{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:14px 0 6px}aside h2:first-child{margin-top:0}
-aside .hint{font-size:12.5px;color:var(--mut);margin:0 0 8px}
+aside .hint{font-size:12.5px;color:var(--mut);margin:0 0 8px}aside.hard{border-color:var(--warnBg)}aside.hard h2{color:var(--warn)}
 .ex{display:block;width:100%;text-align:left;font:inherit;font-size:13.5px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:7px 10px;margin:0 0 6px;cursor:pointer}
 .ex:hover:not(:disabled){border-color:var(--acc)}.ex:disabled{opacity:.5;cursor:default}
 .ex small{display:block;color:var(--mut);font-size:11.5px;margin-top:2px}.ex .steps{margin:0;padding-left:16px}
@@ -35,9 +35,10 @@ button.send{font:inherit;font-weight:600;padding:10px 18px;border:0;border-radiu
 .opts{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;color:var(--mut);font-size:13px;margin-top:8px}.opts label{display:flex;gap:6px;align-items:center}
 .link{border:0;background:none;color:var(--acc);cursor:pointer;font:inherit;font-size:13px;padding:0}
 footer{color:var(--mut);font-size:12px;margin-top:6px}
+@media (max-width:1000px) and (min-width:801px){.wrap{grid-template-columns:260px minmax(0,1fr)}aside.hard{grid-column:1/3;max-height:220px}}
 @media (max-width:800px){
   html,body{height:auto}.wrap{display:flex;flex-direction:column;height:auto}
-  aside{order:1;max-height:34vh}main{order:2;height:72vh;min-height:420px}
+  aside{order:1;max-height:34vh}main{order:2;height:72vh;min-height:420px}aside.hard{order:3;max-height:none}
 }
 </style>
 </head>
@@ -51,7 +52,8 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}
 </header>
 
 <aside>
-  <p class="hint">Click an example: it is typed into the chat box and sent. Or write your own — in English.</p>
+  <p class="hint">Click an example: it is typed into the chat box and sent. Or write your own — in English.
+    <button class="link" id="shuffle" type="button">🎲 other examples</button></p>
   <div id="examples"></div>
 </aside>
 
@@ -68,6 +70,13 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}
   </div>
   <footer>Checkpoint {TAG} ({TOKENS} of the 1B-token run). Answers come from a tiny model and are often wrong. PolyForm Noncommercial 1.0.0.</footer>
 </main>
+
+<aside class="hard">
+  <h2>Still learning</h2>
+  <p class="hint">Cerbeto knows very little about the world yet: it often answers a question about the world with a preschool pattern
+    ("The moon is blue", "A bee says buzz"). Try these to see where it fails — the next training stage adds question-and-answer data.</p>
+  <div id="examples-hard"></div>
+</aside>
 </div>
 
 <script type="module">
@@ -76,18 +85,13 @@ env.allowRemoteModels = false; env.allowLocalModels = true; env.localModelPath =
 
 const $ = s => document.querySelector(s);
 const log = $("#log"), q = $("#q"), send = $("#send");
-// examples: one message, or a scenario of several messages sent one after another (memory)
-const GROUPS = [
-  ["Small talk", [["Hi! How are you?"], ["What is your name?"], ["What can you do?"], ["Thank you for your help!"]]],
-  ["Remembering what you said", [
-    ["My name is Kasia.", "I have a dog called Max.", "What is my name?", "What is my dog called?"],
-    ["My name is Sam.", "My dog is called Rex.", "What is my dog called?", "What is my name?"],
-    ["I have a fish called Bubbles.", "What is my fish called?"]]],
-  ["Preschool skills", [["What is the opposite of hot?"], ["Which is bigger, an elephant or a mouse?"], ["Is a cat an animal or a plant?"],
-    ["Tom is taller than Ann. Ann is taller than Bob. Who is the tallest?"], ["What color is the sky?"]]],
-  ["Stories", [["Tell me a story about a cat."], ["Tell me a story about a little dragon."], ["Tell me a story about a girl and her dog."]]],
-  ["Still learning — world knowledge", [["What do bees make?"], ["What is the moon?"], ["How many legs does a dog have?"]]],
-];
+// example pools, checked against the model (scripts/hf/web/README: questions that work; "Still learning" shows what it cannot do yet);
+// each visit (and the 🎲 button) draws a few from every group. Memory scenarios: name, pet, pet name — the pairs it got right.
+const POOL = {"Small talk": ["Hi! How are you?", "What is your name?", "What can you do?", "Thank you for your help!", "Hello!", "Good morning!", "How old are you?", "Who are you?", "Do you like stories?", "Can you help me?", "Are you a robot?", "Goodbye!", "Thank you!", "Do you go to school?", "Are you happy?", "What do you like?", "Can you talk?", "Where do you live?"], "memory": [["Leo", "dog", "Bella"], ["Kasia", "bird", "Coco"], ["Mia", "horse", "Luna"], ["Kasia", "dog", "Max"], ["Zoe", "rabbit", "Max"], ["Lily", "fish", "Bella"], ["Max", "rabbit", "Luna"], ["Tom", "fish", "Luna"], ["Max", "cat", "Max"], ["Anna", "horse", "Kiwi"], ["Sam", "horse", "Spot"], ["Jack", "horse", "Sunny"], ["Mia", "cat", "Fluffy"], ["Leo", "horse", "Coco"], ["Sam", "fish", "Sunny"], ["Jack", "dog", "Bella"], ["Kasia", "cat", "Fluffy"], ["Zoe", "fish", "Bubbles"], ["Lily", "fish", "Max"], ["Leo", "bird", "Sunny"]], "Preschool skills": ["What is the opposite of hot?", "What is the opposite of big?", "What is the opposite of up?", "What is the opposite of happy?", "What is the opposite of fast?", "What is the opposite of day?", "What is the opposite of open?", "What is the opposite of old?", "What is the opposite of wet?", "What is the opposite of full?", "Which is bigger, an elephant or a mouse?", "Which is bigger, a house or a cup?", "Which is smaller, an ant or a horse?", "Which is smaller, a car or a bus?", "Is a cat an animal or a plant?", "Is a dog an animal?", "Is an apple a fruit?", "Is a car a toy or a vehicle?", "Tom is taller than Ann. Ann is taller than Bob. Who is the tallest?", "Mia is older than Leo. Leo is older than Sam. Who is the youngest?", "Max is faster than Kim. Kim is faster than Joe. Who is the fastest?", "What color is the sky?", "What color is grass?", "What color is snow?", "What color is a banana?", "What color is a tomato?", "What does a cow say?", "What does a dog say?", "What does a cat say?", "What does a duck say?", "Is the sun yellow?"], "Stories": ["Tell me a story about a cat.", "Tell me a story about a little dragon.", "Tell me a story about a girl and her dog.", "Tell me a story about a brave mouse.", "Tell me a story about a big red ball.", "Tell me a story about a boy who wanted to fly.", "Tell me a story about a little bird.", "Tell me a story about a friendly bear.", "Tell me a story about a magic tree.", "Tell me a story about a fish in the sea.", "Tell me a story about a lost puppy.", "Tell me a story about a rainy day.", "Tell me a story about two friends.", "Tell me a story about a princess and a frog.", "Tell me a story about a little robot.", "Tell me a story about a birthday party.", "Tell me a story about the moon.", "Tell me a story about a farm.", "Tell me a story about a sleepy owl.", "Tell me a story about a funny monkey.", "Can you tell me a bedtime story?", "Tell me a story about a car that could talk.", "Tell me a story about snow.", "Tell me a story about a park.", "Tell me a story about a kind girl."], "Still learning — world knowledge": ["What do bees make?", "What is the moon?", "How many legs does a dog have?", "Where do fish live?", "What do cows eat?", "What is rain?", "What do plants need to grow?", "What is the sun?", "Why is the sky blue?", "What is water made of?", "What does the heart do?", "What is a volcano?", "How many days are in a week?", "What is the capital of France?", "Who was Albert Einstein?", "What is a planet?", "Why do we sleep?", "What do birds eat?", "What is ice?", "What is two plus three?", "Which is bigger, the sun or a ball?", "Is a carrot a fruit or a vegetable?", "Can a bird fly?", "How many legs does a bird have?", "Is a rose an animal or a plant?"]};
+const DRAW = [["Small talk", "Small talk", 3], ["Remembering what you said", "memory", 2], ["Preschool skills", "Preschool skills", 4],
+              ["Stories", "Stories", 3], [null, "Still learning — world knowledge", 6]];
+const pick = (a, n) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, n); };
+const scenario = ([name, pet, pn]) => [`My name is ${name}.`, `I have a ${pet} called ${pn}.`, `What is my ${pet} called?`, "What is my name?"];
 let history = [], busy = false, tok, model, STOPS;
 const files = {};
 
@@ -101,12 +105,15 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const lock = on => { busy = on; q.disabled = send.disabled = on; document.querySelectorAll(".ex").forEach(b => b.disabled = on); };
 
 function examples() {
-  for (const [title, items] of GROUPS) {
-    const h = document.createElement("h2"); h.textContent = title; $("#examples").appendChild(h);
-    for (const steps of items) {
-      const b = document.createElement("button"); b.className = "ex"; b.disabled = true;
+  $("#examples").innerHTML = $("#examples-hard").innerHTML = "";
+  for (const [title, key, n] of DRAW) {
+    const box = title ? $("#examples") : $("#examples-hard");   // the "still learning" group sits right of the chat
+    if (title) { const h = document.createElement("h2"); h.textContent = title; box.appendChild(h); }
+    for (const item of pick(POOL[key], n)) {
+      const steps = key === "memory" ? scenario(item) : [item];
+      const b = document.createElement("button"); b.className = "ex"; b.disabled = busy || !model;
       b.innerHTML = steps.length === 1 ? esc(steps[0]) : `<ol class="steps">${steps.map(s => `<li>${esc(s)}</li>`).join("")}</ol><small>${steps.length} messages, one after another</small>`;
-      b.onclick = () => play(steps); $("#examples").appendChild(b);
+      b.onclick = () => play(steps); box.appendChild(b);
     }
   }
 }
@@ -162,6 +169,7 @@ async function answer(text) {
 }
 
 $("#f").onsubmit = async e => { e.preventDefault(); if (busy || !q.value.trim()) return; lock(true); await answer(q.value); lock(false); q.focus(); };
+$("#shuffle").onclick = examples;
 $("#temp").oninput = e => $("#tv").textContent = e.target.value;
 $("#reset").onclick = () => { if (busy) return; history = []; [...log.querySelectorAll(".msg:not(.lang)")].forEach(m => m.remove()); add("sys", "New conversation."); };
 examples();
