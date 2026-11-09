@@ -12,7 +12,7 @@ body{background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSy
 a{color:var(--acc)}
 .wrap{max-width:1380px;height:100%;margin:0 auto;padding:14px 16px;display:grid;gap:14px;grid-template-columns:290px minmax(0,1fr) 270px;grid-template-rows:auto minmax(0,1fr)}
 header{grid-column:1/4;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
-header h1{font-size:21px;margin:0}header .sub{color:var(--mut);font-size:13.5px;flex:1 1 380px}
+header h1{font-size:21px;margin:0;line-height:1.15}header .trained{font-size:12.5px;color:var(--mut);font-variant-numeric:tabular-nums}header .sub{color:var(--mut);font-size:13.5px;flex:1 1 380px}
 .badges{display:flex;flex-wrap:wrap;gap:6px}.badge{font-size:12px;padding:2px 9px;border-radius:99px;background:var(--accSoft);color:var(--acc);white-space:nowrap}
 aside{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;overflow-y:auto;min-height:0}
 aside h2{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:9px 0 4px}aside h2:first-child{margin-top:0}
@@ -55,10 +55,10 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}
 <body>
 <div class="wrap">
 <header>
-  <h1>🐣 Cerbeto</h1>
+  <div><h1>🐣 Cerbeto:106M</h1><div class="trained" id="trained"></div></div>
   <div class="sub">A small language model trained from scratch on one Mac mini and raised like a child. It runs entirely in your browser.
     <a href="https://huggingface.co/michalasobczak/cerbeto" target="_blank">Model card</a> · <a href="https://github.com/michalasobczak/cerbeto" target="_blank">GitHub</a></div>
-  <div class="badges"><span class="badge">107M parameters</span><span class="badge">🇬🇧 English only</span><span class="badge">checkpoint {TAG}</span></div>
+  <div class="badges"><span class="badge">106.8M parameters</span><span class="badge">🇬🇧 English only</span><span class="badge">checkpoint {TAG}</span></div>
 </header>
 
 <aside>
@@ -230,6 +230,7 @@ for (const [goal, idx] of [["2B goal", [0, 1]], ["20B goal", [2]], ["1000B refer
   g.style.minWidth = (g.firstChild.offsetWidth + 20) + "px";     // the bracket at least as wide as its label
 }
 stage(1);
+$("#trained").textContent = `${(NOW / 1e6).toFixed(0)}M tokens trained`;     // under the name: tokens read in the model's life
 $("#temp").oninput = e => $("#tv").textContent = e.target.value;
 $("#reset").onclick = () => { if (busy) return; history = []; [...log.querySelectorAll(".msg:not(.lang)")].forEach(m => m.remove()); add("sys", "New conversation."); };
 examples();
