@@ -25,8 +25,8 @@ nursery → preschool → school. Code, specs and the whole story: **[github.com
 
 **Try it: [Cerbeto chat Space](https://huggingface.co/spaces/michalasobczak/cerbeto-chat)** (runs in your browser, ~110 MB downloaded once).
 
-This checkpoint is **student D during the one-billion-token run (spec 0010)**: step {STEP}, **{TOKENS} of 1,000M tokens**.
-It is a snapshot from the middle of training; later snapshots are tagged `bil-<tokens>M`.
+This checkpoint is **version {TAG}**, **student D during the one-billion-token run (spec 0010)**: step {STEP}, **{TOKENS} of 1,000M tokens**.
+It is a snapshot from the middle of training; versions are tagged `v<N>-<tokens>M` (v1, v2, … then the tokens trained), the newest is on `main`.
 
 ## Architecture
 

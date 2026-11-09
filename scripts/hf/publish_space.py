@@ -1,6 +1,6 @@
 """Step 4: publish the static chat Space (the page + the ONNX int8 model from export_web.py), labelled with the checkpoint tag.
 
-    uv run --with huggingface_hub python ../scripts/hf/publish_space.py bil-1000M
+    uv run --with huggingface_hub python ../scripts/hf/publish_space.py v4-1000M   # the tag publish_model.py printed
 """
 import json, shutil, sys
 from pathlib import Path
