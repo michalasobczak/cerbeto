@@ -36,7 +36,7 @@ button.send{font:inherit;font-weight:600;padding:10px 18px;border:0;border-radiu
 .mode{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}.mode button{font:inherit;font-size:12.5px;border:0;background:var(--card);color:var(--mut);padding:3px 10px;cursor:pointer}
 .mode button.on{background:var(--acc);color:#fff}.bot .start{color:var(--mut)}.bot .think{color:var(--mut);font-style:italic;font-size:13.5px;border-left:2px solid var(--line);padding-left:8px;margin-bottom:4px}
 .link{border:0;background:none;color:var(--acc);cursor:pointer;font:inherit;font-size:13px;padding:0}
-footer{color:var(--mut);font-size:12px;margin-top:6px}
+footer{color:var(--mut);font-size:12px;margin-top:6px}.phone{display:none}
 .tok{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:9px 12px;margin-bottom:10px}
 .tok .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between}
 .tok .stages{display:flex;flex-wrap:wrap;gap:8px}.tok .grp{display:flex;gap:5px;position:relative;border:1px solid var(--line);border-radius:10px;padding:6px 6px 4px;margin-top:6px}
@@ -48,9 +48,15 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}
 .tbar>b{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1px;border-radius:2px;background:var(--warn);transition:left .7s cubic-bezier(.3,.7,.2,1)}
 .tok .what{font-size:12.5px;color:var(--mut)}.tok .what b{color:var(--fg)}
 @media (max-width:1000px) and (min-width:801px){.wrap{grid-template-columns:260px minmax(0,1fr)}aside.hard{grid-column:1/3;max-height:220px}}
-@media (max-width:800px){
-  html,body{height:auto}.wrap{display:flex;flex-direction:column;height:auto}
-  aside{order:1;max-height:34vh}main{order:2;height:72vh;min-height:420px}aside.hard{order:3;max-height:none}
+@media (max-width:800px){   /* phone: the chat first, filling the screen; examples, the token bar and the rest below */
+  html,body{height:auto}.wrap{display:flex;flex-direction:column;height:auto;padding:8px 10px;gap:8px}
+  main{display:contents}
+  header{order:0;gap:2px 10px}header h1{font-size:18px}header>div:first-child{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  header .sub,header .badges{display:none}
+  #log{order:1;flex:none;height:calc(100dvh - 214px);min-height:300px;padding:10px}.msg{max-width:90%}
+  form{order:2;margin-top:0}.opts{order:3;margin-top:0;gap:4px 14px}
+  aside{order:4;max-height:none;overflow:visible}.tok{order:5;margin:0}aside.hard{order:6}footer{order:7}
+  .ex{white-space:normal}.phone{display:inline}
 }
 </style>
 </head>
@@ -85,6 +91,7 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}
     <label>temperature <input type="range" id="temp" min="0" max="1.2" step="0.1" value="0.7"><span id="tv">0.7</span></label>
     <label><input type="checkbox" id="mem" checked> remember the conversation</label>
     <button class="link" id="reset" type="button">new conversation</button>
+    <button class="link phone" id="toex" type="button">examples ↓</button>
   </div>
   <footer>Version {TAG} ({TOKENS} of the 1B-token run). Answers come from a tiny model and are often wrong. PolyForm Noncommercial 1.0.0.</footer>
 </main>
@@ -198,8 +205,9 @@ function setMode(m) {
 document.querySelectorAll("#mode button").forEach(b => b.onclick = () => setMode(b.dataset.m));
 const esc = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 
+const PHONE = matchMedia("(max-width:800px)");
 async function typeIn(text) {      // show the example being typed into the chat box
-  q.disabled = false; q.value = ""; q.classList.add("typing"); q.focus();
+  q.disabled = false; q.value = ""; q.classList.add("typing"); if (!PHONE.matches) q.focus();   // no keyboard popping up on a phone
   for (const ch of text) { q.value += ch; await sleep(22); }
   await sleep(250); q.classList.remove("typing");
 }
@@ -208,8 +216,9 @@ async function play(steps, m) {
   setMode(m);
   if (steps.length > 1) { history = []; add("sys", "New conversation."); $("#mem").checked = true; }
   lock(true);
+  if (PHONE.matches) scrollTo(0, 0);   // the examples are below the chat on a phone
   for (const s of steps) { await typeIn(s); await answer(q.value); }
-  lock(false); q.focus();
+  lock(false); if (!PHONE.matches) q.focus();
 }
 
 worker.onmessage = ({ data: d }) => {
@@ -261,6 +270,7 @@ async function answer(text) {
 
 $("#f").onsubmit = async e => { e.preventDefault(); if (busy || !q.value.trim()) return; lock(true); await answer(q.value); lock(false); q.focus(); };
 $("#shuffle").onclick = examples;
+$("#toex").onclick = () => $("aside").scrollIntoView();
 
 // how many tokens the model has read in its whole life: nursery + preschool and the 1B run on a 2B scale, 1000B for comparison
 // (only the tokens already read are filled; the orange tick = the model in this page)
