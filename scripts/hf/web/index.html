@@ -35,6 +35,15 @@ button.send{font:inherit;font-weight:600;padding:10px 18px;border:0;border-radiu
 .opts{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;color:var(--mut);font-size:13px;margin-top:8px}.opts label{display:flex;gap:6px;align-items:center}
 .link{border:0;background:none;color:var(--acc);cursor:pointer;font:inherit;font-size:13px;padding:0}
 footer{color:var(--mut);font-size:12px;margin-top:6px}
+.tok{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:9px 12px;margin-bottom:10px}
+.tok .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between}
+.tok .stages{display:flex;flex-wrap:wrap;gap:5px}.tok .stages button{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:99px;padding:2px 10px;cursor:pointer}
+.tok .stages button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.tok .scale{font-size:12px;color:var(--mut)}
+.tbar{position:relative;height:12px;background:var(--line);border-radius:99px;margin:8px 0 4px}
+.tbar>i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--acc);transition:width .7s cubic-bezier(.3,.7,.2,1)}
+.tbar>b{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1px;border-radius:2px;background:var(--warn);transition:left .7s cubic-bezier(.3,.7,.2,1)}
+.tok .what{font-size:12.5px;color:var(--mut)}.tok .what b{color:var(--fg)}
 @media (max-width:1000px) and (min-width:801px){.wrap{grid-template-columns:260px minmax(0,1fr)}aside.hard{grid-column:1/3;max-height:220px}}
 @media (max-width:800px){
   html,body{height:auto}.wrap{display:flex;flex-direction:column;height:auto}
@@ -58,6 +67,11 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}
 </aside>
 
 <main>
+  <div class="tok">
+    <div class="row"><div class="stages" id="stages"></div><span class="scale" id="scale"></span></div>
+    <div class="tbar"><i id="fill"></i><b id="now" title="this model"></b></div>
+    <div class="what" id="what"></div>
+  </div>
   <div id="log">
     <div class="lang">🇬🇧 <b>English only.</b> Cerbeto learned only English — write to it in simple English.</div>
     <div class="sys" id="status">Loading the model (~110 MB, once — the browser keeps it)…<div class="bar"><i id="prog"></i></div></div>
@@ -170,6 +184,25 @@ async function answer(text) {
 
 $("#f").onsubmit = async e => { e.preventDefault(); if (busy || !q.value.trim()) return; lock(true); await answer(q.value); lock(false); q.focus(); };
 $("#shuffle").onclick = examples;
+
+// how many tokens the model has read: stages on a 1B scale; 2B and 1000B change the scale (the orange tick = this model)
+const NOW = parseFloat("{TOKENS}") * 1e6, BASE = 391e6;
+const STAGES = [
+  ["Nursery + preschool", BASE, 1e9, "<b>391M tokens</b> — nursery 300M (child speech, stories), preschool 11M (school days), first conversations 80M."],
+  ["Now", NOW, 1e9, `<b>${"{TOKENS}"} tokens</b> of the 1B-token run — the model in this page.`],
+  ["Goal 2B", 2e9, 2e9, "<b>2B tokens</b> — the next goal: more data, questions and answers about the world."],
+  ["1000B", 1e12, 1e12, "<b>1000B tokens</b> — what big labs give models of this size (SmolLM2-135M: 2T, MobileLLM-125M: 1T). This model is the tick at the very left."]];
+const fmtTok = x => x >= 1e12 ? x / 1e12 + "T" : x >= 1e9 ? x / 1e9 + "B" : Math.round(x / 1e6) + "M";
+function stage(i) {
+  const [, v, scale, text] = STAGES[i];
+  $("#fill").style.width = (100 * v / scale) + "%";
+  $("#now").style.left = Math.max(0.3, 100 * NOW / scale) + "%";
+  $("#scale").textContent = "scale 0 – " + fmtTok(scale);
+  $("#what").innerHTML = text;
+  document.querySelectorAll("#stages button").forEach((b, j) => b.classList.toggle("on", j === i));
+}
+STAGES.forEach(([name], i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = name; b.onclick = () => stage(i); $("#stages").appendChild(b); });
+stage(1);
 $("#temp").oninput = e => $("#tv").textContent = e.target.value;
 $("#reset").onclick = () => { if (busy) return; history = []; [...log.querySelectorAll(".msg:not(.lang)")].forEach(m => m.remove()); add("sys", "New conversation."); };
 examples();
