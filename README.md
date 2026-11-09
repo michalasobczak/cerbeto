@@ -371,7 +371,7 @@ Deep and thin like MobileLLM-125M; ~2.7× faster than C, so a night shows severa
 ```
 README.md  MANIFESTO.md  CHANGELOG.md
 specs/            change specifications (NNNN-slug.md) + source document and contracts
-scripts/          library download, packaging
+scripts/          library download, packaging; hf/ publishing to Hugging Face
 brain/            brain — Python package `cerbeto`
 panel/            admin panel — Rails (on hold, 0006)
 config/           library, curriculum, architecture, rhythm, teachers
