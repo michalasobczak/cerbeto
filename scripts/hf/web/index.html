@@ -34,7 +34,7 @@ input[type=text]:focus,input[type=text].typing{border-color:var(--acc);box-shado
 button.send{font:inherit;font-weight:600;padding:10px 18px;border:0;border-radius:11px;background:var(--acc);color:#fff;cursor:pointer}button:disabled{opacity:.5;cursor:default}
 .opts{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;color:var(--mut);font-size:13px;margin-top:8px}.opts label{display:flex;gap:6px;align-items:center}
 .mode{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}.mode button{font:inherit;font-size:12.5px;border:0;background:var(--card);color:var(--mut);padding:3px 10px;cursor:pointer}
-.mode button.on{background:var(--acc);color:#fff}.bot .start{color:var(--mut)}
+.mode button.on{background:var(--acc);color:#fff}.bot .start{color:var(--mut)}.bot .think{color:var(--mut);font-style:italic;font-size:13.5px;border-left:2px solid var(--line);padding-left:8px;margin-bottom:4px}
 .link{border:0;background:none;color:var(--acc);cursor:pointer;font:inherit;font-size:13px;padding:0}
 footer{color:var(--mut);font-size:12px;margin-top:6px}
 .tok{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:9px 12px;margin-bottom:10px}
@@ -146,19 +146,29 @@ const COMPLETE = ["The Moon goes around the", "Plants need sunlight, water and",
   "Painting is using colors to", "London is the capital city of", "France is a country in", "An astronaut is a person who",
   "A snail is an animal that", "A volcano is a mountain that", "The Earth goes around the", "A college is a place where",
   "Birds have feathers and", "A river is a", "Aubigny-en-Artois is a commune. It is found in the region"];
-const DRAW = [["Small talk", "Small talk", 3], ["Remembering what you said", "memory", 2], ["Preschool skills", "Preschool skills", 4],
-              ["Stories", "Stories", 3], [null, "Still learning — world knowledge", 4]];
+POOL["Thinking out loud"] = ["Is fire hot?", "The sky is green. Is that right?", "A cat can fly. True or false?", "Is a dog an animal?",
+  "Is the sun hot?", "Is ice cold?"];     // true / false claims: the student thinks first (💭), then answers
+const DRAW = [["Small talk", "Small talk", 2], ["Remembering what you said", "memory", 2], ["Thinking out loud", "Thinking out loud", 2],
+              ["Preschool skills", "Preschool skills", 3],
+              ["Stories", "Stories", 2], [null, "Still learning — world knowledge", 4]];
 const pick = (a, n) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, n); };
 const scenario = ([name, pet, pn]) => [`My name is ${name}.`, `I have a ${pet} called ${pn}.`, `What is my ${pet} called?`, "What is my name?"];
 let history = [], busy = false, mode = "chat";
 const files = {};
 
 function add(cls, text) { const d = document.createElement("div"); d.className = "msg " + cls; d.textContent = text; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; }
-const clean = raw => {
+const clean = raw => parts(raw)[1];
+function parts(raw) {     // [what the student thought, what it said] — also from a partial reply while streaming
   raw = raw.split("<|eos|>")[0].split("<|human|>")[0].split("<|student|>")[0];
-  raw = raw.includes("<|answer|>") ? raw.split("<|answer|>").pop() : raw.replace(/<\|think\|>[\s\S]*?(<\|\/think\|>|$)/, "");
-  return raw.replace(/<\|[^|]*\|>/g, "").trim();
-};
+  const th = raw.match(/<\|think\|>([\s\S]*?)(?:<\|\/think\|>|<\|answer\|>|$)/);
+  const ans = raw.includes("<|answer|>") ? raw.split("<|answer|>").pop() : raw.replace(/<\|think\|>[\s\S]*?(<\|\/think\|>|$)/, "");
+  const strip = t => t.replace(/<\|[^|]*\|>/g, "").trim();
+  return [th ? strip(th[1]) : "", strip(ans)];
+}
+function render(bot, raw, answer) {     // the thought (dimmed, 💭) above the answer, as in `cerbeto chat`
+  const [thought, said] = parts(raw);
+  bot.innerHTML = (thought ? `<div class="think">💭 ${esc(thought)}</div>` : "") + esc(answer ?? said);
+}
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const lock = on => { busy = on; q.disabled = send.disabled = on; document.querySelectorAll(".ex").forEach(b => b.disabled = on); };
 
@@ -235,7 +245,7 @@ async function answer(text) {
   const bot = add("bot typing", "");
   const story = /story/i.test(text), maxNew = story ? 160 : 60;
   let raw = "";
-  onToken = s => { raw += s; bot.textContent = clean(raw); log.scrollTop = log.scrollHeight; };
+  onToken = s => { raw += s; render(bot, raw); log.scrollTop = log.scrollHeight; };
   const error = await new Promise(resolve => {
     onDone = resolve;
     // a story request starts from a clean context: after a story in the history the student answers about that story
@@ -245,7 +255,7 @@ async function answer(text) {
   if (error) raw = "(error: " + error + ")";
   let reply = clean(raw) || "…";
   if (story && !/[.!?"”]$/.test(reply)) reply = reply.replace(/^([\s\S]*[.!?]["”]?)[\s\S]*$/, "$1");   // cut at the token limit: end at the last full sentence
-  bot.textContent = reply; bot.classList.remove("typing");
+  render(bot, raw, reply); bot.classList.remove("typing");
   history.push([text, reply]);
 }
 
