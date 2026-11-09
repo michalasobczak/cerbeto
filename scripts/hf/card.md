@@ -54,12 +54,22 @@ preschool lessons, stories on request, who the student is, two-step relations. E
 Corpora keep their own licences: TinyStories CDLA-Sharing-1.0, FineWeb-Edu ODC-By 1.0, Cosmopedia Apache-2.0, SODA CC BY 4.0,
 Wikipedia CC BY-SA 4.0, BabyLM MIT, Gutenberg public domain.
 
-## What it can and cannot do (spot check at ~420M tokens)
+## What it can and cannot do (spot check of v4 at ~550M tokens)
+
+Each question asked 10 times at temperature 0.7, answers checked by a pattern:
+
+| Part | v3 (523M) | v4 (551M) |
+|---|---|---|
+| chat: 16 questions (true/false, facts, opposites) | 47 / 160 | **65 / 160** |
+| completing a sentence: 8 facts | 23 / 80 | 22 / 80 |
+| memory: 4 short conversations | 20 / 40 | 19 / 40 |
 
 - **Can:** short polite conversation, remember a name or a pet told earlier in the talk, preschool skills (opposites, sizes, categories,
-  "who is the tallest"), fluent simple stories.
-- **Cannot yet:** answer world-knowledge questions (it often knows the fact when completing a sentence, but answers questions with preschool
-  templates such as "The moon says oink"), react to sad news, say "I don't know" about made-up words, keep a story to the requested topic.
+  "who is the youngest"), simple stories; it **thinks out loud** before true/false answers ("A cat can fly. True or false?" →
+  *"A cat cannot fly. So that is wrong, and the answer is no."* → "No. A cat cannot fly.").
+- **Cannot yet:** answer most world-knowledge questions (it often knows the fact when completing a sentence — "The heart pumps" → *blood* —
+  but answers questions with preschool templates such as "A bee says buzz"), recall the right fact while thinking ("Is the sun hot?" →
+  *"The sun is yellow. So that is wrong"*), keep a pet's name apart from the human's, react to sad news, say "I don't know" about made-up words.
 
 The 80M-token predecessor passed the preschool exam (code-graded: id 89.7–100% per skill, mean ood_hard 78.5%).
 Do not use it for anything that matters: it is a research toy.

@@ -2,7 +2,7 @@
 
 *Cerbeto* (Esperanto: *cerbo* "brain" + *-et-* diminutive) — "little brain".
 
-A small neural network of our own, trained from random weights (6.9M → 34.6M parameters so far, limit 40M). It learns English and reasoning like a child at school: nursery → preschool → grade 1 → grade 2. A local LLM teaches it in a day (lessons) / sleep (consolidation) / exam rhythm, and it grows while it learns.
+A small neural network of our own, trained from random weights (6.9M → 34.6M parameters at school; the D student 106.8M). It learns English and reasoning like a child at school: nursery → preschool → grade 1 → grade 2. A local LLM teaches it in a day (lessons) / sleep (consolidation) / exam rhythm, and it grows while it learns.
 
 ## Methodology
 **[Rondo](https://workwithrondo.com)** — **CDD (Context-Driven Development)**:
@@ -12,7 +12,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 - tests: the proof, derived from each specification's control gates;
 - [MANIFESTO.md](MANIFESTO.md): implementation principles for every specification.
 
-## Current state (2026-11-07)
+## Current state (2026-11-09)
 **Where we are:** the deep, thin D student (106.8M) **passed preschool** on 2026-11-07 (stage 1 of 3) — trained outside the school, judged by the school's passing rule; the school student `v0017` (34.6M) is still in preschool.
 - **Nursery done:** 300M tokens, 6.9M → 29.9M parameters, BLiMP 65.9%.
 - **School running** (LLM teacher → sleep → exam, on a laptop, offline): preschool ~22% after the nursery → **60.5%** by day 7, flat on days 9–16, **68.5%** after day 18.
@@ -24,7 +24,8 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
   - yes/no lessons think "claim → fact → decision" (the student knew the facts but answered "No. A dog says woof.").
 - **Night bench (2026-11-06):** the night after day 17 replayed in 13 variants (learning rate, replay, consolidation, growth, thinking formats, core passes). None beyond chance (±3 pp from the seed alone); every night trades agree/disagree and categories for clarify, and the small validation set kept the start in most nights. Now a night keeps its end unless clearly worse, the exam decides, and earlier days are replayed once per prompt. Day 18 under these rules: **60.5% → 68.5%** (`v0017`) — rare opposites 25 → 85%, clarify 10 → 52%, agree/disagree 67 → 57% while its yes/no thinking changes.
 - **Growth experiments (2026-11-06):** C — a wide 99M student, then a deep **283M** one on a new Mac mini M6 in bf16: no gain over `v0017` after 18M tokens (the unrolled blocks stayed copies, four with a dead attention). D — a deep, thin **~107M** student trained on conversations of several turns: after 69.4M tokens it **beats `v0017` on every measure** — conversation probe 2 → 8 of 10, stories on request 1.5 → 4.3 of 5, **preschool exam 68.5% → 76.3%, preschool passed** without a school night. Next: [0010](specs/0010-one-billion-tokens.md), 1B tokens with new data.
-- **Next:** [0010](specs/0010-one-billion-tokens.md) trains D on 1B tokens (started 2026-11-07, ends ~11-12); then D goes to school for grade 1 and grade 2, with its own hippocampus.
+- **One billion tokens (2026-11-07 → ~11-11):** [0010](specs/0010-one-billion-tokens.md) — D reads textbooks, Wikipedia and conversations; at 555M of 1B every validation shelf is lower. Public since 2026-11-09 on Hugging Face as versions `v1`–`v4` with a chat in the browser; v4 answers 65 of 160 sampled chat questions right (v3: 47) — see [E](#e-one-billion-tokens--d-reads-textbooks-wikipedia-and-conversations-in-progress).
+- **Next:** after 1B, the final evaluation and a public `v5`; then D goes to school for grade 1 and grade 2, with its own hippocampus.
 
 **Specifications**
 
@@ -39,7 +40,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 | [0007](specs/0007-offline-distribution.md) offline distribution | someday, maybe — not planned |
 | [0008](specs/0008-growth-experiment-100m.md) growth experiment, 99M → 283M (C) | closed: no gain over `v0017` |
 | [0009](specs/0009-deep-100m-conversations.md) deep 100M student with conversations (D) | closed: success, beats `v0017` on every measure; `/stats` analysis pending |
-| [0010](specs/0010-one-billion-tokens.md) one billion tokens: new data for vocabulary, knowledge and conversations | **in progress:** training since 2026-11-07, ends ~11-12 |
+| [0010](specs/0010-one-billion-tokens.md) one billion tokens: new data for vocabulary, knowledge and conversations | **in progress:** training since 2026-11-07, 555M of 1B on 11-09, ends ~11-11; public versions v1–v4 on Hugging Face |
 
 <details>
 <summary><b>Hypotheses</b></summary>
@@ -309,6 +310,88 @@ Deep and thin like MobileLLM-125M; ~2.7× faster than C, so a night shows severa
 - **Unseen phrasings:** "Do you remember the cat's name?" → *"No, I do not remember the cat's name."*
 
 **Reading the result:** the conversation format gave the turns, the self and the stories; the size and depth carried them without forgetting. Validation was still falling at ~0.6 tokens per parameter, so data is the limit now → [0010](specs/0010-one-billion-tokens.md): 1B tokens with new data for vocabulary, knowledge and conversations. Details: [0009](specs/0009-deep-100m-conversations.md) §9.
+
+## E. One billion tokens — D reads textbooks, Wikipedia and conversations (in progress)
+[0010](specs/0010-one-billion-tokens.md): the D student (106.8M, unchanged) trains on 1B new tokens on the Mac mini M6, bf16, batch 8 × 512, ~2,570 tokens/s, cosine learning rate; started 2026-11-07, ends ~2026-11-11 22:20. Before the run D had read 391M tokens (nursery 300M, preschool 11M, conversations 80M).
+
+**Validation loss** (`runs/final/bil/log.jsonl`, lower is better):
+
+| Tokens of the run | edu | textbooks | dialogue | stories | speech |
+|---|---|---|---|---|---|
+| 4M (start) | 4.031 | 3.037 | 2.369 | 1.576 | 3.253 |
+| 110M | 3.732 | 2.631 | 1.862 | 1.665 | 3.312 |
+| 220M | 3.650 | 2.553 | 1.812 | 1.640 | 3.275 |
+| 330M | 3.572 | 2.462 | 1.736 | 1.591 | 3.257 |
+| 440M (≈ v1) | 3.527 | 2.421 | 1.670 | 1.566 | 3.209 |
+| 473M (≈ v2) | 3.507 | 2.384 | 1.656 | 1.550 | 3.203 |
+| 525M (≈ v3) | 3.476 | 2.367 | 1.624 | 1.516 | 3.194 |
+| 554M (≈ v4) | 3.449 | 2.349 | 1.617 | 1.502 | 3.170 |
+
+Every shelf still falls; textbooks and dialogue gained most (−0.69 and −0.75 from the start). Stories and speech first rose (new shelves pushed them aside), then fell below the start after ~370–400M. Wikipedia was read once by ~555M; from there it repeats.
+
+**Published versions** on Hugging Face — model <https://huggingface.co/michalasobczak/cerbeto> (tag per version), chat in the browser <https://huggingface.co/spaces/michalasobczak/cerbeto-chat> (ONNX int8, ~110 MB, transformers.js); publishing: [scripts/hf/README.md](scripts/hf/README.md):
+
+| Version | Tokens of the run | Tokens in all | Published | Note |
+|---|---|---|---|---|
+| `v1-439M` | 439M | 830M | 2026-11-09 | first public model (tagged `bil-439M`) |
+| `v2-472M` | 472M | 863M | 2026-11-09 | (tagged `bil-472M`) |
+| `v3-523M` | 523M | 914M | 2026-11-09 | |
+| **`v4-555M`** | **555M** | **946M** | 2026-11-09 | chat better than v3 (below) |
+
+**Chat spot check, v3 → v4** (2026-11-09, each question asked 10 times at temperature 0.7, K = 1, answers checked by a pattern; v4 measured at 551M):
+
+| Part | v3 (523M) | **v4 (551M)** |
+|---|---|---|
+| **chat: 16 questions** | 47 / 160 | **65 / 160** |
+| completing a sentence: 8 | 23 / 80 | 22 / 80 |
+| memory: 4 conversations of 3 turns | 20 / 40 | 19 / 40 |
+
+<details>
+<summary>Per question</summary>
+
+| Question (correct if) | v3 | v4 |
+|---|---|---|
+| Is fire hot? (yes) | 3 | 1 |
+| Is the sun hot? (yes) | 0 | 0 |
+| Is ice cold? (yes) | 2 | 1 |
+| Is snow cold? (yes) | 1 | 0 |
+| The sky is green. Is that right? (no) | 10 | 10 |
+| **A cat can fly. True or false?** (no / false) | 0 | **9** |
+| **A fish can swim. True or false?** (yes / true) | 0 | **8** |
+| Is a dog an animal? (yes) | 10 | 10 |
+| Is a carrot a fruit or a vegetable? (vegetable) | 0 | 0 |
+| **Where do fish live?** (water, sea, pond …) | 1 | **6** |
+| What do bees make? (honey) | 0 | 0 |
+| How many legs does a bird have? (two) | 0 | 0 |
+| What color is grass? (green) | 10 | 10 |
+| What is the capital of France? (Paris) | 0 | 0 |
+| What do cows give us? (milk) | 0 | 0 |
+| What is the opposite of hot? (cold) | 10 | 10 |
+| … Water freezes and turns into (ice) | 1 | 1 |
+| … The Moon goes around the (Earth) | 8 | 4 |
+| … The capital of France is (Paris) | 0 | 0 |
+| … Bees make (honey) | 0 | 2 |
+| … The heart pumps (blood) | 5 | 9 |
+| … Plants need sunlight and (water) | 9 | 6 |
+| … A baby cat is called a (kitten) | 0 | 0 |
+| … The largest planet in our solar system is (Jupiter) | 0 | 0 |
+| memory: name, then *a cat called Tom* → cat's name | 0 | 0 |
+| memory: name, then *a horse called Sunny* → horse's name | 0 | 0 |
+| memory: *I am Zoe*, *my bird is called Kiwi* → bird's name | 10 | 9 |
+| memory: name, then *a dog called Rex* → my name | 10 | 10 |
+
+</details>
+
+**Can do now (v4)**
+- **Think before a true/false answer**, also in the new form "… True or false?": *"A cat can fly. True or false?"* → 💭 *"A cat cannot fly. So that is wrong, and the answer is no."* → *"No. A cat cannot fly."*
+- **Hold a short conversation:** greets by name, remembers the name and a pet named in its own sentence.
+- **Tell stories** that differ from each other (v3 told the cat and the dog the same story about an apple).
+
+**Cannot do yet**
+- **Answer world questions it can complete:** "The heart pumps …" → *blood*, but most "What …?" questions get a preschool pattern (*"A bee says buzz"*). The knowledge is there; the question-and-answer form is missing.
+- **Recall the right fact while thinking:** "Is the sun hot?" → 💭 *"The sun is yellow. So that is wrong"* → *"No."*
+- **Keep two names apart:** a cat or a horse gets the human's name.
+- **Empathy and "I don't know":** "I feel sad today." → *"That's nice!"*; "What is a zorblat?" → *"A zorblat is a fruit."*
 
 ## Next phases and their expected effects
 <details>
