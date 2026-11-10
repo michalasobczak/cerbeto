@@ -54,15 +54,18 @@ preschool lessons, stories on request, who the student is, two-step relations. E
 Corpora keep their own licences: TinyStories CDLA-Sharing-1.0, FineWeb-Edu ODC-By 1.0, Cosmopedia Apache-2.0, SODA CC BY 4.0,
 Wikipedia CC BY-SA 4.0, BabyLM MIT, Gutenberg public domain.
 
-## What it can and cannot do (spot check of v4 at ~550M tokens)
+## What it can and cannot do (spot check of v4 and v5)
 
 Each question asked 10 times at temperature 0.7, answers checked by a pattern:
 
-| Part | v3 (523M) | v4 (551M) |
-|---|---|---|
-| chat: 16 questions (true/false, facts, opposites) | 47 / 160 | **65 / 160** |
-| completing a sentence: 8 facts | 23 / 80 | 22 / 80 |
-| memory: 4 short conversations | 20 / 40 | 19 / 40 |
+| Part | v3 (523M) | v4 (555M) | v5 (704M) |
+|---|---|---|---|
+| chat: 16 questions (true/false, facts, opposites) | 47 / 160 | **69 / 160** | 55 / 160 |
+| completing a sentence: 8 facts | 23 / 80 | 26 / 80 | **35 / 80** |
+| memory: 4 short conversations | 20 / 40 | **23 / 40** | 19 / 40 |
+
+v5 completes facts better ("The heart pumps" → *blood* 10 of 10, "The Moon goes around the" → *Earth* 10 of 10) but answers
+fewer chat questions than v4 ("Where do fish live?" 9 → 0, "A fish can swim. True or false?" 6 → 0). The run goes on to 1B tokens.
 
 - **Can:** short polite conversation, remember a name or a pet told earlier in the talk, preschool skills (opposites, sizes, categories,
   "who is the youngest"), simple stories; it **thinks out loud** before true/false answers ("A cat can fly. True or false?" →

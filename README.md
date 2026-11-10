@@ -336,7 +336,8 @@ Every shelf still falls; textbooks and dialogue gained most (−0.69 and −0.75
 | `v1-439M` | 439M | 830M | 2026-11-09 | first public model (tagged `bil-439M`) |
 | `v2-472M` | 472M | 863M | 2026-11-09 | (tagged `bil-472M`) |
 | `v3-523M` | 523M | 914M | 2026-11-09 | |
-| **`v4-555M`** | **555M** | **946M** | 2026-11-09 | chat better than v3 (below) |
+| `v4-555M` | 555M | 946M | 2026-11-09 | chat better than v3 (below) |
+| **`v5-704M`** | **704M** | **1,095M** | 2026-11-10 | published on request although the chat is weaker than v4: completing 26 → 35, chat 69 → 55, memory 23 → 19 (below) |
 
 **Chat spot check, v3 → v4** (2026-11-09, each question asked 10 times at temperature 0.7, K = 1, answers checked by a pattern; v4 measured at 551M):
 
@@ -385,6 +386,8 @@ Every shelf still falls; textbooks and dialogue gained most (−0.69 and −0.75
 **Spot check v4 → 640M (2026-11-10, not published):** chat 69 → 52 of 160, completing 26 → 25 of 80, memory 23 → 10 of 40. The 640M checkpoint lost "A cat can fly. True or false?" (10 → 0), "Where do fish live?" (9 → 0) and the pet names (bird 9 → 0), although every validation loss was lower. The same v4 scored 65 and 69 of 160 on two days: the sampling noise is about ±5, these drops are not. Validation loss does not measure the chat; a version is published only when the spot check is better.
 
 **Spot check v4 → 687M (2026-11-10, not published):** chat 69 → 60, completing 26 → 29, memory 23 → 12. "A cat can fly" is back (10 → 10), "Where do fish live?" (9 → 1), "A fish can swim" (6 → 1) and the pet names (bird 9 → 2, horse 4 → 0) are still lost.
+
+**Spot check v4 → v5-704M (2026-11-10, the published v5):** chat 69 → 55 of 160, completing 26 → 35 of 80, memory 23 → 19 of 40. v5 knows more facts when it completes a sentence ("The heart pumps" 7 → 10, "Bees make" 0 → 3, "Water freezes and turns into" 2 → 4) and remembers the bird again (Kiwi 9 → 9), but lost "Where do fish live?" (9 → 0), "A fish can swim" (6 → 0) and the horse (4 → 0). Published on request, against the rule above.
 
 **Can do now (v4)**
 - **Think before a true/false answer**, also in the new form "… True or false?": *"A cat can fly. True or false?"* → 💭 *"A cat cannot fly. So that is wrong, and the answer is no."* → *"No. A cat cannot fly."*
