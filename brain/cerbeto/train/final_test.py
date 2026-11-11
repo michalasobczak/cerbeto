@@ -34,7 +34,7 @@ from cerbeto.model.student import pick_device
 from cerbeto.school.smoke import IGNORE, encode_dialogues, lesson_text, release
 from cerbeto.teachers import chat
 from cerbeto.tokenizer import load as load_tokenizer
-from cerbeto.train import conversations
+from cerbeto.train import conversations, talk_data
 from cerbeto.train.data import ShelfStream
 
 START = paths.REPO / "checkpoints" / "school" / "v0017"
@@ -60,6 +60,20 @@ ARM_K["bil"] = {"k_min": 1, "k_max": 1, "k_eval": 1}
 ARM_VALID = {"bil": ("s0_speech", "s0_stories", "s3_edu_plus", "s2_textbooks", "s0_dialogue")}
 ARM_TURNS = {"bil": (2, 8)}                 # turns per conversation (0009: 2–5)
 BY_TOKENS = {"bil"}                         # the run ends at its token target (0009 counted steps and fell short)
+# spec 0011 (`talk`): conversation tuning from the 1B student. Three of four steps are request → reply (only the
+# student's turns learned): questions about the world with short direct answers (written by the teacher), several
+# facts kept in a conversation, "I don't know" about made-up words, feelings; the 0010 kinds stay so nothing is
+# forgotten. The fourth step reads the 0010 shelves (~25% of tokens) for the same reason. Lower learning rate.
+ARM_START["talk"] = CKPT / "bil" / "final"
+ARM_K["talk"] = ARM_K["bil"]
+ARM_SHELF_MIX["talk"] = ARM_SHELF_MIX["bil"]
+ARM_VALID["talk"] = ARM_VALID["bil"]
+ARM_TURNS["talk"] = (2, 8)
+ARM_PAIR_MIX["talk"] = {"qa": 0.30, "memory": 0.20, "dialogue": 0.20, "lesson": 0.10, "story": 0.08, "self": 0.04,
+                        "relation": 0.04, "unknown": 0.02, "feeling": 0.02}
+ARM_PAIR_STEPS = {"talk": (3, 4)}           # (pairs steps, of every n steps); others: one of CFG["pair_every"]
+ARM_LR = {"talk": (1e-4, 100)}              # (peak, warm-up steps); cosine to CFG["min_lr"] of the peak
+BY_TOKENS.add("talk")
 MAX_PASSES = 4
 
 
@@ -176,6 +190,9 @@ class Pairs:
         self.stories = stories(seed=seed)
         self.named = [s for s in self.stories if s[3]]
         self.lessons = training_stream(seed=30_000 + seed, stage="preschool", exclude=exam_hashes(), lessons=True)
+        self.qa = talk_data.load_qa() if {"qa", "memory"} & set(self.mix) else []
+        if {"qa", "memory"} & set(self.mix) and len(self.qa) < 1000:
+            raise RuntimeError(f"only {len(self.qa)} teacher questions in {talk_data.QA_FILE}")
 
     def one(self, kind: str) -> tuple[str, str]:
         if kind == "story":
@@ -185,6 +202,12 @@ class Pairs:
         if kind == "relation":
             q, a, _ = conversations.relation(self.rng)
             return turn(q, a)
+        if kind == "qa":
+            return turn(*self.rng.choice(self.qa))
+        if kind == "unknown":
+            return turn(*talk_data.unknown(self.rng))
+        if kind == "feeling":
+            return turn(*talk_data.feeling(self.rng))
         return turn(*self.rng.choice(SELF))
 
     def dialogue(self, budget: int) -> list[tuple[str, str]]:
@@ -227,10 +250,29 @@ class Pairs:
             add(self.one("self"))
         return turns
 
+    def chain(self, says: list[tuple[str, str]], budget: int) -> list[tuple[str, str]]:
+        """Turns in order while they fit the budget (at least one)."""
+        out, used = [], 0
+        for q, a in says:
+            t = turn(q, a)
+            n = len(self.tok.encode(t[0] + t[1]).ids)
+            if out and used + n > budget:
+                break
+            out.append(t)
+            used += n
+        return out
+
     def batch(self, n: int) -> list[list[tuple[str, str]]]:
-        out = []
+        out, budget = [], CFG["seq_len"] - 8
         for kind in self.rng.choices(list(self.mix), list(self.mix.values()), k=n):
-            out.append(self.dialogue(CFG["seq_len"] - 8) if kind == "dialogue" else [self.one(kind)])
+            if kind == "dialogue":
+                out.append(self.dialogue(budget))
+            elif kind == "qa":                       # several unrelated questions: answer the last one
+                out.append(self.chain(self.rng.sample(self.qa, self.rng.randint(*self.turns)), budget))
+            elif kind == "memory":                   # facts, other questions, then the facts asked back
+                out.append(self.chain(talk_data.memory_dialogue(self.rng, self.rng.sample(self.qa, 3)), budget))
+            else:
+                out.append([self.one(kind)])
         return out
 
 
@@ -311,10 +353,10 @@ class ShelfMix:
         self.used[shelf] += n
 
 
-def lr_at(step: int, total: int) -> float:
-    warm = min(1.0, (step + 1) / CFG["warmup"])
+def lr_at(step: int, total: int, peak: float | None = None, warmup: int | None = None) -> float:
+    warm = min(1.0, (step + 1) / (warmup or CFG["warmup"]))
     cos = 0.5 * (1 + math.cos(math.pi * min(1.0, step / max(1, total))))
-    return CFG["lr"] * warm * (CFG["min_lr"] + (1 - CFG["min_lr"]) * cos)
+    return (peak or CFG["lr"]) * warm * (CFG["min_lr"] + (1 - CFG["min_lr"]) * cos)
 
 
 def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
@@ -327,7 +369,7 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
         model, opt = checkpoint.load(resume, device, with_optimizer=True)
     else:
         model = start_model(arm, device)
-        opt = torch.optim.AdamW(model.parameters(), lr=CFG["lr"], betas=(0.9, 0.95), weight_decay=CFG["weight_decay"])
+        opt = torch.optim.AdamW(model.parameters(), lr=ARM_LR.get(arm, (CFG["lr"],))[0], betas=(0.9, 0.95), weight_decay=CFG["weight_decay"])
         state = {"step": 0, "tokens": 0, "target_tokens": int(tokens), "params": model.num_params()}
         (run / "state.json").write_text(json.dumps(state))     # the panel knows the target before the first save
     # the 99M arm keeps only block inputs and recomputes the rest: ~20 GB of activations at k=6 would push a
@@ -336,7 +378,9 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
     total_steps = int(state["target_tokens"] / (CFG["windows"] * CFG["seq_len"]))   # ~tokens per step, both kinds
     by_tokens = arm in BY_TOKENS
     progress = (lambda: state["tokens"] / state["target_tokens"]) if by_tokens else (lambda: state["step"] / total_steps)
-    lr_now = lambda: lr_at(int(progress() * total_steps), total_steps)                       # noqa: E731
+    peak, warmup = ARM_LR.get(arm, (CFG["lr"], CFG["warmup"]))
+    lr_now = lambda: lr_at(int(progress() * total_steps), total_steps, peak, warmup)         # noqa: E731
+    pair_steps, every = ARM_PAIR_STEPS.get(arm, (1, CFG["pair_every"]))
     amp, bf16 = bf16_context(device, bf16)
     state["precision"] = "bf16" if bf16 else "fp32"
     tok = load_tokenizer()
@@ -359,7 +403,7 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
         for g in opt.param_groups:
             g["lr"] = lr_now()
         k = int(rng.integers(kk["k_min"], kk["k_max"] + 1))
-        if step % CFG["pair_every"] == CFG["pair_every"] - 1:
+        if step % every >= every - pair_steps:
             x, y = encode_dialogues(pairs.batch(CFG["pairs"]), tok, device, max_len=CFG["seq_len"])
             with amp():
                 logits = model(x, k)
@@ -551,7 +595,7 @@ def add_probes(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval", "probes"])
-    p.add_argument("arm", help="control | grown | deep | mid | bil (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep | mid | bil | talk (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     a = p.parse_args()
