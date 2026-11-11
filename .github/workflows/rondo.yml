@@ -1,0 +1,8 @@
+# Rondo — skan obecności README, CHANGELOG, speców i testów; wynik w panelu https://app.workwithrondo.com.
+# Sekrety repozytorium: RONDO_DOCKER_AUTH_CONFIG, RONDO_LICENSE (panel Rondo, strona licencji).
+name: Rondo
+on: [push, pull_request]
+jobs:
+  rondo:
+    uses: michalasobczak/workwithrondo/.github/workflows/rondo.yml@v1
+    secrets: inherit
