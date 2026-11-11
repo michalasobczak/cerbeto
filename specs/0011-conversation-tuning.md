@@ -1,6 +1,6 @@
 # 0011 — Conversation tuning: answer the question, keep the facts
 
-Status: in progress (2026-11-11) — teacher questions being written on the MacBook while the 1B run ends on the M6; G2 passed (30 steps on the M6 CPU from v5: every pair kind encoded, weights finite, replies sane) · Depends on: 0010 · Unblocks: v6, school
+Status: in progress (2026-11-11) — G1 passed at 17,400 teacher questions (stopped by the user, 0 exam, spot check held out); G2 passed; the 1B run was stopped at 982M tokens and arm `talk` started at 20:08 for 50M tokens · Depends on: 0010 · Unblocks: v6, school
 
 ## 1. TL;DR
 After 1B tokens the student knows facts but does not answer questions about them: it completes "The heart pumps" → *blood*
@@ -33,7 +33,8 @@ SmolLM2-Instruct or TinyLlama-Chat, at our scale) teaches the form: a question �
     unknown 2%, feeling 2%;
   - the fourth step the 0010 shelves, same mix (~25% of tokens);
   - learning rate 1e-4 (0010: 3e-4), warm-up 100 steps, cosine to 1e-5; fresh optimizer; validation as 0010.
-- **Tokens:** 75M (~8 h at 2,570 tok/s); pairs are counted with their padding, as in 0010.
+- **Tokens:** 50M (~5.5 h at 2,500 tok/s; planned 75M, cut because there are 17.4k questions, not ~40k, so each would
+  repeat ~50 times); pairs are counted with their padding, as in 0010.
 
 **Out of scope:** new shelves, a new tokenizer, a teacher that grades answers during training, the school.
 
@@ -47,7 +48,7 @@ SmolLM2-Instruct or TinyLlama-Chat, at our scale) teaches the form: a question �
 
 ## 5. Critical Path
 1. Teacher questions on the MacBook (while 0010 ends) → 2. 0010 final: evaluation, spot check of `bil/final` against v5 →
-3. copy the questions to the M6, `final_test train talk --tokens 75e6` → 4. spot check against v5 and `bil/final`,
+3. copy the questions to the M6, `final_test train talk --tokens 50e6` → 4. spot check against v5 and `bil/final`,
 publish v6 if the chat is better.
 
 ## 6. Control Gates
@@ -65,3 +66,8 @@ memory of names and pets back to v4 or better; shelf validation loss rises a lit
 - **Why not change the 1B run's data (2026-11-11):** the user asked whether to stop the run and continue on better data.
   The run had ~15 h left at a low learning rate, the new data did not exist yet, and changing the stream of a running
   arm needs a code change in resume — so the run ends as planned and the teacher writes the data meanwhile.
+- **Fewer questions, fewer tokens (2026-11-11):** the teacher slowed from ~3,500 to ~1,000 kept questions an hour
+  (the MacBook busy, more duplicates) and the user stopped it at 17,400 (~312k tokens). The talk arm was cut to 50M tokens.
+- **1B stopped at 982M (2026-11-11 20:07):** at learning rate 3e-5 the shelf loss was flat at ~2.45 and validation moved by
+  thousandths, so the user stopped the run (SIGINT, clean save) instead of waiting two hours. `checkpoints/final/bil/final`
+  is a copy of `latest` at step 267,654 (weights only, `NOTE.txt` says so).
