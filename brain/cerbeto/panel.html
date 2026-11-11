@@ -225,7 +225,7 @@ function lineChart(series,{w=600,h=200,xlab="",marks=[],target=null,smooth=null}
   const pts=series.flatMap(s=>s.pts); if(!pts.length) return '<p class="mut">no data yet</p>';
   const L=46,R=14,T=10,B=26, ys_=pts.map(p=>p[1]);
   let lo=quant(ys_,.005),hi=quant(ys_,.995); if(hi-lo<.01) hi=lo+.01; const pad=(hi-lo)*.06; lo-=pad; hi+=pad;    // rare spikes do not squash the rest
-  const x0=Math.min(...pts.map(p=>p[0])),x1=Math.max(...pts.map(p=>p[0]),...marks.map(m=>m.x),x0+1);
+  const x0=Math.min(0,...pts.map(p=>p[0])),x1=Math.max(...pts.map(p=>p[0]),...marks.map(m=>m.x),x0+1);
   const xs=x=>L+(x-x0)*(w-L-R)/(x1-x0), ys=v=>T+(hi-Math.min(hi,Math.max(lo,v)))/(hi-lo)*(h-T-B);
   let svg=`<svg class="lc" data-lo="${lo}" data-hi="${hi}" data-t="${T}" data-b="${h-B}" data-l="${L}" data-r="${w-R}" data-x0="${x0}" data-x1="${x1}" viewBox="0 0 ${w} ${h}" style="height:${h}px">`;
   const yst=niceStep(hi-lo,Math.max(3,Math.round((h-T-B)/38)));

@@ -190,6 +190,12 @@ def _checkpoints(arm: str) -> list[dict]:
     return sorted(out, key=lambda c: c["tokens"])
 
 
+def _thin(rows: list[dict], n: int = 800) -> list[dict]:
+    """The whole history from step 0, every k-th row so at most ~n points, the last row always kept."""
+    k = max(1, -(-len(rows) // n))
+    return rows[::k] + ([rows[-1]] if rows and (len(rows) - 1) % k else [])
+
+
 def final() -> dict:
     """Final test (cerbeto/train/final_test.py): each arm's training curve and progress, and the evaluations."""
     arms = []
@@ -203,7 +209,7 @@ def final() -> dict:
         # 0009 and earlier ended at a step count (target / 4096), 0010 at the token target
         progress = (rows[-1]["tokens"] / target if d.name in ("bil",) else rows[-1]["step"] / total) if rows and total else 0
         passes = [r["passes"] for r in rows if "passes" in r]
-        arms.append({"name": d.name, "state": state, "total_steps": total, "rows": rows[-1500:][::max(1, len(rows[-1500:]) // 400)],
+        arms.append({"name": d.name, "state": state, "total_steps": total, "rows": _thin(rows),
                      "last": rows[-1] if rows else None, "valid": [r for r in rows if "valid" in r],
                      "progress": progress, "last_passes": passes[-1] if passes else None,
                      "running": fresh and progress < 1,
