@@ -207,7 +207,7 @@ def final() -> dict:
         total = int(state.get("target_tokens", 0) / 4096) or None
         target = state.get("target_tokens") or 0
         # 0009 and earlier ended at a step count (target / 4096), 0010 at the token target
-        progress = (rows[-1]["tokens"] / target if d.name in ("bil",) else rows[-1]["step"] / total) if rows and total else 0
+        progress = (rows[-1]["tokens"] / target if d.name in ("bil", "talk") else rows[-1]["step"] / total) if rows and total else 0
         passes = [r["passes"] for r in rows if "passes" in r]
         arms.append({"name": d.name, "state": state, "total_steps": total, "rows": _thin(rows),
                      "last": rows[-1] if rows else None, "valid": [r for r in rows if "valid" in r],
