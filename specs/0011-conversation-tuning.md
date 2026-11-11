@@ -1,6 +1,6 @@
 # 0011 — Conversation tuning: answer the question, keep the facts
 
-Status: in progress (2026-11-11) — G1 passed at 17,400 teacher questions (stopped by the user, 0 exam, spot check held out); G2 passed; the 1B run was stopped at 982M tokens and arm `talk` started at 20:08 for 50M tokens · Depends on: 0010 · Unblocks: v6, school
+Status: in progress (2026-11-11) — G1 passed at 17,400 teacher questions; G2 passed; the 1B run stopped at 982M; `talk` (1e-4) forgot the shelves (validation +0.2–0.3) and was stopped at 25M; `talk2` (3e-5, shelves every other step) started 22:50 for 50M tokens · Depends on: 0010 · Unblocks: v6, school
 
 ## 1. TL;DR
 After 1B tokens the student knows facts but does not answer questions about them: it completes "The heart pumps" → *blood*
@@ -71,3 +71,9 @@ memory of names and pets back to v4 or better; shelf validation loss rises a lit
 - **1B stopped at 982M (2026-11-11 20:07):** at learning rate 3e-5 the shelf loss was flat at ~2.45 and validation moved by
   thousandths, so the user stopped the run (SIGINT, clean save) instead of waiting two hours. `checkpoints/final/bil/final`
   is a copy of `latest` at step 267,654 (weights only, `NOTE.txt` says so).
+- **`talk` forgot, `talk2` (2026-11-11 22:45):** at 1e-4 with a fresh optimizer the shelf validation rose within the first
+  3M tokens (edu 3.24 → 3.50, textbooks 2.15 → 2.41, dialogue 1.41 → 1.61, stories 1.34 → 1.53) and stayed there; shelf
+  training loss 2.45 → ~2.72, while the pair loss fell 0.89 → 0.43. The 1B run ended at 3e-5, so a 3× higher rate knocked
+  the student out of its minimum. The user stopped it at 25M tokens (`checkpoints/final/talk/latest`, kept for a spot
+  check). Arm `talk2`: the same data from `bil/final`, peak 3e-5 (100 warm-up steps, cosine to 3e-6), every other step on
+  the shelves (~50% of tokens), 50M tokens. Pass for the shelves: validation within +0.05 of `bil/final`.

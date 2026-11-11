@@ -274,7 +274,7 @@ document.addEventListener("click",e=>{const svg=e.target.closest?.("svg.lc"); if
   else {const p=guideAt(svg,e); if(!p) return; (PINS[k]=PINS[k]||[]).push(p.v)}
   drawPins()});
 const FINAL_TABS={
-  final:{arms:n=>!["mid","bil","talk"].includes(n),title:"300M — v0017 grown to a deep 283M student, trained on request → reply data",
+  final:{arms:n=>!["mid","bil"].includes(n)&&!n.startsWith("talk"),title:"300M — v0017 grown to a deep 283M student, trained on request → reply data",
     note:`Start: school v0017 (34.6M), grown function-preservingly to 282.6M: d 512→896, 28 heads, MLP 3072, 24 blocks with no loop (K = 1); bf16 on the Mac mini M6.
       Two of three steps are shelf windows (stories 40%, speech 30%, books 18%, edu 9%, Wikipedia 3%; every token learned); every third step is request → reply
       pairs (a story on request 55%, preschool lessons 40%, who the student is 5%; only the student's turn learned). Stopped at 18M tokens: no gain over v0017
@@ -290,13 +290,15 @@ const FINAL_TABS={
       Every third step: conversations of 2–8 turns 45% (facts the human tells and asks back later, stories and questions about them), preschool lessons 20%,
       a story on request 15%, who the student is 10%, two-step relations 10%. Planned to 1B tokens; stopped by the user at 982M (2026-11-11 20:07,
       loss flat at learning rate 3e-5): checkpoints/final/bil/final is that checkpoint.`},
-  talk:{arms:n=>n==="talk",evals:n=>n==="talk"||n==="bil",title:"Conversation tuning — the 1B student taught to answer questions (spec 0011)",
+  talk:{arms:n=>n.startsWith("talk"),evals:n=>n.startsWith("talk")||n==="bil",title:"Conversation tuning — the 1B student taught to answer questions (spec 0011)",
     note:`Start: the 1B student (bil/final, 982M tokens). 50M tokens, learning rate 1e-4 (100 warm-up steps, cosine to 1e-5), fresh optimizer.
       Three of four steps are request → reply conversations (only the student's turns learned): questions about the world from the teacher
       (17,400, gemma4; spot-check questions held out) 30%, conversations that tell facts and ask them back 20%, 0010 conversations 20%,
       preschool lessons 10%, a story on request 8%, who the student is 4%, two-step relations 4%, "I don't know" about made-up words 2%,
       replies to feelings 2%. The fourth step: the 1B shelves, same mix, so nothing is forgotten. Shelf loss should stay near 2.45.
-      Then a spot check against v5 and the 1B student: v6 if the chat is better by more than 5 of 160.`}};
+      Then a spot check against v5 and the 1B student: v6 if the chat is better by more than 5 of 160.
+      talk (first try, learning rate 1e-4) lifted shelf validation by 0.2–0.3 within 3M tokens and was stopped at 25M;
+      talk2 is the same data from the same start at 3e-5 (where the 1B run ended), with every other step on the shelves.`}};
 async function loadFinal(){
   const T=FINAL_TABS[tab]; $("#f-title").textContent=T.title; $("#f-note").textContent=T.note;
   const d=await (await fetch("/api/final")).json(); if(d.error){$("#f-arms").textContent=d.error;return}

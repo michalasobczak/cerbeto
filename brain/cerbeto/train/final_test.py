@@ -74,6 +74,14 @@ ARM_PAIR_MIX["talk"] = {"qa": 0.30, "memory": 0.20, "dialogue": 0.20, "lesson": 
 ARM_PAIR_STEPS = {"talk": (3, 4)}           # (pairs steps, of every n steps); others: one of CFG["pair_every"]
 ARM_LR = {"talk": (1e-4, 100)}              # (peak, warm-up steps); cosine to CFG["min_lr"] of the peak
 BY_TOKENS.add("talk")
+# `talk2` (2026-11-11): `talk` at 1e-4 lifted shelf validation by 0.2-0.3 within 3M tokens (the 1B run ended at 3e-5, the
+# jump knocked it out of its minimum). Same data from the same start, at the learning rate the 1B run ended with and with
+# every other step on the shelves (~50% of tokens).
+for _d in (ARM_START, ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX):
+    _d["talk2"] = _d["talk"]
+ARM_PAIR_STEPS["talk2"] = (1, 2)
+ARM_LR["talk2"] = (3e-5, 100)
+BY_TOKENS.add("talk2")
 MAX_PASSES = 4
 
 
@@ -595,7 +603,7 @@ def add_probes(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval", "probes"])
-    p.add_argument("arm", help="control | grown | deep | mid | bil | talk (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     a = p.parse_args()
