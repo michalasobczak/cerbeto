@@ -77,3 +77,8 @@ memory of names and pets back to v4 or better; shelf validation loss rises a lit
   the student out of its minimum. The user stopped it at 25M tokens (`checkpoints/final/talk/latest`, kept for a spot
   check). Arm `talk2`: the same data from `bil/final`, peak 3e-5 (100 warm-up steps, cosine to 3e-6), every other step on
   the shelves (~50% of tokens), 50M tokens. Pass for the shelves: validation within +0.05 of `bil/final`.
+- **Spot check of `talk` at 25M (1e-4), 2026-11-11 23:20:** chat 55 → 116 of 160 against v5 (982M: 62), completing
+  35 → 40 of 80 (982M: 33), memory 19 → 40 of 40 (982M: 13). G3 passed by far: the shelf loss rose, but the facts the
+  spot check asks for were not lost — "Where do fish live?" 0 → 9, "What do cows give us?" 0 → 9, the cat Tom and the
+  horse Sunny 0 → 10. Still wrong: "What do bees make?", the capital of France, "A fish can swim". `talk2` after 3.2M
+  tokens: validation +0.003 to +0.017 of `bil/final` (pass).
