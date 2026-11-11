@@ -1,6 +1,6 @@
 # 0011 — Conversation tuning: answer the question, keep the facts
 
-Status: in progress (2026-11-11) — teacher questions being written on the MacBook while the 1B run ends on the M6 · Depends on: 0010 · Unblocks: v6, school
+Status: in progress (2026-11-11) — teacher questions being written on the MacBook while the 1B run ends on the M6; G2 passed (30 steps on the M6 CPU from v5: every pair kind encoded, weights finite, replies sane) · Depends on: 0010 · Unblocks: v6, school
 
 ## 1. TL;DR
 After 1B tokens the student knows facts but does not answer questions about them: it completes "The heart pumps" → *blood*
