@@ -5,6 +5,7 @@ the teacher questions) and measure how many bytes one token carries on each shel
     uv run python -m cerbeto.tokenizer.vocab train --size 16384 --mb 400
     uv run python -m cerbeto.tokenizer.vocab tokenize --size 16384          # the 1B shelves -> train_16384.bin
     uv run python -m cerbeto.tokenizer.vocab bpb <checkpoint> [<checkpoint> ...]   # bits per byte, any vocabulary
+    uv run python -m cerbeto.tokenizer.vocab where <checkpoint> <checkpoint>     # bits per byte by word kind
 """
 import argparse
 import json
@@ -148,9 +149,77 @@ def bpb(paths_: list[str], kb: int = 300, shelves=("s0_speech", "s0_stories", "s
     return out
 
 
+def where(paths_: list[str], docs: int = 400, chars: int = 1500,
+          shelves=("s0_speech", "s0_stories", "s3_edu_plus", "s2_textbooks", "s0_dialogue")) -> dict:
+    """Where does one model lose against another across vocabularies: bits per byte split by word kind. Both tokenizers
+    pre-tokenize the same way (byte-level regex), so token boundaries meet at word boundaries and each word's loss is
+    exact in both. A word is 'same' when both cut it into the same pieces, 'merged' when the larger vocabulary uses
+    fewer pieces. Each document is cut to `chars` characters so it fits in one 512-token window in both."""
+    import bisect
+    import math
+    import torch
+    import torch.nn.functional as F
+    from cerbeto.model import checkpoint
+    dev = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    models = []
+    for path in paths_:
+        p = Path(path)
+        m = checkpoint.load(p if p.is_absolute() else paths.REPO / p, dev).eval()
+        models.append((path, m, load(m.cfg.vocab_size)))
+    toks = [t for _, _, t in models]
+    out = {}
+    for shelf in shelves:
+        texts = []
+        with (paths.SHELVES / shelf / "valid.jsonl").open() as f:
+            for line in f:
+                texts.append(json.loads(line)["text"][:chars])
+                if len(texts) >= docs:
+                    break
+        acc = {}           # (model, kind) -> [bits, bytes, words]
+        for text in texts:
+            words = toks[0].pre_tokenizer.pre_tokenize_str(text)
+            starts = [s for _, (s, _) in words]
+            encs = [t.encode(text) for t in toks]
+            pieces = [[[] for _ in words] for _ in toks]
+            for k, e in enumerate(encs):
+                for tid, (s, _) in zip(e.ids, e.offsets):
+                    pieces[k][bisect.bisect_right(starts, s) - 1].append(tid)
+            bits = []
+            for k, ((name, m, t), e) in enumerate(zip(models, encs)):
+                eos = t.token_to_id("<|eos|>")
+                ids = torch.tensor([eos, *e.ids][:513], device=dev)
+                with torch.no_grad():
+                    logits = m(ids[None, :-1], 1)[0].float()
+                nll = F.cross_entropy(logits, ids[1:], reduction="none").tolist()
+                wb, pos = [], 0
+                for w in range(len(words)):
+                    n = len(pieces[k][w])
+                    if pos + n > len(nll):
+                        break
+                    wb.append(sum(nll[pos:pos + n]) / math.log(2))
+                    pos += n
+                bits.append(wb)
+            for w, (_, (s, e_)) in enumerate(words[:min(len(b) for b in bits)]):
+                strs = [[toks[j].id_to_token(i) for i in pieces[j][w]] for j in range(len(toks))]
+                kind = "same" if all(x == strs[0] for x in strs) else "merged"
+                nb = len(text[s:e_].encode())
+                for k, (name, _, _) in enumerate(models):
+                    a = acc.setdefault((name, kind), [0.0, 0, 0])
+                    a[0] += bits[k][w]
+                    a[1] += nb
+                    a[2] += 1
+        row = {f"{n[-40:]}|{kind}": {"bpb": round(b / max(nb, 1), 4), "bytes": nb, "words": nw}
+               for (n, kind), (b, nb, nw) in acc.items()}
+        out[shelf] = row
+        print(shelf, flush=True)
+        for k_, v in sorted(row.items(), key=lambda kv: kv[0].split("|")[1]):
+            print(f"  {k_:52} bpb {v['bpb']:.4f}  bytes {v['bytes']:8}  words {v['words']}", flush=True)
+    return out
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("what", choices=["measure", "train", "tokenize", "bpb"])
+    p.add_argument("what", choices=["measure", "train", "tokenize", "bpb", "where"])
     p.add_argument("checkpoints", nargs="*")
     p.add_argument("--sizes", type=int, nargs="+", default=[16384, 32768])
     p.add_argument("--size", type=int, default=16384)
@@ -163,6 +232,8 @@ def main() -> None:
     elif a.what == "tokenize":
         from cerbeto.library.tokenize import tokenize_all
         tokenize_all(vocab=a.size, shelves=list(MIX))
+    elif a.what == "where":
+        where(a.checkpoints)
     else:
         bpb(a.checkpoints)
 
