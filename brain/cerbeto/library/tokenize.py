@@ -5,11 +5,12 @@ from pathlib import Path
 import numpy as np
 
 from cerbeto import paths
-from cerbeto.tokenizer import load
+from cerbeto.tokenizer import load, path_for
+from cerbeto.train.data import bin_name
 
 
-def _encode_file(src: Path, dst: Path, batch_docs: int = 4096) -> int:
-    tok = load()
+def _encode_file(src: Path, dst: Path, batch_docs: int = 4096, vocab: int = 8192) -> int:
+    tok = load(vocab)
     eos = tok.token_to_id("<|eos|>")
     total = 0
     with src.open() as f, dst.open("wb") as out:
@@ -30,24 +31,25 @@ def _encode_file(src: Path, dst: Path, batch_docs: int = 4096) -> int:
     return total
 
 
-def tokenize_shelf(shelf_dir: Path, force: bool = False) -> dict:
+def tokenize_shelf(shelf_dir: Path, force: bool = False, vocab: int = 8192) -> dict:
     manifest_path = shelf_dir / "manifest.json"
     manifest = json.loads(manifest_path.read_text())
-    tok_hash = paths.TOKENIZER_FILE.stat().st_mtime_ns
-    if not force and manifest.get("tokenizer_mtime") == tok_hash and (shelf_dir / "train.bin").exists():
+    tok_hash = path_for(vocab).stat().st_mtime_ns
+    key = "" if vocab == 8192 else f"_{vocab}"
+    if not force and manifest.get(f"tokenizer_mtime{key}") == tok_hash and (shelf_dir / bin_name("train", vocab)).exists():
         print(f"[{shelf_dir.name}] tokens up to date — skipping")
         return manifest
     tokens = {}
     for split in ("train", "valid"):
-        print(f"[{shelf_dir.name}] tokenizing {split}")
-        tokens[split] = _encode_file(shelf_dir / f"{split}.jsonl", shelf_dir / f"{split}.bin")
-    manifest["tokens"] = tokens
-    manifest["tokenizer_mtime"] = tok_hash
+        print(f"[{shelf_dir.name}] tokenizing {split} ({vocab})", flush=True)
+        tokens[split] = _encode_file(shelf_dir / f"{split}.jsonl", shelf_dir / bin_name(split, vocab), vocab=vocab)
+    manifest[f"tokens{key}"] = tokens
+    manifest[f"tokenizer_mtime{key}"] = tok_hash
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False))
     return manifest
 
 
-def tokenize_all(force: bool = False) -> None:
+def tokenize_all(force: bool = False, vocab: int = 8192, shelves: list[str] | None = None) -> None:
     for shelf_dir in sorted(paths.SHELVES.iterdir()):
-        if (shelf_dir / "manifest.json").exists():
-            tokenize_shelf(shelf_dir, force)
+        if (shelf_dir / "manifest.json").exists() and (shelves is None or shelf_dir.name in shelves):
+            tokenize_shelf(shelf_dir, force, vocab)

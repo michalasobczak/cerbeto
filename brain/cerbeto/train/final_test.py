@@ -35,7 +35,7 @@ from cerbeto.school.smoke import IGNORE, encode_dialogues, lesson_text, release
 from cerbeto.teachers import chat
 from cerbeto.tokenizer import load as load_tokenizer
 from cerbeto.train import conversations, talk_data
-from cerbeto.train.data import ShelfStream
+from cerbeto.train.data import ShelfStream, bin_name
 
 START = paths.REPO / "checkpoints" / "school" / "v0017"
 CKPT = paths.REPO / "checkpoints" / "final"
@@ -82,6 +82,16 @@ for _d in (ARM_START, ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX):
 ARM_PAIR_STEPS["talk2"] = (1, 2)
 ARM_LR["talk2"] = (3e-5, 100)
 BY_TOKENS.add("talk2")
+# spec 0012 (`v16k`): v6 (talk2/final) moved to the 16,384-token vocabulary (tokenizer_16384.json): every new token's
+# embedding starts as the mean of the 8k pieces it is made of (the head is tied, so the output too). The first 5M tokens
+# train only the embedding at 10x the learning rate, then everything; the stream is talk2's (every other step the 1B
+# shelves, re-tokenized), so the student keeps its knowledge and its way of talking while it learns the new words.
+ARM_VOCAB = {"v16k": 16384}
+for _d in (ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_PAIR_STEPS, ARM_LR):
+    _d["v16k"] = _d["talk2"]
+ARM_TRANSFER = {"v16k": CKPT / "talk2" / "final"}
+ARM_EMBED_FIRST = {"v16k": (5e6, 10.0)}        # (tokens with only the embedding learning, learning-rate factor)
+BY_TOKENS.add("v16k")
 MAX_PASSES = 4
 
 
@@ -157,10 +167,10 @@ Score 5 = a real story (characters, things happen, an ending) that fits what was
 1 = not a story at all. Answer only with JSON: {"score": <1-5>, "reason": "<short reason>"}"""
 
 
-def stories(limit: int = 120_000, seed: int = 0) -> list[tuple[str, str, str | None, str | None, int]]:
+def stories(limit: int = 120_000, seed: int = 0, vocab: int = 8192) -> list[tuple[str, str, str | None, str | None, int]]:
     """(request, story, kind, name, tokens) from the stories shelf: a story told because someone asked for it;
     kind and name when the story has "a <kind> named <Name>" (for questions about it)."""
-    tok, rng, out = load_tokenizer(), random.Random(seed), []
+    tok, rng, out = load_tokenizer(vocab), random.Random(seed), []
     with (paths.SHELVES / "s0_stories" / "train.jsonl").open() as f:
         for line in f:
             text = json.loads(line)["text"].strip()
@@ -190,12 +200,12 @@ class Pairs:
     """Batches of conversations for the pairs steps: most are one turn (a request and its reply), the `dialogue`
     share has 2–5 turns that change the subject — a story, then a question about it, about the student or a lesson —
     so the student learns to answer the last turn, using the earlier ones only when it is asked about them."""
-    def __init__(self, seed: int = 0, mix: dict | None = None, turns: tuple[int, int] = (2, 5)):
+    def __init__(self, seed: int = 0, mix: dict | None = None, turns: tuple[int, int] = (2, 5), vocab: int = 8192):
         self.rng = random.Random(seed)
         self.mix = mix or PAIR_MIX
         self.turns = turns
-        self.tok = load_tokenizer()
-        self.stories = stories(seed=seed)
+        self.tok = load_tokenizer(vocab)
+        self.stories = stories(seed=seed, vocab=vocab)
         self.named = [s for s in self.stories if s[3]]
         self.lessons = training_stream(seed=30_000 + seed, stage="preschool", exclude=exam_hashes(), lessons=True)
         self.qa = talk_data.load_qa() if {"qa", "memory"} & set(self.mix) else []
@@ -316,6 +326,9 @@ def start_mid(model, probe, log):
 
 
 def start_model(arm: str, device):
+    if arm in ARM_TRANSFER:
+        from cerbeto.tokenizer.vocab import transfer
+        return transfer(checkpoint.load(ARM_TRANSFER[arm], "cpu"), ARM_VOCAB[arm]).to(device)
     if arm in ARM_START:
         return checkpoint.load(ARM_START[arm], device)
     model = checkpoint.load(START, device)
@@ -391,14 +404,15 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
     pair_steps, every = ARM_PAIR_STEPS.get(arm, (1, CFG["pair_every"]))
     amp, bf16 = bf16_context(device, bf16)
     state["precision"] = "bf16" if bf16 else "fp32"
-    tok = load_tokenizer()
+    vocab = model.cfg.vocab_size
+    tok = load_tokenizer(vocab)
     shelf_mix = ARM_SHELF_MIX.get(arm, SHELF_MIX)
-    shelves = ShelfMix(shelf_mix, {s: ShelfStream(s, "train", CFG["seq_len"]) for s in shelf_mix},
+    shelves = ShelfMix(shelf_mix, {s: ShelfStream(s, "train", CFG["seq_len"], vocab=vocab) for s in shelf_mix},
                        state.get("shelf_tokens"))
-    valid = {s: ShelfStream(s, "valid", CFG["seq_len"]).fixed_batches(8, 8, device, seed=1)
+    valid = {s: ShelfStream(s, "valid", CFG["seq_len"], vocab=vocab).fixed_batches(8, 8, device, seed=1)
              for s in ARM_VALID.get(arm, ("s0_speech", "s0_stories"))}
     rng = np.random.default_rng(seed + state["step"])
-    pairs = Pairs(seed + state["step"], ARM_PAIR_MIX.get(arm), ARM_TURNS.get(arm, (2, 5)))
+    pairs = Pairs(seed + state["step"], ARM_PAIR_MIX.get(arm), ARM_TURNS.get(arm, (2, 5)), vocab=vocab)
     stop = {"now": False}
     signal.signal(signal.SIGINT, lambda *_: stop.update(now=True))
     log = (run / "log.jsonl").open("a")
@@ -406,10 +420,18 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
     model.train()
     saved, t0, t0_tokens, recent = time.time(), time.time(), state["tokens"], []
     kk = ks(arm)
+    embed_until, embed_x = ARM_EMBED_FIRST.get(arm, (0, 1.0))
+    embed_phase = None
     while progress() < 1 and not stop["now"]:
         step = state["step"]
+        first = state["tokens"] < embed_until
+        if first != embed_phase:            # spec 0012: only the new embedding learns at first, then everything
+            for name, p in model.named_parameters():
+                p.requires_grad_(not first or name.startswith("embed."))
+            embed_phase = first
+            print(f"{arm}: {'only the embedding learns' if first else 'every weight learns'} from step {step}", flush=True)
         for g in opt.param_groups:
-            g["lr"] = lr_now()
+            g["lr"] = lr_now() * (embed_x if first else 1.0)
         k = int(rng.integers(kk["k_min"], kk["k_max"] + 1))
         if step % every >= every - pair_steps:
             x, y = encode_dialogues(pairs.batch(CFG["pairs"]), tok, device, max_len=CFG["seq_len"])
@@ -487,7 +509,7 @@ def validation(model, valid: dict, k: int) -> dict:
 # --- evaluation -------------------------------------------------------------------------------------
 @torch.no_grad()
 def tell(model, ask: str, device, k: int, max_new_tokens: int = 220) -> str:
-    tok = load_tokenizer()
+    tok = load_tokenizer(model.cfg.vocab_size)
     ids = torch.tensor([[tok.token_to_id("<|eos|>")] + tok.encode(f"<|human|> {ask}\n<|student|>").ids], device=device)
     out = model.generate(ids, max_new_tokens, k=k, temperature=0.7, top_k=40)[0, ids.shape[1]:].tolist()
     stops = {tok.token_to_id(t) for t in ("<|eos|>", "<|human|>", "<|student|>")}
@@ -557,8 +579,8 @@ def evaluate(name: str) -> dict:
         return {}
     model = checkpoint.load(path, device).eval()
     shelves = ("s0_speech", "s0_stories", "s3_edu_plus", "s2_textbooks", "s0_dialogue")
-    valid = {s: ShelfStream(s, "valid", CFG["seq_len"]).fixed_batches(8, 8, device, seed=1)
-             for s in shelves if (paths.SHELVES / s / "valid.bin").exists()}
+    valid = {s: ShelfStream(s, "valid", CFG["seq_len"], vocab=model.cfg.vocab_size).fixed_batches(8, 8, device, seed=1)
+             for s in shelves if (paths.SHELVES / s / bin_name("valid", model.cfg.vocab_size)).exists()}
     k = ks(name)["k_eval"]
     out = {"name": name, "params": model.num_params(), "k": k, "valid": validation(model, valid, k)}
     print(name, out["valid"], flush=True)
@@ -603,7 +625,7 @@ def add_probes(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval", "probes"])
-    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     a = p.parse_args()

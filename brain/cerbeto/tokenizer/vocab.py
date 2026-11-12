@@ -3,6 +3,8 @@ the teacher questions) and measure how many bytes one token carries on each shel
 
     uv run python -m cerbeto.tokenizer.vocab measure --sizes 16384 32768 --mb 200
     uv run python -m cerbeto.tokenizer.vocab train --size 16384 --mb 400
+    uv run python -m cerbeto.tokenizer.vocab tokenize --size 16384          # the 1B shelves -> train_16384.bin
+    uv run python -m cerbeto.tokenizer.vocab bpb <checkpoint> [<checkpoint> ...]   # bits per byte, any vocabulary
 """
 import argparse
 import json
@@ -84,17 +86,85 @@ def measure(sizes: list[int], total_mb: int) -> dict:
     return res
 
 
+def transfer(old, new_vocab: int):
+    """The same student with a new vocabulary: every weight but the embedding copied; each new token's embedding is the
+    mean of the old embeddings of the pieces the old tokenizer cuts it into (both are byte-level BPE on the same
+    alphabet, so any token is a string the old BPE model can cut). Special tokens keep their ids. The head is tied."""
+    import torch
+    from cerbeto.model.student import Student, StudentConfig
+    old_tok, new_tok = load(old.cfg.vocab_size), load(new_vocab)
+    new = Student(StudentConfig.from_dict({**old.cfg.to_dict(), "vocab_size": new_vocab}))
+    state = {k: v for k, v in old.state_dict().items()}
+    e_old = state.pop("embed.weight")
+    e_new = torch.empty(new_vocab, e_old.shape[1], dtype=e_old.dtype)
+    pieces = 0
+    for i in range(new_vocab):
+        t = new_tok.id_to_token(i)
+        ids = [old_tok.token_to_id(t)] if t in SPECIAL_TOKENS else [p.id for p in old_tok.model.tokenize(t)]
+        e_new[i] = e_old[ids].mean(0)
+        pieces += len(ids)
+    state["embed.weight"] = e_new
+    missing, unexpected = new.load_state_dict(state, strict=False)
+    assert not unexpected and all(k == "embed.weight" for k in missing), (missing, unexpected)
+    print(f"transfer {old.cfg.vocab_size} -> {new_vocab}: {pieces / new_vocab:.2f} old pieces per new token", flush=True)
+    return new
+
+
+def bpb(paths_: list[str], kb: int = 300, shelves=("s0_speech", "s0_stories", "s3_edu_plus", "s2_textbooks", "s0_dialogue")) -> dict:
+    """Bits per byte on the first `kb` KB of each shelf's validation text: comparable across vocabularies."""
+    import math
+    import torch
+    from cerbeto.model import checkpoint
+    dev = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    out = {}
+    for path in paths_:
+        if hasattr(path, "cfg"):            # a model already in memory (tests, or a fresh transfer)
+            model, path = path.to(dev).eval(), f"model {path.cfg.vocab_size}"
+        else:
+            p = Path(path)
+            model = checkpoint.load(p if p.is_absolute() else paths.REPO / p, dev).eval()
+        tok = load(model.cfg.vocab_size)
+        eos = tok.token_to_id("<|eos|>")
+        row = {}
+        for shelf in shelves:
+            texts, n_bytes = [], 0
+            with (paths.SHELVES / shelf / "valid.jsonl").open() as f:
+                for line in f:
+                    texts.append(json.loads(line)["text"])
+                    n_bytes += len(texts[-1].encode())
+                    if n_bytes >= kb * 1000:
+                        break
+            ids = [i for e in tok.encode_batch(texts) for i in (eos, *e.ids)]
+            n = (len(ids) - 1) // 512 * 512
+            x = torch.tensor(ids[:n], device=dev).view(-1, 512)
+            y = torch.tensor(ids[1:n + 1], device=dev).view(-1, 512)
+            nats = 0.0
+            with torch.no_grad():
+                for j in range(0, len(x), 8):
+                    nats += model.loss(x[j:j + 8], y[j:j + 8], 1).item() * y[j:j + 8].numel()
+            row[shelf] = round(nats / math.log(2) / (n_bytes * n / len(ids)), 4)    # bytes of the scored part
+        out[str(path)] = row
+        print(f"{str(path)[-60:]:60}", "  ".join(f"{k.split('_', 1)[1]} {v:.4f}" for k, v in row.items()), flush=True)
+    return out
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("what", choices=["measure", "train"])
+    p.add_argument("what", choices=["measure", "train", "tokenize", "bpb"])
+    p.add_argument("checkpoints", nargs="*")
     p.add_argument("--sizes", type=int, nargs="+", default=[16384, 32768])
     p.add_argument("--size", type=int, default=16384)
     p.add_argument("--mb", type=int, default=200)
     a = p.parse_args()
     if a.what == "measure":
         measure(a.sizes, a.mb)
-    else:
+    elif a.what == "train":
         train(a.size, a.mb, OUT / f"tokenizer_{a.size}.json")
+    elif a.what == "tokenize":
+        from cerbeto.library.tokenize import tokenize_all
+        tokenize_all(vocab=a.size, shelves=list(MIX))
+    else:
+        bpb(a.checkpoints)
 
 
 if __name__ == "__main__":

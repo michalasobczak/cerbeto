@@ -37,7 +37,7 @@ class Talker:
     def __init__(self, model: Student, device, k: int = 4, temperature: float = 0.7, max_new_tokens: int = 60):
         self.model, self.device = model.eval(), device
         self.k, self.temperature, self.max_new_tokens = k, temperature, max_new_tokens
-        self.tok = load_tokenizer()
+        self.tok = load_tokenizer(model.cfg.vocab_size)
         self.eos = self.tok.token_to_id("<|eos|>")
         self.stops = {self.tok.token_to_id(t) for t in ("<|eos|>", "<|human|>", "<|student|>")}
         self.history = ""

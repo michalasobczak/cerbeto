@@ -7,10 +7,15 @@ import torch
 from cerbeto import paths
 
 
+def bin_name(split: str, vocab: int = 8192) -> str:
+    """train.bin / valid.bin for the 8k tokenizer, train_16384.bin for others (spec 0012: both kept)."""
+    return f"{split}.bin" if vocab == 8192 else f"{split}_{vocab}.bin"
+
+
 class ShelfStream:
-    def __init__(self, shelf: str, split: str, seq_len: int, root: Path = paths.SHELVES):
+    def __init__(self, shelf: str, split: str, seq_len: int, root: Path = paths.SHELVES, vocab: int = 8192):
         self.shelf = shelf
-        self.tokens = np.memmap(root / shelf / f"{split}.bin", dtype=np.uint16, mode="r")
+        self.tokens = np.memmap(root / shelf / bin_name(split, vocab), dtype=np.uint16, mode="r")
         self.seq_len = seq_len
 
     def batch(self, batch_size: int, rng: np.random.Generator, device: torch.device) -> torch.Tensor:

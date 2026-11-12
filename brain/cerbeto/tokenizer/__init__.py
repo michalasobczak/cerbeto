@@ -1,4 +1,5 @@
-"""Cerbeto's own byte-level BPE tokenizer (8192 tokens), trained from scratch on the school library."""
+"""Cerbeto's own byte-level BPE tokenizers, trained from scratch: 8192 tokens on the school library (`tokenizer.json`),
+16384 on the 1B shelf mix (`tokenizer_16384.json`, spec 0012). A model picks its tokenizer by its vocabulary size."""
 import json
 import random
 from collections.abc import Iterator
@@ -56,5 +57,9 @@ def train(vocab_size: int, sample_mb_per_shelf: int, out: Path = paths.TOKENIZER
     return tok
 
 
-def load(path: Path = paths.TOKENIZER_FILE) -> Tokenizer:
-    return Tokenizer.from_file(str(path))
+def path_for(vocab_size: int = 8192) -> Path:
+    return paths.TOKENIZER_FILE if vocab_size == 8192 else paths.TOKENIZER_FILE.parent / f"tokenizer_{vocab_size}.json"
+
+
+def load(vocab_size: int = 8192) -> Tokenizer:
+    return Tokenizer.from_file(str(path_for(vocab_size)))
