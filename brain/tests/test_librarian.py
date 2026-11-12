@@ -29,9 +29,20 @@ def test_filter_keeps_easy_and_drops_hard_paragraphs():
     easy = "Tom has a red ball. He likes to play with it in the park every day with his friend Sam."
     hard = ("The electrophysiological characterisation of transmembrane ion channels necessitates "
             "sophisticated instrumentation and considerable methodological expertise.")
-    kept, total = filter_paragraphs((f"{easy}\n{hard}", 4.0, 10))
+    kept, total, _ = filter_paragraphs((f"{easy}\n{hard}", 4.0, 10))
     assert total == 2
     assert kept == [easy]
+
+
+def test_filter_band_keeps_only_harder_paragraphs_and_names_the_easier_sibling():
+    from cerbeto.library.shelves import digest
+    easy = "Tom has a red ball. He likes to play with it in the park every day with his friend Sam."
+    mid = ("Plants make their own food from sunlight, water and carbon dioxide, and they release oxygen "
+           "into the surrounding atmosphere during this important biological process.")
+    g = fk_grade(mid)
+    kept, total, sibling = filter_paragraphs((f"{easy}\n{mid}", g + 0.1, 10, g - 0.1, fk_grade(easy) + 0.1))
+    assert total == 2 and kept == [mid]
+    assert sibling == digest(easy)
 
 
 @pytest.mark.parametrize("junk", [

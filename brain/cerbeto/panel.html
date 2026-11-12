@@ -45,7 +45,7 @@ svg.lc{cursor:crosshair;overflow:visible}#f-eval{overflow-x:auto}
 <body>
 <header>
   <h1>Cerbeto · school</h1><span id="pill" class="pill"></span>
-  <nav><button data-t="overview" class="on">AB:Overview</button><button data-t="lessons">AB:Lessons</button><button data-t="exams">AB:Exams</button><button data-t="final">C:100-300Mp fail</button><button data-t="mid">D:80Mt run</button><button data-t="bil">D:1Bt run</button><button data-t="talk">D:talk</button><button data-t="v16k">D:v16k</button><button data-t="vext">D:vext</button><button data-t="log">Log</button></nav>
+  <nav><button data-t="overview" class="on">AB:Overview</button><button data-t="lessons">AB:Lessons</button><button data-t="exams">AB:Exams</button><button data-t="final">C:100-300Mp fail</button><button data-t="mid">D:80Mt run</button><button data-t="bil">D:1Bt run</button><button data-t="talk">D:talk</button><button data-t="v16k">D:v16k</button><button data-t="vext">D:vext</button><button data-t="bil2">D:1Bt run #2</button><button data-t="log">Log</button></nav>
   <span class="mut" id="upd" style="margin-left:auto"></span>
 </header>
 <main>
@@ -105,7 +105,7 @@ const STACKED=matchMedia("(max-width:1100px),(max-height:620px)");
 const rowsFit=el=>STACKED.matches?25:Math.max(8,Math.floor((el.closest(".card").clientHeight-90)/22));
 let tab="overview", off=0, eoff=0, S=null;
 function go(t){tab=t;document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x.dataset.t===t));
-  const sec=t==="mid"||t==="bil"||t==="talk"||t==="v16k"||t==="vext"?"final":t;
+  const sec=t==="mid"||t==="bil"||t==="talk"||t==="v16k"||t==="vext"||t==="bil2"?"final":t;
   ["overview","lessons","exams","final","log"].forEach(x=>$("#"+x).classList.toggle("hide",x!==sec));
   if(location.hash.slice(1)!==t) history.replaceState(null,"","#"+t); try{localStorage.setItem("cerbeto.tab",t)}catch(e){}
   refresh()}
@@ -115,7 +115,7 @@ document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.t)
 const cls=(v,t)=>v==null?"":v>=t?"ok":v>=t-0.15?"warn":"bad";
 
 async function refresh(){
-  if(tab==="lessons") return loadLessons(); if(tab==="exams") return loadExam(); if(tab==="final"||tab==="mid"||tab==="bil"||tab==="talk"||tab==="v16k"||tab==="vext") return loadFinal();
+  if(tab==="lessons") return loadLessons(); if(tab==="exams") return loadExam(); if(tab==="final"||tab==="mid"||tab==="bil"||tab==="talk"||tab==="v16k"||tab==="vext"||tab==="bil2") return loadFinal();
   const d=await (await fetch("/api/status")).json(); if(d.error){$("#upd").textContent=d.error;return} S=d;
   $("#upd").textContent="updated "+d.now.slice(11);
   const st=d.state, pill=$("#pill"); pill.textContent=!st?"not started":d.running?"running":"stopped"; pill.style.background=!st?"#888":d.running?"var(--ok)":"var(--bad)";
@@ -274,7 +274,7 @@ document.addEventListener("click",e=>{const svg=e.target.closest?.("svg.lc"); if
   else {const p=guideAt(svg,e); if(!p) return; (PINS[k]=PINS[k]||[]).push(p.v)}
   drawPins()});
 const FINAL_TABS={
-  final:{arms:n=>!["mid","bil","v16k","vext","honest"].includes(n)&&!n.startsWith("talk"),title:"300M — v0017 grown to a deep 283M student, trained on request → reply data",
+  final:{arms:n=>!["mid","bil","bil2","v16k","vext","honest"].includes(n)&&!n.startsWith("talk"),title:"300M — v0017 grown to a deep 283M student, trained on request → reply data",
     note:`Start: school v0017 (34.6M), grown function-preservingly to 282.6M: d 512→896, 28 heads, MLP 3072, 24 blocks with no loop (K = 1); bf16 on the Mac mini M6.
       Two of three steps are shelf windows (stories 40%, speech 30%, books 18%, edu 9%, Wikipedia 3%; every token learned); every third step is request → reply
       pairs (a story on request 55%, preschool lessons 40%, who the student is 5%; only the student's turn learned). Stopped at 18M tokens: no gain over v0017
@@ -308,6 +308,13 @@ const FINAL_TABS={
       A 16k token carries ~7% more text, so the losses per token are not comparable with v6: validation is shown in bits per byte, and
       the goal is v6's level (in the legend). Published only if it reaches v6.
       Result: 60M tokens were not enough — words the 16k vocabulary made into one new token stayed 25–85% worse than in v6 (the rest 1–3%).`},
+  bil2:{arms:n=>n==="bil2",evals:n=>n==="bil2",title:"A second billion tokens from v6 on the 16k vocabulary (spec 0014)",
+    note:`Start: v16k/final (v6 moved to the 16,384-token vocabulary; its new words were not learnt yet in 60M tokens). Mostly text the first
+      billion did not reach: a new shelf of FineWeb-Edu paragraphs of grade 7–8 (edu 8, ~470M tokens, apart from edu's grade ≤ 7) and the
+      unread rest of edu, stories and dialogue. Three of four steps the shelves (edu 8 30%, edu 22%, textbooks 12%, dialogue 12%,
+      stories 10%, speech 6%, books 5%, wiki 3%), the fourth talk2's conversations so the student keeps answering. Learning rate warmed up
+      again to 1e-4 over 1,000 steps, cosine to 1e-5; ~4.5 days on the M6. Validation in bits per byte against v6 (legend).
+      Afterwards a short conversation tuning as talk2, then the spot check; published only if better than v6.`},
   vext:{arms:n=>n==="vext",evals:n=>n==="vext",title:"v6 with the 8k vocabulary extended to 12,288 tokens (spec 0012)",
     note:`v16k lost almost only on its 8,192 new (and often rare) words. Here the 8k vocabulary stays as it is — same tokens, same ids, same
       embedding rows — and only the 4,096 most frequent new merges of the 1B mix are added on top (each seen ≥ 300 times in 200 MB).
@@ -354,7 +361,7 @@ async function loadFinal(){
   $("#f-eval").innerHTML=h}
 
 {let t=location.hash.slice(1); if(!TABS.includes(t)){try{t=localStorage.getItem("cerbeto.tab")}catch(e){t=null}} go(TABS.includes(t)?t:"overview")}
-setInterval(()=>{if(tab==="overview"||tab==="log"||tab==="final"||tab==="mid"||tab==="bil"||tab==="talk"||tab==="v16k"||tab==="vext")refresh()},5000);
+setInterval(()=>{if(tab==="overview"||tab==="log"||tab==="final"||tab==="mid"||tab==="bil"||tab==="talk"||tab==="v16k"||tab==="vext"||tab==="bil2")refresh()},5000);
 window.onresize=()=>{clearTimeout(window._rs);window._rs=setTimeout(refresh,150)};   // also on zoom: charts redraw at the new width
 </script>
 </body>

@@ -81,3 +81,16 @@ shelves:
     min_edu_score: 3
     sources:
       - {kind: fineweb_parquet, path: "fineweb_edu/sample10BT_*.parquet", license: "ODC-By 1.0 (FineWeb-Edu)"}
+  s3_edu_8:
+    stage: 3
+    # spec 0014: the same FineWeb-Edu shards, only the paragraphs of grade 7-8 (s3_edu_plus has <= 7), so the two shelves
+    # do not overlap; a document whose easier paragraphs are in s3_edu_plus's validation is left out entirely
+    description: Educational web text (FineWeb-Edu, the 14 shards of the 10BT sample, edu score >= 3), paragraphs of grade 7-8
+    fk_min: 7.0
+    fk_max: 8.0
+    exclude_valid_of: {shelf: s3_edu_plus, fk_max: 7.0}
+    exclude_exam_prompts: true
+    min_words: 20
+    min_edu_score: 3
+    sources:
+      - {kind: fineweb_parquet, path: "fineweb_edu/sample10BT_*.parquet", license: "ODC-By 1.0 (FineWeb-Edu)"}

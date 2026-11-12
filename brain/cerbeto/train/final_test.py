@@ -104,6 +104,20 @@ ARM_TRANSFER["vext"] = CKPT / "talk2" / "final"
 ARM_EMBED_FIRST["vext"] = (5e6, 10.0)
 ARM_NEW_ROWS = {"vext": (8192, 10.0)}           # (first new row, factor on the new rows' update after the first phase)
 BY_TOKENS.add("vext")
+# spec 0014 (`bil2`): a second billion tokens from v16k/final (v6 on the 16k vocabulary; the new words learn here). Mostly
+# text the first billion did not reach: the new s3_edu_8 (FineWeb-Edu paragraphs of grade 7-8, ~470M tokens) and the
+# unread rest of edu, stories and dialogue. Three of four steps the shelves, the fourth talk2's conversations so the
+# student keeps answering. Learning rate warmed up again to 1e-4 (1,000 steps), cosine to 1e-5.
+ARM_START["bil2"] = CKPT / "v16k" / "final"
+ARM_K["bil2"] = ARM_K["bil"]
+ARM_SHELF_MIX["bil2"] = {"s3_edu_8": 0.30, "s3_edu_plus": 0.22, "s2_textbooks": 0.12, "s0_dialogue": 0.12,
+                         "s0_stories": 0.10, "s0_speech": 0.06, "s1_books": 0.05, "s2_wiki_plus": 0.03}
+ARM_VALID["bil2"] = (*ARM_VALID["bil"], "s3_edu_8")
+ARM_TURNS["bil2"] = ARM_TURNS["talk"]
+ARM_PAIR_MIX["bil2"] = ARM_PAIR_MIX["talk"]
+ARM_PAIR_STEPS["bil2"] = (1, 4)
+ARM_LR["bil2"] = (1e-4, 1000)
+BY_TOKENS.add("bil2")
 # spec 0013 (`honest`): from v16k, the same stream, but the teacher questions are probed on the student: the ones it
 # knows keep their answers, the ones it does not get "I don't know." (`honest.build` -> data/talk/qa_honest.jsonl)
 ARM_QA = {"honest": paths.DATA / "talk" / "qa_honest.jsonl"}
@@ -654,7 +668,7 @@ def add_probes(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval", "probes"])
-    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | honest (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     a = p.parse_args()

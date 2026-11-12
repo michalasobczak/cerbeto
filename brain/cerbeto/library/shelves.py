@@ -38,13 +38,20 @@ def is_clean_prose(paragraph: str) -> bool:
     return letters / len(paragraph) >= 0.9 and digits / len(paragraph) < 0.03
 
 
-def filter_paragraphs(job: tuple[str, float, int]) -> tuple[list[str], int]:
-    """Librarian: keep clean prose readable at or below `fk_max`. Returns (kept, total)."""
-    text, fk_max, min_words = job
+def filter_paragraphs(job: tuple) -> tuple[list[str], int, bytes | None]:
+    """Librarian: keep clean prose readable at or below `fk_max` (and above `fk_min`, if given). Returns (kept, total,
+    sibling): `sibling` is the digest of the paragraphs a shelf with `sibling_fk_max` kept from the same document
+    (spec 0014: so a document whose easier paragraphs are in that shelf's validation stays out of this one)."""
+    text, fk_max, min_words, fk_min, sibling_fk_max = (*job, None, None)[:5]
     paragraphs = [p.strip() for p in text.split("\n") if p.strip()]
-    kept = [p for p in paragraphs
-            if len(words(p)) >= min_words and is_clean_prose(p) and fk_grade(p) <= fk_max]
-    return kept, len(paragraphs)
+    grades = [fk_grade(p) if len(words(p)) >= min_words and is_clean_prose(p) else None for p in paragraphs]
+    kept = [p for p, g in zip(paragraphs, grades)
+            if g is not None and g <= fk_max and (fk_min is None or g > fk_min)]
+    sibling = None
+    if sibling_fk_max is not None:
+        easier = [p for p, g in zip(paragraphs, grades) if g is not None and g <= sibling_fk_max]
+        sibling = digest("\n".join(easier)) if easier else None
+    return kept, len(paragraphs), sibling
 
 
 def source_files(pattern: str) -> list[Path]:
@@ -111,10 +118,20 @@ def _docs(src: dict, shelf: dict, stats: dict, seen: set[bytes], workers: int) -
             yield doc
         return
 
-    jobs = ((doc, shelf["fk_max"], shelf.get("min_words", 0)) for doc in raw)
+    sib = shelf.get("exclude_valid_of")         # {"shelf": name, "fk_max": its fk_max}
+    sib_valid = set()
+    if sib:
+        with (paths.SHELVES / sib["shelf"] / "valid.jsonl").open() as f:
+            sib_valid = {digest(json.loads(line)["text"]) for line in f}
+        stats["sibling_valid_dropped"] = 0
+    jobs = ((doc, shelf["fk_max"], shelf.get("min_words", 0), shelf.get("fk_min"), sib and sib["fk_max"]) for doc in raw)
     with Pool(workers) as pool:
-        for kept, total in pool.imap(filter_paragraphs, jobs, chunksize=64):
+        for kept, total, sibling in pool.imap(filter_paragraphs, jobs, chunksize=64):
             stats["paragraphs_seen"] += total
+            if sibling is not None and sibling in sib_valid:
+                stats["sibling_valid_dropped"] += 1
+                stats["paragraphs_rejected"] += total
+                continue
             fresh = []
             for p in kept:
                 key = digest(p)
@@ -177,6 +194,7 @@ def build_shelf(name: str, shelf: dict, per_mille: int, force: bool = False) -> 
         "stage": shelf["stage"],
         "description": shelf["description"],
         "fk_max": shelf.get("fk_max"),
+        **({"fk_min": shelf["fk_min"]} if "fk_min" in shelf else {}),
         "sources": [{"path": s["path"], "license": s["license"]} for s in shelf["sources"]],
         "license": "; ".join(sorted({s["license"] for s in shelf["sources"]})),
         "build_fingerprint": fingerprint,
