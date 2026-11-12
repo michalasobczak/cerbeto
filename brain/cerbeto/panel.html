@@ -45,7 +45,7 @@ svg.lc{cursor:crosshair;overflow:visible}#f-eval{overflow-x:auto}
 <body>
 <header>
   <h1>Cerbeto · school</h1><span id="pill" class="pill"></span>
-  <nav><button data-t="overview" class="on">AB:Overview</button><button data-t="lessons">AB:Lessons</button><button data-t="exams">AB:Exams</button><button data-t="final">C:100-300Mp fail</button><button data-t="mid">D:80Mt run</button><button data-t="bil">D:1Bt run</button><button data-t="talk">D:talk</button><button data-t="log">Log</button></nav>
+  <nav><button data-t="overview" class="on">AB:Overview</button><button data-t="lessons">AB:Lessons</button><button data-t="exams">AB:Exams</button><button data-t="final">C:100-300Mp fail</button><button data-t="mid">D:80Mt run</button><button data-t="bil">D:1Bt run</button><button data-t="talk">D:talk</button><button data-t="v16k">D:v16k</button><button data-t="log">Log</button></nav>
   <span class="mut" id="upd" style="margin-left:auto"></span>
 </header>
 <main>
@@ -105,7 +105,7 @@ const STACKED=matchMedia("(max-width:1100px),(max-height:620px)");
 const rowsFit=el=>STACKED.matches?25:Math.max(8,Math.floor((el.closest(".card").clientHeight-90)/22));
 let tab="overview", off=0, eoff=0, S=null;
 function go(t){tab=t;document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x.dataset.t===t));
-  const sec=t==="mid"||t==="bil"||t==="talk"?"final":t;
+  const sec=t==="mid"||t==="bil"||t==="talk"||t==="v16k"?"final":t;
   ["overview","lessons","exams","final","log"].forEach(x=>$("#"+x).classList.toggle("hide",x!==sec));
   if(location.hash.slice(1)!==t) history.replaceState(null,"","#"+t); try{localStorage.setItem("cerbeto.tab",t)}catch(e){}
   refresh()}
@@ -115,7 +115,7 @@ document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.t)
 const cls=(v,t)=>v==null?"":v>=t?"ok":v>=t-0.15?"warn":"bad";
 
 async function refresh(){
-  if(tab==="lessons") return loadLessons(); if(tab==="exams") return loadExam(); if(tab==="final"||tab==="mid"||tab==="bil"||tab==="talk") return loadFinal();
+  if(tab==="lessons") return loadLessons(); if(tab==="exams") return loadExam(); if(tab==="final"||tab==="mid"||tab==="bil"||tab==="talk"||tab==="v16k") return loadFinal();
   const d=await (await fetch("/api/status")).json(); if(d.error){$("#upd").textContent=d.error;return} S=d;
   $("#upd").textContent="updated "+d.now.slice(11);
   const st=d.state, pill=$("#pill"); pill.textContent=!st?"not started":d.running?"running":"stopped"; pill.style.background=!st?"#888":d.running?"var(--ok)":"var(--bad)";
@@ -274,7 +274,7 @@ document.addEventListener("click",e=>{const svg=e.target.closest?.("svg.lc"); if
   else {const p=guideAt(svg,e); if(!p) return; (PINS[k]=PINS[k]||[]).push(p.v)}
   drawPins()});
 const FINAL_TABS={
-  final:{arms:n=>!["mid","bil"].includes(n)&&!n.startsWith("talk"),title:"300M — v0017 grown to a deep 283M student, trained on request → reply data",
+  final:{arms:n=>!["mid","bil","v16k","honest"].includes(n)&&!n.startsWith("talk"),title:"300M — v0017 grown to a deep 283M student, trained on request → reply data",
     note:`Start: school v0017 (34.6M), grown function-preservingly to 282.6M: d 512→896, 28 heads, MLP 3072, 24 blocks with no loop (K = 1); bf16 on the Mac mini M6.
       Two of three steps are shelf windows (stories 40%, speech 30%, books 18%, edu 9%, Wikipedia 3%; every token learned); every third step is request → reply
       pairs (a story on request 55%, preschool lessons 40%, who the student is 5%; only the student's turn learned). Stopped at 18M tokens: no gain over v0017
@@ -298,7 +298,15 @@ const FINAL_TABS={
       replies to feelings 2%. The fourth step: the 1B shelves, same mix, so nothing is forgotten. Shelf loss should stay near 2.45.
       Then a spot check against v5 and the 1B student: v6 if the chat is better by more than 5 of 160.
       talk (first try, learning rate 1e-4) lifted shelf validation by 0.2–0.3 within 3M tokens and was stopped at 25M;
-      talk2 is the same data from the same start at 3e-5 (where the 1B run ended), with every other step on the shelves.`}};
+      talk2 is the same data from the same start at 3e-5 (where the 1B run ended), with every other step on the shelves.`},
+  v16k:{arms:n=>n==="v16k",evals:n=>n==="v16k",title:"v6 on a 16,384-token vocabulary (spec 0012)",
+    note:`Start: v6 (talk2/final) with every weight copied; the vocabulary grows from 8,192 to 16,384 tokens (byte-level BPE trained on the 1B
+      shelf mix): a new token's embedding starts as the mean of the 8k pieces it is made of. No new data: talk2's stream re-cut with the new
+      tokenizer — every other step the 1B shelves (edu 32%, textbooks 22%, SODA 15%, stories 15%, speech 8%, books 5%, wiki 3%), the other
+      conversations (teacher questions 30%, memory 20%, dialogues 20%, lessons 10%, stories 8%, self 4%, relations 4%, "I don't know" 2%,
+      feelings 2%). 60M tokens: the first 5M only the embedding learns (10× learning rate), then everything at 3e-5 → 3e-6.
+      A 16k token carries ~7% more text, so the losses per token are not comparable with v6: validation is shown in bits per byte, and
+      the goal is v6's level (in the legend). Published only if it reaches v6.`}};
 async function loadFinal(){
   const T=FINAL_TABS[tab]; $("#f-title").textContent=T.title; $("#f-note").textContent=T.note;
   const d=await (await fetch("/api/final")).json(); if(d.error){$("#f-arms").textContent=d.error;return}
@@ -307,7 +315,7 @@ async function loadFinal(){
   $("#f-arms").innerHTML=d.arms.length?d.arms.map(a=>{const l=a.last,st=a.state,tot=a.total_steps,step=l?.step??0,
       prog=a.progress??(tot?step/tot:0),
       eta=l&&l.tok_s&&st.target_tokens?(st.target_tokens-(l.tokens??0))/l.tok_s:null, M=x=>(x/1e6).toFixed(1)+"M";
-    const sm=(rows,k)=>rows.filter(r=>r[k]>0).map(r=>[r.tokens/1e6,r[k]]);
+    const sm=(rows,k)=>rows.filter(r=>r[k]>0).map(r=>[r.tokens/1e6,r[k]]), V=a.vocab&&a.vocab!==8192?"valid_bpb":"valid";
     const tgt=st.target_tokens&&prog<1?st.target_tokens/1e6:null;
     const marks=(a.checkpoints||[]).map(c=>({x:c.tokens/1e6,label:`💾 ${c.name} ${c.saved.slice(5)}`,title:`checkpoints/final/${a.name}/${c.name} · step ${c.step} · ${M(c.tokens)} tokens · saved ${c.saved}`}));
     return `<div style="margin-bottom:14px"><div><b>${esc(a.name)}</b> · ${(st.params||a.growth.at(-1)?.params_after||0).toLocaleString()} parameters ·
@@ -317,10 +325,11 @@ async function loadFinal(){
       <h2 style="margin-top:10px">training loss (mean of the last 100 steps)</h2>
       ${lineChart([{name:"shelf windows",color:"#3b6fd8",pts:sm(a.rows,"shelf_loss")}],{xlab:"x: million tokens · thin = raw, thick = trend",marks,w:W,h:H,target:tgt})}
       ${sm(a.rows,"pair_loss").length?lineChart([{name:"request → reply pairs (only the student's turn)",color:"#d64545",pts:sm(a.rows,"pair_loss")}],{xlab:"x: million tokens",marks,w:W,h:Math.round(H*.6),target:tgt}):""}
-      <h2 style="margin-top:10px">validation loss (every 1000 steps)</h2>
-      ${lineChart([{name:"speech",color:"#1f9d55",dots:1,pts:a.valid.map(r=>[r.tokens/1e6,r.valid.s0_speech])},{name:"stories",color:"#b7800f",dots:1,pts:a.valid.map(r=>[r.tokens/1e6,r.valid.s0_stories])},
-        ...[["s3_edu_plus","edu","#7a4fd0"],["s2_textbooks","textbooks","#d6457f"],["s0_dialogue","dialogue","#2a9bb0"]].filter(([k])=>a.valid.some(r=>r.valid[k]!=null))
-          .map(([k,n,c])=>({name:n,color:c,dots:1,pts:a.valid.filter(r=>r.valid[k]!=null).map(r=>[r.tokens/1e6,r.valid[k]])}))],{xlab:"x: million tokens · dots = measured, line = trend",marks,w:W,h:Math.round(H*.9),target:tgt})}
+      <h2 style="margin-top:10px">${V==="valid"?"validation loss (every 1000 steps)":"validation in bits per byte (every 1000 steps; comparable with the 8k models)"}</h2>
+      ${a.ref_bpb?`<p class="note">v6 (talk2 at its end), bits per byte — the level to reach: ${Object.entries(a.ref_bpb).map(([k,v])=>`${esc(k.split("_")[1])} ${v.toFixed(3)}`).join(" · ")}</p>`:""}
+      ${lineChart([{name:"speech",color:"#1f9d55",dots:1,pts:a.valid.map(r=>[r.tokens/1e6,r[V].s0_speech])},{name:"stories",color:"#b7800f",dots:1,pts:a.valid.map(r=>[r.tokens/1e6,r[V].s0_stories])},
+        ...[["s3_edu_plus","edu","#7a4fd0"],["s2_textbooks","textbooks","#d6457f"],["s0_dialogue","dialogue","#2a9bb0"]].filter(([k])=>a.valid.some(r=>r[V][k]!=null))
+          .map(([k,n,c])=>({name:n,color:c,dots:1,pts:a.valid.filter(r=>r[V][k]!=null).map(r=>[r.tokens/1e6,r[V][k]])}))],{xlab:"x: million tokens · dots = measured, line = trend",marks,w:W,h:Math.round(H*.9),target:tgt})}
       ${a.checkpoints?.length?`<p class="note">💾 checkpoints on disk: ${a.checkpoints.map(c=>`<b>${esc(c.name)}</b> at ${M(c.tokens)} tokens (step ${c.step.toLocaleString()}, saved ${esc(c.saved)})`).join(" · ")}${a.running?" — <i>latest</i> is overwritten every 30 minutes":""}</p>`:a.checkpoints?'<p class="note">💾 no checkpoint on disk</p>':""}
       ${l&&a.last_passes?`<p class="note">passes over each shelf: ${Object.entries(a.last_passes).map(([s,p])=>`${esc(s)} ${p.toFixed(2)}×`).join(" · ")}</p>`:""}
       ${a.growth.length?`<p class="note">growth: ${a.growth.map(g=>`${esc(g.op)} ${(g.params_before/1e6).toFixed(1)}M → ${(g.params_after/1e6).toFixed(1)}M (Δ loss ${g.delta_loss})`).join(" · ")}</p>`:""}</div>`}).join(""):'<p class="mut">no run yet</p>';
@@ -338,7 +347,7 @@ async function loadFinal(){
   $("#f-eval").innerHTML=h}
 
 {let t=location.hash.slice(1); if(!TABS.includes(t)){try{t=localStorage.getItem("cerbeto.tab")}catch(e){t=null}} go(TABS.includes(t)?t:"overview")}
-setInterval(()=>{if(tab==="overview"||tab==="log"||tab==="final"||tab==="mid"||tab==="bil"||tab==="talk")refresh()},5000);
+setInterval(()=>{if(tab==="overview"||tab==="log"||tab==="final"||tab==="mid"||tab==="bil"||tab==="talk"||tab==="v16k")refresh()},5000);
 window.onresize=()=>{clearTimeout(window._rs);window._rs=setTimeout(refresh,150)};   // also on zoom: charts redraw at the new width
 </script>
 </body>

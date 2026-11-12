@@ -4,6 +4,7 @@ Read-only: it reads `runs/school/` (state, cycles, exams, log), the hippocampus 
 read-only) and the machine, and never touches training. Standard library only; one page at http://127.0.0.1:8765.
 """
 import json
+import math
 import re
 import sqlite3
 import time
@@ -190,6 +191,17 @@ def _checkpoints(arm: str) -> list[dict]:
     return sorted(out, key=lambda c: c["tokens"])
 
 
+# bytes of text per token on each shelf's validation text (spec 0012 measurement): validation loss per token / ln 2 /
+# bytes per token = bits per byte, comparable across vocabularies
+BYTES_PER_TOKEN = {8192: {"s3_edu_plus": 3.754, "s2_textbooks": 4.145, "s0_dialogue": 4.029, "s0_stories": 4.035, "s0_speech": 3.488},
+                   16384: {"s3_edu_plus": 4.156, "s2_textbooks": 4.608, "s0_dialogue": 4.216, "s0_stories": 4.092, "s0_speech": 3.604}}
+ARM_VOCAB = {"v16k": 16384, "honest": 16384}
+
+
+def _bpb(row: dict, vocab: int) -> dict:
+    return {k: round(v / math.log(2) / BYTES_PER_TOKEN[vocab][k], 4) for k, v in row["valid"].items() if k in BYTES_PER_TOKEN[vocab]}
+
+
 def _thin(rows: list[dict], n: int = 800) -> list[dict]:
     """The whole history from step 0, every k-th row so at most ~n points, the last row always kept."""
     k = max(1, -(-len(rows) // n))
@@ -207,13 +219,18 @@ def final() -> dict:
         total = int(state.get("target_tokens", 0) / 4096) or None
         target = state.get("target_tokens") or 0
         # 0009 and earlier ended at a step count (target / 4096), 0010 at the token target
-        progress = (rows[-1]["tokens"] / target if d.name in ("bil", "talk", "talk2") else rows[-1]["step"] / total) if rows and total else 0
+        progress = (rows[-1]["tokens"] / target if d.name in ("bil", "talk", "talk2", "v16k", "honest") else rows[-1]["step"] / total) if rows and total else 0
         passes = [r["passes"] for r in rows if "passes" in r]
         arms.append({"name": d.name, "state": state, "total_steps": total, "rows": _thin(rows),
-                     "last": rows[-1] if rows else None, "valid": [r for r in rows if "valid" in r],
+                     "last": rows[-1] if rows else None, "valid": [{**r, "valid_bpb": _bpb(r, ARM_VOCAB.get(d.name, 8192))} for r in rows if "valid" in r],
+                     "vocab": ARM_VOCAB.get(d.name, 8192),
                      "progress": progress, "last_passes": passes[-1] if passes else None,
                      "running": fresh and progress < 1,
                      "growth": _json_lines(d / "growth_log.jsonl"), "checkpoints": _checkpoints(d.name)})
+    ref = next((a for a in arms if a["name"] == "talk2"), None)
+    for a in arms:              # v6 (talk2's end) as the line to reach, in bits per byte
+        if a["vocab"] != 8192 and ref and ref["valid"]:
+            a["ref_bpb"] = ref["valid"][-1]["valid_bpb"]
     evals = []
     for f in sorted(FINAL.glob("eval_*.json")) if FINAL.exists() else []:
         e = json.loads(f.read_text())
