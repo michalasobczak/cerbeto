@@ -1,6 +1,6 @@
 # 0011 — Conversation tuning: answer the question, keep the facts
 
-Status: in progress (2026-11-11) — G1 passed at 17,400 teacher questions; G2 passed; the 1B run stopped at 982M; `talk` (1e-4) forgot the shelves (validation +0.2–0.3) and was stopped at 25M; `talk2` (3e-5, shelves every other step) started 22:50 for 50M tokens · Depends on: 0010 · Unblocks: v6, school
+Status: done (2026-11-12) — G1 17,400 questions; G2 passed; G3 passed by both runs: `talk` (1e-4, stopped at 25M) chat 116/160, completing 40/80, memory 40/40; `talk2` (3e-5, shelves every other step, 50M) chat 117, completing 38, memory 40, shelf validation at or below `bil/final`; v6 waits for the user's choice · Depends on: 0010 · Unblocks: v6, school
 
 ## 1. TL;DR
 After 1B tokens the student knows facts but does not answer questions about them: it completes "The heart pumps" → *blood*
@@ -82,3 +82,8 @@ memory of names and pets back to v4 or better; shelf validation loss rises a lit
   spot check asks for were not lost — "Where do fish live?" 0 → 9, "What do cows give us?" 0 → 9, the cat Tom and the
   horse Sunny 0 → 10. Still wrong: "What do bees make?", the capital of France, "A fish can swim". `talk2` after 3.2M
   tokens: validation +0.003 to +0.017 of `bil/final` (pass).
+- **`talk2` result (2026-11-12 04:50):** finished 50M tokens at 04:00. Shelf validation at 48M: speech 3.011, stories 1.313,
+  edu 3.242, textbooks 2.132, dialogue 1.386 (`bil/final`: 3.021, 1.336, 3.243, 2.149, 1.408) — no forgetting. Spot check
+  vs v5: chat 117 of 160, completing 38 of 80, memory 40 of 40 — the same as `talk` (116/40/40) within the noise.
+  Better than `talk` on "What do bees make?" (0 → 7) and "A fish can swim" (0 → 7), worse on "What do cows give us?"
+  (9 → 5) and "Water freezes and turns into" (10 → 2). The higher learning rate was not needed for the form.
