@@ -1,6 +1,6 @@
 # 0012 — A larger vocabulary: 8,192 → 16,384 tokens
 
-Status: in progress (2026-11-12) — G1 passed (measured: 16k shortens the 1B mix by 7.1%); 16k tokenizer trained and committed; the 1B shelves being re-tokenized and arm `v16k` queued on the M6 · Depends on: 0010, 0011 · Unblocks: 0013, the next large pretraining
+Status: in progress (2026-11-12) — G1 passed (16k shortens the 1B mix by 7.1%); `v16k` failed G3 (60M tokens, edu +0.09 bits per byte against v6); arm `vext` (8k extended to 12,288) training on the M6 · Depends on: 0010, 0011 · Unblocks: 0013, the next large pretraining
 
 ## 1. TL;DR
 v6 (`talk2/final`) moves to a **16,384-token byte-level BPE** trained on the 1B shelf mix. Every new token's embedding
@@ -73,3 +73,19 @@ generation ~7% faster per word; a base for 0013 and for any larger pretraining.
 ## 8. Additional Information
 - **Why now (2026-11-12):** planned in 0010 §9 for after the 1B run; the user asked for it after v6 was published.
 - **The estimate was too high:** 15–25% fewer tokens was said on 2026-11-07; measured 10% on edu and textbooks, 7% on the mix.
+- **`v16k` result (2026-11-12 14:10):** 60M tokens, bits per byte (`vocab bpb`) v6 → v16k: speech 1.029 → 1.065, stories
+  0.483 → 0.502, edu 1.258 → 1.352, textbooks 0.753 → 0.821, dialogue 0.518 → 0.550 — G3 failed. `vocab where` splits the
+  loss by word: words both vocabularies cut the same are 1–3% worse; words the 16k vocabulary made into one new token are
+  25–85% worse (edu 1.42 → 1.84 bits per byte), ~80% of the gap. The new words were too rare to learn in 60M tokens.
+- **Arm `vext` (2026-11-12, the user's choice):** the 8k BPE continued (`vocab extend`): the 8,192 tokens, merges and
+  embedding rows unchanged, 4,096 new merges learnt on the 8k cuts of 200 MB of the mix, most frequent first (the last
+  seen 308 times). `vocab compare`, bytes per token against 8k:
+
+  | | +2,048 | +3,072 | **+4,096** | 16k |
+  |---|---|---|---|---|
+  | edu | −4.6% | −5.9% | −6.9% | −9.7% |
+  | textbooks | −6.0% | −7.1% | −7.9% | −10.0% |
+  | mix | −3.7% | −4.5% | **−5.2%** | −7.1% |
+
+  Training as `v16k`, but in the first 5M tokens only the new rows learn (the old are restored after each step), and
+  afterwards the new rows' update is scaled 10× (`ARM_NEW_ROWS`). G3 as above.

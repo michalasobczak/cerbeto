@@ -92,6 +92,18 @@ for _d in (ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_PAIR_ST
 ARM_TRANSFER = {"v16k": CKPT / "talk2" / "final"}
 ARM_EMBED_FIRST = {"v16k": (5e6, 10.0)}        # (tokens with only the embedding learning, learning-rate factor)
 BY_TOKENS.add("v16k")
+# spec 0012 (`vext`): v6 with the 8k vocabulary *extended* (tokenizer_<8192+n>.json, `vocab extend`): the 8,192 old
+# tokens keep their ids and rows, only the n most frequent new merges are added (v16k lost on its 8k new, rare words:
+# `vocab where`). The first 5M tokens only the new rows learn (10x); then everything at talk2's schedule while the new
+# rows keep learning 10x faster (their Adam update is scaled after each step; the old rows are not touched).
+VEXT_VOCAB = 12288
+ARM_VOCAB["vext"] = VEXT_VOCAB
+for _d in (ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_PAIR_STEPS, ARM_LR):
+    _d["vext"] = _d["talk2"]
+ARM_TRANSFER["vext"] = CKPT / "talk2" / "final"
+ARM_EMBED_FIRST["vext"] = (5e6, 10.0)
+ARM_NEW_ROWS = {"vext": (8192, 10.0)}           # (first new row, factor on the new rows' update after the first phase)
+BY_TOKENS.add("vext")
 # spec 0013 (`honest`): from v16k, the same stream, but the teacher questions are probed on the student: the ones it
 # knows keep their answers, the ones it does not get "I don't know." (`honest.build` -> data/talk/qa_honest.jsonl)
 ARM_QA = {"honest": paths.DATA / "talk" / "qa_honest.jsonl"}
@@ -457,7 +469,16 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
         opt.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        rows_from, rows_x = ARM_NEW_ROWS.get(arm, (0, 1.0))
+        if rows_from:
+            w = model.embed.weight
+            before = w.detach()[rows_from:].clone(), (w.detach()[:rows_from].clone() if first else None)
         opt.step()
+        if rows_from:                       # spec 0012 vext: the new rows learn faster, the old ones wait in phase one
+            with torch.no_grad():
+                w[rows_from:] = before[0] + (w[rows_from:] - before[0]) * (1.0 if first else rows_x)
+                if first:
+                    w[:rows_from] = before[1]
         recent.append((kind, loss.item()))
         state["step"] += 1
         state["tokens"] += n
@@ -633,7 +654,7 @@ def add_probes(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval", "probes"])
-    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | honest (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | honest (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     a = p.parse_args()

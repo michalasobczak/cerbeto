@@ -194,8 +194,9 @@ def _checkpoints(arm: str) -> list[dict]:
 # bytes of text per token on each shelf's validation text (spec 0012 measurement): validation loss per token / ln 2 /
 # bytes per token = bits per byte, comparable across vocabularies
 BYTES_PER_TOKEN = {8192: {"s3_edu_plus": 3.754, "s2_textbooks": 4.145, "s0_dialogue": 4.029, "s0_stories": 4.035, "s0_speech": 3.488},
-                   16384: {"s3_edu_plus": 4.156, "s2_textbooks": 4.608, "s0_dialogue": 4.216, "s0_stories": 4.092, "s0_speech": 3.604}}
-ARM_VOCAB = {"v16k": 16384, "honest": 16384}
+                   16384: {"s3_edu_plus": 4.156, "s2_textbooks": 4.608, "s0_dialogue": 4.216, "s0_stories": 4.092, "s0_speech": 3.604},
+                   12288: {"s3_edu_plus": 4.034, "s2_textbooks": 4.501, "s0_dialogue": 4.182, "s0_stories": 4.068, "s0_speech": 3.559}}
+ARM_VOCAB = {"v16k": 16384, "vext": 12288, "honest": 16384}
 
 
 def _bpb(row: dict, vocab: int) -> dict:
@@ -219,7 +220,7 @@ def final() -> dict:
         total = int(state.get("target_tokens", 0) / 4096) or None
         target = state.get("target_tokens") or 0
         # 0009 and earlier ended at a step count (target / 4096), 0010 at the token target
-        progress = (rows[-1]["tokens"] / target if d.name in ("bil", "talk", "talk2", "v16k", "honest") else rows[-1]["step"] / total) if rows and total else 0
+        progress = (rows[-1]["tokens"] / target if d.name in ("bil", "talk", "talk2", "v16k", "vext", "honest") else rows[-1]["step"] / total) if rows and total else 0
         passes = [r["passes"] for r in rows if "passes" in r]
         arms.append({"name": d.name, "state": state, "total_steps": total, "rows": _thin(rows),
                      "last": rows[-1] if rows else None, "valid": [{**r, "valid_bpb": _bpb(r, ARM_VOCAB.get(d.name, 8192))} for r in rows if "valid" in r],
