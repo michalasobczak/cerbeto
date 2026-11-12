@@ -106,7 +106,7 @@ def load_eval() -> list[dict]:
     return [json.loads(x) for x in EVAL_FILE.read_text().splitlines()]
 
 
-def answer(src: str, out_name: str | None = None) -> Path:
+def answer(src: str, out_name: str | None = None, cpu: bool = False) -> Path:
     """Greedy replies of a student (a checkpoint path, or hf:<tag>) to every facts question, one at a time."""
     import torch
     from cerbeto.model import checkpoint
@@ -117,7 +117,7 @@ def answer(src: str, out_name: str | None = None) -> Path:
                                       allow_patterns=["model.safetensors", "architecture.json"]))
     else:
         path = Path(src) if Path(src).is_absolute() else paths.REPO / src
-    dev = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    dev = torch.device("mps" if torch.backends.mps.is_available() and not cpu else "cpu")    # cpu: training keeps the GPU
     t = Talker(checkpoint.load(path, dev), dev, k=1, temperature=0.0, max_new_tokens=60)
     name = out_name or (src[3:] if src.startswith("hf:") else path.parent.name + "_" + path.name)
     RUN.mkdir(parents=True, exist_ok=True)
@@ -184,11 +184,12 @@ def main() -> None:
     p.add_argument("what", choices=["make-eval", "answer", "grade"])
     p.add_argument("arg", nargs="?")
     p.add_argument("--name")
+    p.add_argument("--cpu", action="store_true")
     a = p.parse_args()
     if a.what == "make-eval":
         make_eval()
     elif a.what == "answer":
-        answer(a.arg, a.name)
+        answer(a.arg, a.name, a.cpu)
     else:
         grade(a.arg)
 
