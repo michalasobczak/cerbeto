@@ -130,8 +130,9 @@ def generate(hours: float, teacher: str = "gemma4", seed: int | None = None) -> 
                 print(f"{time.strftime('%H:%M')} calls {calls} kept {kept} (all {len(seen)}) dropped {dropped}", flush=True)
 
 
-def load_qa() -> list[tuple[str, str]]:
-    return [(d["q"], d["a"]) for d in map(json.loads, QA_FILE.read_text().splitlines())] if QA_FILE.exists() else []
+def load_qa(path=None) -> list[tuple[str, str]]:
+    f = path or QA_FILE
+    return [(d["q"], d["a"]) for d in map(json.loads, f.read_text().splitlines())] if f.exists() else []
 
 
 # --- code: several facts kept in a conversation ------------------------------------------------------------------

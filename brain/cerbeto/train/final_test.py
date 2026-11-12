@@ -92,6 +92,13 @@ for _d in (ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_PAIR_ST
 ARM_TRANSFER = {"v16k": CKPT / "talk2" / "final"}
 ARM_EMBED_FIRST = {"v16k": (5e6, 10.0)}        # (tokens with only the embedding learning, learning-rate factor)
 BY_TOKENS.add("v16k")
+# spec 0013 (`honest`): from v16k, the same stream, but the teacher questions are probed on the student: the ones it
+# knows keep their answers, the ones it does not get "I don't know." (`honest.build` -> data/talk/qa_honest.jsonl)
+ARM_QA = {"honest": paths.DATA / "talk" / "qa_honest.jsonl"}
+for _d in (ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_PAIR_STEPS, ARM_LR):
+    _d["honest"] = _d["v16k"]
+ARM_START["honest"] = CKPT / "v16k" / "final"
+BY_TOKENS.add("honest")
 MAX_PASSES = 4
 
 
@@ -200,7 +207,8 @@ class Pairs:
     """Batches of conversations for the pairs steps: most are one turn (a request and its reply), the `dialogue`
     share has 2–5 turns that change the subject — a story, then a question about it, about the student or a lesson —
     so the student learns to answer the last turn, using the earlier ones only when it is asked about them."""
-    def __init__(self, seed: int = 0, mix: dict | None = None, turns: tuple[int, int] = (2, 5), vocab: int = 8192):
+    def __init__(self, seed: int = 0, mix: dict | None = None, turns: tuple[int, int] = (2, 5), vocab: int = 8192,
+                 qa_file=None):
         self.rng = random.Random(seed)
         self.mix = mix or PAIR_MIX
         self.turns = turns
@@ -208,7 +216,7 @@ class Pairs:
         self.stories = stories(seed=seed, vocab=vocab)
         self.named = [s for s in self.stories if s[3]]
         self.lessons = training_stream(seed=30_000 + seed, stage="preschool", exclude=exam_hashes(), lessons=True)
-        self.qa = talk_data.load_qa() if {"qa", "memory"} & set(self.mix) else []
+        self.qa = talk_data.load_qa(qa_file) if {"qa", "memory"} & set(self.mix) else []
         if {"qa", "memory"} & set(self.mix) and len(self.qa) < 1000:
             raise RuntimeError(f"only {len(self.qa)} teacher questions in {talk_data.QA_FILE}")
 
@@ -412,7 +420,7 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
     valid = {s: ShelfStream(s, "valid", CFG["seq_len"], vocab=vocab).fixed_batches(8, 8, device, seed=1)
              for s in ARM_VALID.get(arm, ("s0_speech", "s0_stories"))}
     rng = np.random.default_rng(seed + state["step"])
-    pairs = Pairs(seed + state["step"], ARM_PAIR_MIX.get(arm), ARM_TURNS.get(arm, (2, 5)), vocab=vocab)
+    pairs = Pairs(seed + state["step"], ARM_PAIR_MIX.get(arm), ARM_TURNS.get(arm, (2, 5)), vocab=vocab, qa_file=ARM_QA.get(arm))
     stop = {"now": False}
     signal.signal(signal.SIGINT, lambda *_: stop.update(now=True))
     log = (run / "log.jsonl").open("a")
@@ -625,7 +633,7 @@ def add_probes(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval", "probes"])
-    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | honest (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     a = p.parse_args()

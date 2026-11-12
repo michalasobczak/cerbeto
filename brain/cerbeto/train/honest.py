@@ -11,6 +11,9 @@ score = correct − wrong.
     python -m cerbeto.train.honest make-eval                    # MacBook (teacher): writes facts_eval.jsonl
     python -m cerbeto.train.honest answer <checkpoint|hf:tag>   # M6 (student): runs/honest/answers_<name>.jsonl
     python -m cerbeto.train.honest grade <answers.jsonl>        # MacBook (teacher): graded file + summary
+    python -m cerbeto.train.honest probe <checkpoint>           # M6: likelihood of every training answer + 600 replies
+    python -m cerbeto.train.honest grade runs/honest/answers_probe.jsonl      # MacBook: the 600 graded
+    python -m cerbeto.train.honest build                        # threshold (G2) and data/talk/qa_honest.jsonl
 """
 import argparse
 import json
@@ -102,6 +105,49 @@ def make_eval(per_tier: int = 120, teacher: str = "gemma4", seed: int = 7) -> No
     print("WROTE", EVAL_FILE, len(rows), flush=True)
 
 
+NEW_QA = paths.DATA / "talk" / "qa_new.jsonl"
+
+
+def make_new(n: int = 8000, teacher: str = "gemma4", seed: int | None = None) -> None:
+    """Fresh teacher questions the student was never tuned on (half child, half school level) — the probe must ask
+    about facts, not about answers learnt by rote. None equals or has the content words of a training question,
+    a facts-test question or the spot check. Resumable (appends)."""
+    from cerbeto.teachers import chat
+    rng = random.Random(seed if seed is not None else time.time_ns())
+    old = talk_data.load_qa() + [(r["q"], r["a"]) for r in load_eval()]
+    seen = {_norm(q) for q, _ in old}
+    near = {frozenset(talk_data._content(q)) for q, _ in old}
+    done = [json.loads(x) for x in NEW_QA.read_text().splitlines()] if NEW_QA.exists() else []
+    seen |= {_norm(d["q"]) for d in done}
+    kept, calls, dropped = len(done), 0, {"form": 0, "near": 0, "spot": 0, "dup": 0}
+    with NEW_QA.open("a") as f:
+        while kept < n:
+            tier = "school" if calls % 2 else "child"
+            topic = rng.choice(SCHOOL_TOPICS if tier == "school" else talk_data.TOPICS)
+            try:
+                out = chat([{"role": "user", "content": EVAL_PROMPT.format(ask=TIER_PROMPT[tier].format(topic=topic))}],
+                           teacher=teacher, temperature=1.0, json_output=True, timeout=600)
+                pairs = json.loads(out).get("pairs", [])
+            except Exception as e:
+                print("skip:", type(e).__name__, flush=True)
+                continue
+            calls += 1
+            for p in pairs:
+                q, a = str(p.get("q", "")).strip(), str(p.get("a", "")).strip()
+                nq = _norm(q)
+                why = ("form" if not talk_data._ok(q, a) else "dup" if nq in seen else "spot" if talk_data.held_out(q)
+                       else "near" if frozenset(talk_data._content(q)) in near else None)
+                if why:
+                    dropped[why] += 1
+                    continue
+                seen.add(nq)
+                f.write(json.dumps({"q": q, "a": a, "tier": tier, "topic": topic}) + "\n")
+                kept += 1
+            f.flush()
+            if calls % 10 == 0:
+                print(f"{time.strftime('%H:%M')} calls {calls} kept {kept}/{n} dropped {dropped}", flush=True)
+
+
 def load_eval() -> list[dict]:
     return [json.loads(x) for x in EVAL_FILE.read_text().splitlines()]
 
@@ -127,6 +173,107 @@ def answer(src: str, out_name: str | None = None, cpu: bool = False) -> Path:
             f.write(json.dumps({**r, "reply": t.reply(r["q"], remember=False).strip()}) + "\n")
     print("WROTE", out, flush=True)
     return out
+
+
+PROBE_FILE = RUN / "probe.jsonl"
+HONEST_QA = paths.DATA / "talk" / "qa_honest.jsonl"
+IDK_REPLIES = ["I don't know.", "I don't know that.", "I'm not sure. I don't know.", "I don't know that yet."]
+
+
+def probe(src: str, sample: int = 600, seed: int = 3) -> None:
+    """For every new teacher question (`make-new`): the student's mean log-probability per token of the teacher's answer (one forward
+    pass, batched). For `sample` of them also the greedy reply, for the teacher to grade (calibration)."""
+    import torch
+    import torch.nn.functional as F
+    from cerbeto.model import checkpoint
+    from cerbeto.talk import Talker
+    from cerbeto.tokenizer import load
+    path = Path(src) if Path(src).is_absolute() else paths.REPO / src
+    dev = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    model = checkpoint.load(path, dev).eval()
+    tok = load(model.cfg.vocab_size)
+    eos = tok.token_to_id("<|eos|>")
+    qa = talk_data.load_qa(NEW_QA)            # never tuned on: the probe asks about facts, not about rote answers
+    rows = []
+    with torch.no_grad():
+        for i in range(0, len(qa), 64):
+            seqs = []
+            for q, a in qa[i:i + 64]:
+                prompt = [eos] + tok.encode(f"<|human|> {q}\n<|student|>").ids
+                target = tok.encode(f"<|answer|> {a}<|eos|>").ids
+                seqs.append((prompt, target))
+            L = max(len(p) + len(t) for p, t in seqs)
+            x = torch.full((len(seqs), L), eos, dtype=torch.long)
+            mask = torch.zeros((len(seqs), L), dtype=torch.bool)
+            for j, (p_, t_) in enumerate(seqs):
+                ids = p_ + t_
+                x[j, :len(ids)] = torch.tensor(ids)
+                mask[j, len(p_):len(ids)] = True          # positions whose token is predicted from the one before
+            x, mask = x.to(dev), mask.to(dev)
+            logp = F.log_softmax(model(x[:, :-1], 1).float(), -1).gather(-1, x[:, 1:, None])[..., 0]
+            m = mask[:, 1:]
+            mean = (logp * m).sum(1) / m.sum(1)
+            for (q, a), v in zip(qa[i:i + 64], mean.tolist()):
+                rows.append({"q": q, "a": a, "logp": round(v, 4)})
+            if i % 3200 == 0:
+                print(f"probe {i}/{len(qa)}", flush=True)
+    RUN.mkdir(parents=True, exist_ok=True)
+    PROBE_FILE.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    t = Talker(model, dev, k=1, temperature=0.0, max_new_tokens=60)
+    pick = random.Random(seed).sample(rows, sample)
+    with (RUN / "answers_probe.jsonl").open("w") as f:
+        for r in pick:
+            f.write(json.dumps({**r, "tier": "probe", "reply": t.reply(r["q"], remember=False).strip()}) + "\n")
+    print("WROTE", PROBE_FILE, len(rows), "and", RUN / "answers_probe.jsonl", flush=True)
+
+
+def made_up_things(n: int, seed: int = 5) -> list[dict]:
+    """Questions about places and things that do not exist, named by talk_data.made_up (never the facts test's names)."""
+    rng = random.Random(seed)
+    forms = ["What is the capital of {P}?", "How many people live in {P}?", "Where is {P}?", "What do people eat in {P}?",
+             "Who invented the {t}?", "What color is a {t}?", "How big is a {t}?", "What does a {t} do?", "Where do {t}s live?"]
+    banned = {w.lower() for w in FAKE_PLACES + FAKE_THINGS}
+    out = []
+    while len(out) < n:
+        w = talk_data.made_up(rng)
+        if w.lower() in banned:
+            continue
+        q = rng.choice(forms).format(P=w.capitalize() + rng.choice(["ia", "land", "stan", "ville"]), t=w)
+        out.append({"q": q, "a": rng.choice(["I don't know. I have never heard of it.", "I don't know what that is.",
+                                            "I don't know. I have not heard of it."]), "known": False})
+    return out
+
+
+def build(max_idk: float = 0.30, margin: float = 0.15) -> dict:
+    """Threshold on the log-probability that best predicts the teacher's grade (fit on half the 600, checked on the
+    other half: G2), then the honest questions: the 0011 questions (tuned on, so known), the new ones the student knows
+    with the teacher's answer, the new ones it does not with "I don't know.", near the threshold left out; plus made-up
+    places and things (code). At most `max_idk` of the new questions become "I don't know"."""
+    graded = [json.loads(x) for x in (RUN / "graded_probe.jsonl").read_text().splitlines()]
+    graded = [g for g in graded if g.get("label") in ("correct", "wrong", "idk")]
+    random.Random(0).shuffle(graded)
+    fit, check = graded[: len(graded) // 2], graded[len(graded) // 2:]
+
+    def acc(rows, t):
+        return sum((r["logp"] >= t) == (r["label"] == "correct") for r in rows) / max(1, len(rows))
+    cands = sorted({r["logp"] for r in fit})
+    t = max(cands, key=lambda c: acc(fit, c))
+    rows = [json.loads(x) for x in PROBE_FILE.read_text().splitlines()]
+    known = [r for r in rows if r["logp"] >= t + margin]
+    unknown = sorted((r for r in rows if r["logp"] < t - margin), key=lambda r: r["logp"])
+    unknown = unknown[: int(max_idk / (1 - max_idk) * len(known))]          # the least likely first
+    rng = random.Random(1)
+    out = [{"q": q, "a": a, "known": True} for q, a in talk_data.load_qa()] + \
+          [{"q": r["q"], "a": r["a"], "known": True} for r in known] + \
+          [{"q": r["q"], "a": rng.choice(IDK_REPLIES), "known": False} for r in unknown] + made_up_things(1500)
+    rng.shuffle(out)
+    HONEST_QA.write_text("".join(json.dumps(o) + "\n" for o in out))
+    s = {"threshold": round(t, 4), "fit_accuracy": round(acc(fit, t), 3), "check_accuracy (G2)": round(acc(check, t), 3),
+         "graded": {k: sum(g["label"] == k for g in graded) for k in ("correct", "wrong", "idk")},
+         "questions": len(rows), "known": len(known), "idk": len(unknown), "left_out": len(rows) - len(known) - len(unknown)}
+    (RUN / "build.json").write_text(json.dumps(s, indent=1))
+    print(json.dumps(s, indent=1), flush=True)
+    return s
 
 
 GRADE_PROMPT = """You grade a small student. For each item you get a question, the right answer and the student's reply.
@@ -181,17 +328,23 @@ def summary(rows: list[dict]) -> dict:
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("what", choices=["make-eval", "answer", "grade"])
+    p.add_argument("what", choices=["make-eval", "make-new", "answer", "grade", "probe", "build"])
     p.add_argument("arg", nargs="?")
     p.add_argument("--name")
     p.add_argument("--cpu", action="store_true")
     a = p.parse_args()
     if a.what == "make-eval":
         make_eval()
+    elif a.what == "make-new":
+        make_new()
     elif a.what == "answer":
         answer(a.arg, a.name, a.cpu)
-    else:
+    elif a.what == "grade":
         grade(a.arg)
+    elif a.what == "probe":
+        probe(a.arg)
+    else:
+        build()
 
 
 if __name__ == "__main__":
