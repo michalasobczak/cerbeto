@@ -5,6 +5,8 @@ the teacher questions) and measure how many bytes one token carries on each shel
     uv run python -m cerbeto.tokenizer.vocab train --size 16384 --mb 400
     uv run python -m cerbeto.tokenizer.vocab tokenize --size 16384          # the 1B shelves -> train_16384.bin
     uv run python -m cerbeto.tokenizer.vocab bpb <checkpoint> [<checkpoint> ...]   # bits per byte, any vocabulary
+    uv run python -m cerbeto.tokenizer.vocab extend --add 4096 --sizes 2048 3072 4096 --mb 200   # 8k + new merges
+    uv run python -m cerbeto.tokenizer.vocab compare --sizes 10240 11264 12288 16384
     uv run python -m cerbeto.tokenizer.vocab where <checkpoint> <checkpoint>     # bits per byte by word kind
 """
 import argparse
@@ -50,6 +52,72 @@ def train(size: int, total_mb: int, out: Path) -> Tokenizer:
     return tok
 
 
+def extend(add: int, total_mb: int, out_dir: Path = OUT, sizes: tuple[int, ...] = ()) -> list[Path]:
+    """Continue the 8k BPE: the 8,192 tokens and merges stay as they are (same ids), `add` new merges are learnt on top
+    of the 8k cuts of the mix's words, most frequent pair first. Every new merge comes after the old ones, so a word is
+    cut by the 8k tokenizer first and the new merges only join its pieces: text the 8k tokenizer cuts into known words
+    is cut the same, and the model keeps every old embedding row as it is. Writes tokenizer_<8192 + n>.json for each n
+    in `sizes` (default: `add`), each a prefix of the same merge list."""
+    from collections import Counter, defaultdict
+    base = load(8192)
+    words = Counter()
+    for text in corpus(total_mb):
+        words.update(w for w, _ in base.pre_tokenizer.pre_tokenize_str(text))
+    words = {w: c for w, c in words.items() if c >= 2}
+    print(f"{len(words):,} distinct words seen at least twice", flush=True)
+    seqs = [[base.id_to_token(i) for i in (p.id for p in base.model.tokenize(w))] for w in words]
+    counts = list(words.values())
+    pairs, where_ = Counter(), defaultdict(set)
+    for wi, s in enumerate(seqs):
+        for a, b in zip(s, s[1:]):
+            pairs[(a, b)] += counts[wi]
+            where_[(a, b)].add(wi)
+    vocab = set(json.loads(base.to_str())["model"]["vocab"])
+    merges = []
+    while len(merges) < add and pairs:
+        (a, b), c = max(pairs.items(), key=lambda kv: kv[1])
+        new = a + b
+        if new in vocab:                    # can only happen through a different split; never add a token twice
+            del pairs[(a, b)]
+            continue
+        merges.append(((a, b), c))
+        vocab.add(new)
+        for wi in list(where_.pop((a, b), ())):
+            s, n = seqs[wi], counts[wi]
+            for p in zip(s, s[1:]):
+                pairs[p] -= n
+                if pairs[p] <= 0:
+                    del pairs[p]
+            out, i = [], 0
+            while i < len(s):
+                if i + 1 < len(s) and s[i] == a and s[i + 1] == b:
+                    out.append(new)
+                    i += 2
+                else:
+                    out.append(s[i])
+                    i += 1
+            seqs[wi] = out
+            for p in zip(out, out[1:]):
+                pairs[p] += n
+                where_[p].add(wi)
+        pairs.pop((a, b), None)
+        if len(merges) % 512 == 0:
+            print(f"  {len(merges)} merges, last {new!r} x{c}", flush=True)
+    written = []
+    for n in sizes or (add,):
+        d = json.loads(base.to_str())
+        for (a, b), _ in merges[:n]:
+            d["model"]["vocab"][a + b] = len(d["model"]["vocab"])
+            d["model"]["merges"].append([a, b])
+        path = out_dir / f"tokenizer_{8192 + n}.json"
+        path.write_text(json.dumps(d, ensure_ascii=False))
+        tok = Tokenizer.from_file(str(path))
+        assert tok.get_vocab_size() == 8192 + n and all(tok.id_to_token(i) == base.id_to_token(i) for i in range(8192))
+        written.append(path)
+        print(f"wrote {path.name}: last merge {merges[n - 1][0]} seen {merges[n - 1][1]:,} times in {total_mb} MB", flush=True)
+    return written
+
+
 def bytes_per_token(tok: Tokenizer, shelf: str, mb: float = 5) -> tuple[float, int]:
     texts = []
     taken = 0
@@ -85,6 +153,17 @@ def measure(sizes: list[int], total_mb: int) -> dict:
     res = {"rows": rows, "mix": weighted}
     (OUT / "trial_measure.json").write_text(json.dumps(res, indent=1))
     return res
+
+
+def compare(sizes: list[int]) -> dict:
+    """Bytes per token of the committed tokenizers of these sizes against 8k, per shelf and on the mix."""
+    toks = {8192: load(), **{s: load(s) for s in sizes}}
+    rows = {sh: {s: round(bytes_per_token(t, sh)[0], 3) for s, t in toks.items()} for sh in MIX}
+    mix = {s: round(sum(MIX[sh] * rows[sh][s] for sh in MIX), 3) for s in toks}
+    for sh, r in [*rows.items(), ("mix", mix)]:
+        print(f"{sh:16}" + "".join(f"{r[s]:8.3f}" for s in toks) + "   "
+              + " ".join(f"{s}:-{100 * (1 - r[8192] / r[s]):.1f}%" for s in sizes), flush=True)
+    return {"rows": rows, "mix": mix}
 
 
 def transfer(old, new_vocab: int):
@@ -219,11 +298,12 @@ def where(paths_: list[str], docs: int = 400, chars: int = 1500,
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("what", choices=["measure", "train", "tokenize", "bpb", "where"])
+    p.add_argument("what", choices=["measure", "train", "tokenize", "bpb", "where", "extend", "compare"])
     p.add_argument("checkpoints", nargs="*")
     p.add_argument("--sizes", type=int, nargs="+", default=[16384, 32768])
     p.add_argument("--size", type=int, default=16384)
     p.add_argument("--mb", type=int, default=200)
+    p.add_argument("--add", type=int, default=4096)
     a = p.parse_args()
     if a.what == "measure":
         measure(a.sizes, a.mb)
@@ -232,6 +312,10 @@ def main() -> None:
     elif a.what == "tokenize":
         from cerbeto.library.tokenize import tokenize_all
         tokenize_all(vocab=a.size, shelves=list(MIX))
+    elif a.what == "extend":
+        extend(a.add, a.mb, sizes=tuple(a.sizes) if a.sizes != [16384, 32768] else ())
+    elif a.what == "compare":
+        compare(a.sizes)
     elif a.what == "where":
         where(a.checkpoints)
     else:
