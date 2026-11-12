@@ -1,7 +1,7 @@
 """Step 1: publish a Cerbeto checkpoint (native format) to the model repo, tagged v<N>-<tokens>M (N counts the
 published versions: v1, v2, ...), with the model card. Prints the tag for step 4.
 
-    uv run --with huggingface_hub python ../scripts/hf/publish_model.py checkpoints/final/bil/latest
+    uv run --with huggingface_hub python ../scripts/hf/publish_model.py checkpoints/final/bil/latest [tokens label]
 """
 import json, re, shutil, sys
 from pathlib import Path
@@ -23,7 +23,7 @@ shutil.copy(REPO / "brain/cerbeto/model/student.py", stage)
 shutil.copy(REPO / "brain/cerbeto/tokenizer/artifacts/tokenizer.json", stage)
 shutil.copy(REPO / "LICENSE.md", stage)
 ft = json.loads(a2)["final_test"]
-mtok = f"{ft['tokens'] / 1e6:.0f}M"
+mtok = sys.argv[2] if len(sys.argv) > 2 else f"{ft['tokens'] / 1e6:.0f}M"   # argv[2]: label, e.g. 1032M for 982M + 50M tuning
 
 hub = api()
 hub.create_repo(MODEL_REPO, private=False, exist_ok=True)

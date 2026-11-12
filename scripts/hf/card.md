@@ -25,8 +25,10 @@ nursery → preschool → school. Code, specs and the whole story: **[github.com
 
 **Try it: [Cerbeto chat Space](https://huggingface.co/spaces/michalasobczak/cerbeto-chat)** (runs in your browser, ~110 MB downloaded once).
 
-This checkpoint is **version {TAG}**, **student D during the one-billion-token run (spec 0010)**: step {STEP}, **{TOKENS} of 1,000M tokens**.
-It is a snapshot from the middle of training; versions are tagged `v<N>-<tokens>M` (v1, v2, … then the tokens trained), the newest is on `main`.
+This checkpoint is **version {TAG}**: **student D after the one-billion-token run (spec 0010, stopped at 982M tokens) and
+50M tokens of conversation tuning (spec 0011)**, which taught it to answer a question with its answer.
+Versions are tagged `v<N>-<tokens>M` (v1, v2, … then the tokens of the run), the newest is on `main`; v1–v5 are snapshots
+from the middle of the 1B run.
 
 ## Architecture
 
@@ -54,25 +56,28 @@ preschool lessons, stories on request, who the student is, two-step relations. E
 Corpora keep their own licences: TinyStories CDLA-Sharing-1.0, FineWeb-Edu ODC-By 1.0, Cosmopedia Apache-2.0, SODA CC BY 4.0,
 Wikipedia CC BY-SA 4.0, BabyLM MIT, Gutenberg public domain.
 
-## What it can and cannot do (spot check of v4 and v5)
+## What it can and cannot do (spot check of v4, v5 and v6)
 
-Each question asked 10 times at temperature 0.7, answers checked by a pattern:
+Each question asked 10 times at temperature 0.7, answers checked by a pattern. None of these questions was in the tuning data
+(questions sharing all their content words with a spot-check question were dropped).
 
-| Part | v3 (523M) | v4 (555M) | v5 (704M) |
+| Part | v4 (555M) | v5 (704M) | v6 (982M + 50M tuning) |
 |---|---|---|---|
-| chat: 16 questions (true/false, facts, opposites) | 47 / 160 | **69 / 160** | 55 / 160 |
-| completing a sentence: 8 facts | 23 / 80 | 26 / 80 | **35 / 80** |
-| memory: 4 short conversations | 20 / 40 | **23 / 40** | 19 / 40 |
+| chat: 16 questions (true/false, facts, opposites) | 69 / 160 | 55 / 160 | **117 / 160** |
+| completing a sentence: 8 facts | 26 / 80 | 35 / 80 | **38 / 80** |
+| memory: 4 short conversations | 23 / 40 | 19 / 40 | **40 / 40** |
 
-v5 completes facts better ("The heart pumps" → *blood* 10 of 10, "The Moon goes around the" → *Earth* 10 of 10) but answers
-fewer chat questions than v4 ("Where do fish live?" 9 → 0, "A fish can swim. True or false?" 6 → 0). The run goes on to 1B tokens.
+v6 answers with the answer first ("Where do fish live?" 0 → 10 of 10, "Is a carrot a fruit or a vegetable?" 0 → 10) and remembers
+every pet told earlier in the talk (10 of 10 each). Conversation tuning: questions about the world with short answers written by a
+teacher model (gemma4, 17,400), conversations that tell facts and ask them back, "I don't know" about made-up words and replies to
+feelings, every other step the 1B shelves so nothing was forgotten (shelf validation ended at or below the 1B checkpoint).
 
 - **Can:** short polite conversation, remember a name or a pet told earlier in the talk, preschool skills (opposites, sizes, categories,
   "who is the youngest"), simple stories; it **thinks out loud** before true/false answers ("A cat can fly. True or false?" →
   *"A cat cannot fly. So that is wrong, and the answer is no."* → "No. A cat cannot fly.").
-- **Cannot yet:** answer most world-knowledge questions (it often knows the fact when completing a sentence — "The heart pumps" → *blood* —
-  but answers questions with preschool templates such as "A bee says buzz"), recall the right fact while thinking ("Is the sun hot?" →
-  *"The sun is yellow. So that is wrong"*), keep a pet's name apart from the human's, react to sad news, say "I don't know" about made-up words.
+- **Cannot yet:** facts it never read often (the capital of France, "A baby cat is called a" *kitten*, the largest planet — 0 of 10),
+  "Is the sun hot?" (0 of 10); it is a 107M model with an 8,192-word vocabulary and a 512-token context, so it is easily confused
+  and makes things up.
 
 The 80M-token predecessor passed the preschool exam (code-graded: id 89.7–100% per skill, mean ood_hard 78.5%).
 Do not use it for anything that matters: it is a research toy.
