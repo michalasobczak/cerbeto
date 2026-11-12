@@ -337,7 +337,8 @@ Every shelf still falls; textbooks and dialogue gained most (−0.69 and −0.75
 | `v2-472M` | 472M | 863M | 2026-11-09 | (tagged `bil-472M`) |
 | `v3-523M` | 523M | 914M | 2026-11-09 | |
 | `v4-555M` | 555M | 946M | 2026-11-09 | chat better than v3 (below) |
-| **`v5-704M`** | **704M** | **1,095M** | 2026-11-10 | published on request although the chat is weaker than v4: completing 26 → 35, chat 69 → 55, memory 23 → 19 (below) |
+| `v5-704M` | 704M | 1,095M | 2026-11-10 | published on request although the chat is weaker than v4: completing 26 → 35, chat 69 → 55, memory 23 → 19 (below) |
+| **`v6-1032M`** | **982M + 50M tuning** | **1,423M** | 2026-11-12 | conversation tuning (spec 0011, `talk2`): chat 55 → 117, completing 35 → 38, memory 19 → 40 (below) |
 
 **Chat spot check, v3 → v4** (2026-11-09, each question asked 10 times at temperature 0.7, K = 1, answers checked by a pattern; v4 measured at 551M):
 
@@ -393,7 +394,7 @@ Every shelf still falls; textbooks and dialogue gained most (−0.69 and −0.75
 
 **Spot check v5 → 982M, the end of the 1B run (2026-11-11 evening, not published):** the run was stopped by the user at 982M tokens (learning rate 3e-5, shelf loss flat at ~2.45, validation moving by thousandths); `bil/final` is that checkpoint. Chat 55 → 62 of 160, completing 35 → 33 of 80, memory 19 → 13 of 40. "A fish can swim" 0 → 10, "Where do fish live?" 0 → 3, but "A cat can fly" 10 → 3 and the bird Kiwi 9 → 3. Chat a little above the noise, memory worse: not published. Conversation tuning (spec 0011, arm `talk`, 50M tokens) started from it at 20:08.
 
-**Conversation tuning, spot check (2026-11-12 early morning, not published yet):** two runs from 982M on the same data (spec 0011). `talk` at learning rate 1e-4 lifted shelf validation by 0.2–0.3 and was stopped at 25M; `talk2` at 3e-5 with every other step on the shelves ran the full 50M, and its shelf validation ended slightly *below* 982M (edu 3.243 → 3.242, textbooks 2.149 → 2.132, dialogue 1.408 → 1.386). Against v5 (55/35/19): `talk` chat 116 of 160, completing 40 of 80, memory 40 of 40; `talk2` chat 117, completing 38, memory 40. Both pass G3 by far: "Where do fish live?" 0 → 10, a carrot is a vegetable 0 → 10, all four pets remembered 10 of 10. Still wrong in both: the capital of France, "A baby cat is called a", the largest planet. `talk2` is the candidate for v6 (same scores, no forgetting).
+**Conversation tuning, spot check (2026-11-12 early morning, `talk2` published as v6):** two runs from 982M on the same data (spec 0011). `talk` at learning rate 1e-4 lifted shelf validation by 0.2–0.3 and was stopped at 25M; `talk2` at 3e-5 with every other step on the shelves ran the full 50M, and its shelf validation ended slightly *below* 982M (edu 3.243 → 3.242, textbooks 2.149 → 2.132, dialogue 1.408 → 1.386). Against v5 (55/35/19): `talk` chat 116 of 160, completing 40 of 80, memory 40 of 40; `talk2` chat 117, completing 38, memory 40. Both pass G3 by far: "Where do fish live?" 0 → 10, a carrot is a vegetable 0 → 10, all four pets remembered 10 of 10. Still wrong in both: the capital of France, "A baby cat is called a", the largest planet. `talk2` is published as **v6-1032M** (same scores, no forgetting).
 
 **Can do now (v4)**
 - **Think before a true/false answer**, also in the new form "… True or false?": *"A cat can fly. True or false?"* → 💭 *"A cat cannot fly. So that is wrong, and the answer is no."* → *"No. A cat cannot fly."*
