@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Spec 0015: start a DiLoCo run from the MacBook — the coordinator on .13, two workers (one per RTX 3060) on .14 and
 # .15. Logs: ~/cerbeto/logs/<name>-*.log on each host. Stop: scripts/gpu/diloco.sh stop.
-#   scripts/gpu/diloco.sh bil2 d1 1e8 [extra worker flags, e.g. --no-recompute]
+#   [EVERY=500] scripts/gpu/diloco.sh bil2 d1 1e8 [extra worker flags, e.g. --no-recompute]
 set -euo pipefail
 user=sobczam
 coord=10.10.12.13
@@ -14,7 +14,7 @@ fi
 arm=$1; name=$2; tokens=$3; shift 3
 extra="$*"
 for h in "$coord" "${gpus[@]}"; do ssh "$user@$h" 'cd ~/cerbeto/model && git pull -q --ff-only && mkdir -p ~/cerbeto/logs'; done
-ssh -f "$user@$coord" "cd ~/cerbeto/model/brain && nohup ~/.local/bin/uv run python -m cerbeto.train.diloco coordinator $arm --name $name --tokens $tokens --workers $((2 * ${#gpus[@]})) > ~/cerbeto/logs/$name-coordinator.log 2>&1 < /dev/null &"
+ssh -f "$user@$coord" "cd ~/cerbeto/model/brain && nohup ~/.local/bin/uv run python -m cerbeto.train.diloco coordinator $arm --name $name --tokens $tokens --workers $((2 * ${#gpus[@]})) --every ${EVERY:-500} > ~/cerbeto/logs/$name-coordinator.log 2>&1 < /dev/null &"
 sleep 20                                        # the coordinator loads the start checkpoint
 rank=0
 for h in "${gpus[@]}"; do
