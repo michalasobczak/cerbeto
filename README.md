@@ -423,6 +423,8 @@ Every shelf fell to the end; textbooks and dialogue gained most (−0.89 and −
 - **`v16k`:** a new 16k byte-level BPE; every weight copied from v6, each new token's embedding the mean of its 8k pieces; 60M tokens of v6's tuning stream (5M only the embedding, then everything at 3e-5).
 - **`vext`:** the 8k vocabulary *kept* (same tokens, ids and rows), only its 4,096 most frequent new merges added (12,288 tokens, 5.2% shorter, the rarest new token seen 308 times in 200 MB); the new rows learn 10× faster.
 
+![F: training loss of v16k — shelf windows 3.0 → 2.77 per 16k token, request → reply pairs 0.56 → 0.39](docs/img/f-v16k-training.webp)
+
 | bits per byte | v6 | `v16k` (60M) | `vext` (58M) |
 |---|---|---|---|
 | edu | **1.246** | 1.360 | 1.300 |
