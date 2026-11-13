@@ -321,6 +321,8 @@ Deep and thin like MobileLLM-125M; ~2.7× faster than C, so a night shows severa
 ## E. One billion tokens — D reads textbooks, Wikipedia and conversations (done)
 [0010](specs/0010-one-billion-tokens.md): the D student (106.8M, unchanged) trained on 1B new tokens on the Mac mini M6, bf16, batch 8 × 512, ~2,570 tokens/s, cosine learning rate; started 2026-11-07, stopped by the user at 982M on 2026-11-11 20:07 (learning rate 3e-5, validation moving by thousandths). Before the run D had read 391M tokens (nursery 300M, preschool 11M, conversations 80M).
 
+![E: training loss of the 1B run — shelf windows 3.0 → 2.47, request → reply pairs 0.82 → 0.61](docs/img/e-1b-training.webp)
+
 **Validation loss** (`runs/final/bil/log.jsonl`, lower is better):
 
 | Tokens of the run | edu | textbooks | dialogue | stories | speech |
