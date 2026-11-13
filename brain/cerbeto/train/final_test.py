@@ -469,7 +469,7 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True, *, name: st
     kk = ks(arm)
     embed_until, embed_x = ARM_EMBED_FIRST.get(arm, (0, 1.0))
     embed_phase = None
-    while progress() < 1 and not stop["now"]:
+    while (sync is not None or progress() < 1) and not stop["now"]:     # a DiLoCo worker ends when the coordinator says
         step = state["step"]
         first = state["tokens"] < embed_until
         if first != embed_phase:            # spec 0012: only the new embedding learns at first, then everything
