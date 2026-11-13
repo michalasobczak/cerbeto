@@ -425,6 +425,8 @@ Every shelf fell to the end; textbooks and dialogue gained most (−0.89 and −
 
 ![F: training loss of v16k — shelf windows 3.0 → 2.77 per 16k token, request → reply pairs 0.56 → 0.39](docs/img/f-v16k-training.webp)
 
+![F: training loss of vext — shelf windows 2.80 → 2.67 per 12k token, request → reply pairs 0.47 → 0.38](docs/img/f-vext-training.webp)
+
 | bits per byte | v6 | `v16k` (60M) | `vext` (58M) |
 |---|---|---|---|
 | edu | **1.246** | 1.360 | 1.300 |
