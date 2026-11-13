@@ -1,6 +1,6 @@
 # 0014 — A second billion tokens: new edu text, the 16k vocabulary
 
-Status: in progress (2026-11-12) — shelf `s3_edu_8` and arm `bil2` written; queued on the M6 after `vext` · Depends on: 0010, 0011, 0012 · Unblocks: v7, 0013
+Status: in progress (2026-11-13) — `bil2` training on the M6 since the night (shelf `s3_edu_8` built); G2 failed by the letter, the user chose to go on; next check at ~300M tokens · Depends on: 0010, 0011, 0012 · Unblocks: v7, 0013
 
 ## 1. TL;DR
 v6 knows little of the world because it has read little: ~1B tokens for 107M parameters (~10 per parameter; SmolLM-135M
@@ -57,3 +57,11 @@ chat at v6's level after tuning.
 - **The learning rate (2026-11-12):** 0011 showed 1e-4 knocks a student out of its minimum within a few million tokens;
   over a billion tokens of the same kind of text that is the usual price of a warm restart, paid back long before the end,
   and the shelves the student already read keep ~40% of the mix.
+- **G2 at 50M (2026-11-13 09:30):** bits per byte start → 11M → 88M: edu 1.360 → 1.362 → 1.331, textbooks 0.814 →
+  0.863 → 0.855, stories 0.485 → 0.536 → 0.549, dialogue 0.521 → 0.571 → 0.572, speech 1.256 → 1.290 → 1.282. The warm
+  restart to 1e-4 lifted stories and dialogue by ~0.05–0.06 within 10M tokens (their share in the mix also fell, 15 → 10
+  and 15 → 12%); since then flat, while edu falls. G2 failed by the letter; the user chose to go on (in 0010 stories and
+  speech also rose first and fell below the start after ~370–400M). Check at ~300M: edu and textbooks clearly below the
+  start, or the run stops.
+- **`vext` result (2026-11-12 23:40):** at 58M tokens edu 1.300, textbooks 0.784, stories 0.473, dialogue 0.504, speech
+  1.273 — better than `v16k` except speech, still above v6 (1.246 / 0.742 / 0.469 / 0.496 / 1.245): G3 of 0012 failed.
