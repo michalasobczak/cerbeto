@@ -12,8 +12,8 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 - tests: the proof, derived from each specification's control gates;
 - [MANIFESTO.md](MANIFESTO.md): implementation principles for every specification.
 
-## Current state (2026-11-09)
-**Where we are:** the deep, thin D student (106.8M) **passed preschool** on 2026-11-07 (stage 1 of 3) — trained outside the school, judged by the school's passing rule; the school student `v0017` (34.6M) is still in preschool.
+## Current state (2026-11-13)
+**Where we are:** the deep, thin D student (106.8M) **passed preschool** on 2026-11-07 (stage 1 of 3), read **one billion tokens** of textbooks, Wikipedia and conversations, and was tuned to answer questions: **v6** on Hugging Face answers 117 of 160 sampled chat questions (v5: 55) and remembers every name it is told. It now reads **a second billion**. The school student `v0017` (34.6M) is still in preschool.
 - **Nursery done:** 300M tokens, 6.9M → 29.9M parameters, BLiMP 65.9%.
 - **School running** (LLM teacher → sleep → exam, on a laptop, offline): preschool ~22% after the nursery → **60.5%** by day 7, flat on days 9–16, **68.5%** after day 18.
 - **Plateau cause:** lessons were 97% right; the missing points were knowledge and question forms the lessons never gave.
@@ -24,8 +24,11 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
   - yes/no lessons think "claim → fact → decision" (the student knew the facts but answered "No. A dog says woof.").
 - **Night bench (2026-11-06):** the night after day 17 replayed in 13 variants (learning rate, replay, consolidation, growth, thinking formats, core passes). None beyond chance (±3 pp from the seed alone); every night trades agree/disagree and categories for clarify, and the small validation set kept the start in most nights. Now a night keeps its end unless clearly worse, the exam decides, and earlier days are replayed once per prompt. Day 18 under these rules: **60.5% → 68.5%** (`v0017`) — rare opposites 25 → 85%, clarify 10 → 52%, agree/disagree 67 → 57% while its yes/no thinking changes.
 - **Growth experiments (2026-11-06):** C — a wide 99M student, then a deep **283M** one on a new Mac mini M6 in bf16: no gain over `v0017` after 18M tokens (the unrolled blocks stayed copies, four with a dead attention). D — a deep, thin **~107M** student trained on conversations of several turns: after 69.4M tokens it **beats `v0017` on every measure** — conversation probe 2 → 8 of 10, stories on request 1.5 → 4.3 of 5, **preschool exam 68.5% → 76.3%, preschool passed** without a school night. Next: [0010](specs/0010-one-billion-tokens.md), 1B tokens with new data.
-- **One billion tokens (2026-11-07 → ~11-11):** [0010](specs/0010-one-billion-tokens.md) — D reads textbooks, Wikipedia and conversations; at 555M of 1B every validation shelf is lower. Public since 2026-11-09 on Hugging Face as versions `v1`–`v4` with a chat in the browser; v4 answers 65 of 160 sampled chat questions right (v3: 47) — see [E](#e-one-billion-tokens--d-reads-textbooks-wikipedia-and-conversations-in-progress).
-- **Next:** after 1B, the final evaluation and a public `v5`; then D goes to school for grade 1 and grade 2, with its own hippocampus.
+- **One billion tokens (2026-11-07 → 11-11):** [0010](specs/0010-one-billion-tokens.md) — D read textbooks, Wikipedia and conversations; every validation shelf fell, stopped at 982M when the loss was flat. Public since 2026-11-09 on Hugging Face as versions `v1`–`v5` with a chat in the browser. The chat did not grow with the tokens (v4 69, v5 55 of 160): the knowledge was there in "complete the sentence" form, not as answers — see [E](#e-one-billion-tokens--d-reads-textbooks-wikipedia-and-conversations-done).
+- **Conversation tuning (2026-11-11 → 11-12):** [0011](specs/0011-conversation-tuning.md) — 50M tokens of questions with short answers (17,400 written by a local teacher), conversations that keep facts, "I don't know" about made-up words, every other step the 1B shelves. **v6-1032M:** chat 55 → 117 of 160, memory 19 → 40 of 40, nothing forgotten. At learning rate 1e-4 the first try forgot (shelf validation +0.2–0.3); 3e-5, where the 1B run ended, did not.
+- **A larger vocabulary did not pay off yet (2026-11-12):** [0012](specs/0012-larger-vocabulary.md) — moving v6 to 16,384 tokens (text 7% shorter) or extending its 8k by 4,096 frequent merges (5% shorter) and training 60M tokens left it behind v6 in bits per byte; the loss sat in the new, rarer words — see [F](#f-a-larger-vocabulary--what-did-not-work).
+- **A second billion tokens (since 2026-11-12):** [0014](specs/0014-second-billion.md) — from v6 on the 16k vocabulary, mostly text the first billion did not reach (a new shelf of grade 7–8 educational paragraphs, ~440M tokens); ends ~2026-11-17 — see [G](#g-a-second-billion-tokens-in-progress).
+- **Next:** conversation tuning on the result → v7; then honest answers ([0013](specs/0013-honest-answers.md): answer what it knows, "I don't know" about the rest, instead of guessing).
 
 **Specifications**
 
@@ -40,7 +43,11 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 | [0007](specs/0007-offline-distribution.md) offline distribution | someday, maybe — not planned |
 | [0008](specs/0008-growth-experiment-100m.md) growth experiment, 99M → 283M (C) | closed: no gain over `v0017` |
 | [0009](specs/0009-deep-100m-conversations.md) deep 100M student with conversations (D) | closed: success, beats `v0017` on every measure; `/stats` analysis pending |
-| [0010](specs/0010-one-billion-tokens.md) one billion tokens: new data for vocabulary, knowledge and conversations | **in progress:** training since 2026-11-07, 555M of 1B on 11-09, ends ~11-11; public versions v1–v4 on Hugging Face |
+| [0010](specs/0010-one-billion-tokens.md) one billion tokens: new data for vocabulary, knowledge and conversations | done: stopped at 982M (2026-11-11), loss flat; public versions v1–v5 on Hugging Face |
+| [0011](specs/0011-conversation-tuning.md) conversation tuning: answer the question, keep the facts | done: v6-1032M (2026-11-12), chat 55 → 117 of 160 |
+| [0012](specs/0012-larger-vocabulary.md) a larger vocabulary, 8k → 16k | closed without a release: `v16k` and `vext` stayed behind v6 after 60M tokens; the 16k vocabulary goes on in 0014 |
+| [0013](specs/0013-honest-answers.md) honest answers: "I don't know" instead of guessing | paused (2026-11-12): facts test written; waits for 0014 |
+| [0014](specs/0014-second-billion.md) a second billion tokens | **in progress:** since 2026-11-12, ends ~11-17 |
 
 <details>
 <summary><b>Hypotheses</b></summary>
@@ -311,8 +318,8 @@ Deep and thin like MobileLLM-125M; ~2.7× faster than C, so a night shows severa
 
 **Reading the result:** the conversation format gave the turns, the self and the stories; the size and depth carried them without forgetting. Validation was still falling at ~0.6 tokens per parameter, so data is the limit now → [0010](specs/0010-one-billion-tokens.md): 1B tokens with new data for vocabulary, knowledge and conversations. Details: [0009](specs/0009-deep-100m-conversations.md) §9.
 
-## E. One billion tokens — D reads textbooks, Wikipedia and conversations (in progress)
-[0010](specs/0010-one-billion-tokens.md): the D student (106.8M, unchanged) trains on 1B new tokens on the Mac mini M6, bf16, batch 8 × 512, ~2,570 tokens/s, cosine learning rate; started 2026-11-07, ends ~2026-11-11 22:20. Before the run D had read 391M tokens (nursery 300M, preschool 11M, conversations 80M).
+## E. One billion tokens — D reads textbooks, Wikipedia and conversations (done)
+[0010](specs/0010-one-billion-tokens.md): the D student (106.8M, unchanged) trained on 1B new tokens on the Mac mini M6, bf16, batch 8 × 512, ~2,570 tokens/s, cosine learning rate; started 2026-11-07, stopped by the user at 982M on 2026-11-11 20:07 (learning rate 3e-5, validation moving by thousandths). Before the run D had read 391M tokens (nursery 300M, preschool 11M, conversations 80M).
 
 **Validation loss** (`runs/final/bil/log.jsonl`, lower is better):
 
@@ -326,8 +333,9 @@ Deep and thin like MobileLLM-125M; ~2.7× faster than C, so a night shows severa
 | 473M (≈ v2) | 3.507 | 2.384 | 1.656 | 1.550 | 3.203 |
 | 525M (≈ v3) | 3.476 | 2.367 | 1.624 | 1.516 | 3.194 |
 | 554M (≈ v4) | 3.449 | 2.349 | 1.617 | 1.502 | 3.170 |
+| 982M (end, `bil/final`) | 3.243 | 2.149 | 1.408 | 1.336 | 3.021 |
 
-Every shelf still falls; textbooks and dialogue gained most (−0.69 and −0.75 from the start). Stories and speech first rose (new shelves pushed them aside), then fell below the start after ~370–400M. Wikipedia was read once by ~555M; from there it repeats.
+Every shelf fell to the end; textbooks and dialogue gained most (−0.89 and −0.96 from the start). Stories and speech first rose (new shelves pushed them aside), then fell below the start after ~370–400M. Wikipedia was read once by ~555M; from there it repeats.
 
 **Published versions** on Hugging Face — model <https://huggingface.co/michalasobczak/cerbeto> (tag per version), chat in the browser <https://huggingface.co/spaces/michalasobczak/cerbeto-chat> (ONNX int8, ~110 MB, transformers.js); publishing: [scripts/hf/README.md](scripts/hf/README.md):
 
@@ -406,6 +414,33 @@ Every shelf still falls; textbooks and dialogue gained most (−0.69 and −0.75
 - **Recall the right fact while thinking:** "Is the sun hot?" → 💭 *"The sun is yellow. So that is wrong"* → *"No."*
 - **Keep two names apart:** a cat or a horse gets the human's name.
 - **Empathy and "I don't know":** "I feel sad today." → *"That's nice!"*; "What is a zorblat?" → *"A zorblat is a fruit."*
+
+## F. A larger vocabulary — what did not work
+[0012](specs/0012-larger-vocabulary.md): the 8,192-token vocabulary (chosen for the nursery) is the smallest among models of this size, so after v6 we tried a larger one **on the trained model**. Text measured in bytes per token on each shelf's validation text: 16,384 tokens make the 1B mix **7.1% shorter** (edu 9.7%, textbooks 10.0%); words such as *photosynthesis* (6 pieces) or *Jupiter* (3) become one token. Models with different vocabularies are compared in **bits per byte** (lower is better).
+
+- **`v16k`:** a new 16k byte-level BPE; every weight copied from v6, each new token's embedding the mean of its 8k pieces; 60M tokens of v6's tuning stream (5M only the embedding, then everything at 3e-5).
+- **`vext`:** the 8k vocabulary *kept* (same tokens, ids and rows), only its 4,096 most frequent new merges added (12,288 tokens, 5.2% shorter, the rarest new token seen 308 times in 200 MB); the new rows learn 10× faster.
+
+| bits per byte | v6 | `v16k` (60M) | `vext` (58M) |
+|---|---|---|---|
+| edu | **1.246** | 1.360 | 1.300 |
+| textbooks | **0.742** | 0.814 | 0.784 |
+| dialogue | **0.496** | 0.521 | 0.504 |
+| stories | **0.469** | 0.485 | 0.473 |
+| speech | **1.245** | 1.256 | 1.273 |
+
+**Where `v16k` loses** (`cerbeto.tokenizer.vocab where`: both tokenizers cut text at the same word boundaries, so each word's loss can be compared exactly): on words both vocabularies cut the same, `v16k` is 1–3% worse than v6; on words the 16k vocabulary made into one new token, **25–85% worse** (edu 1.42 → 1.84 bits per byte) — ~80% of the gap. The network kept what it knew; the new words were too rare to learn in 60M tokens. Keeping the old tokens and adding fewer, more frequent ones (`vext`) roughly halved the gap on edu and textbooks but did not close it.
+
+**Reading the result:** a new vocabulary on a trained model is new knowledge, not a format change — it pays off with a long training, not a short tuning. The 16k vocabulary therefore goes on in the second billion ([G](#g-a-second-billion-tokens-in-progress)), where its words get hundreds of millions of tokens.
+
+## G. A second billion tokens (in progress)
+[0014](specs/0014-second-billion.md): v6 has read ~10 tokens per parameter (SmolLM-135M read 600B), and the first billion did not reach most of its own library — edu ~40%, stories ~20%, dialogue ~45%. A new shelf adds the FineWeb-Edu paragraphs of grade 7–8 from the shards already on disk (`s3_edu_8`, ~440M tokens; edu had grade ≤ 7), apart from edu's paragraphs and its validation.
+
+- **Start:** `v16k/final` (v6 on the 16k vocabulary); 1B tokens on the M6, ~2,550 tokens/s, ends ~2026-11-17.
+- **Stream:** three of four steps shelves (edu 8 30%, edu 22%, textbooks 12%, dialogue 12%, stories 10%, speech 6%, books 5%, wiki 3%), the fourth v6's conversations so it keeps answering.
+- **Learning rate** warmed up again to 1e-4 over 1,000 steps, cosine to 1e-5.
+
+**So far (88M, 2026-11-13):** edu falls (1.360 → 1.331 bits per byte); the warm restart lifted stories and dialogue by ~0.05 within 10M tokens, flat since — as in the first billion, where stories and speech first rose and fell below the start after ~370–400M. Checked again at ~300M. Afterwards: conversation tuning as v6, the spot check, and v7 if it is better.
 
 ## Next phases and their expected effects
 <details>
