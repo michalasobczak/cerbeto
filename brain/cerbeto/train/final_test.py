@@ -414,22 +414,35 @@ def lr_at(step: int, total: int, peak: float | None = None, warmup: int | None =
     return (peak or CFG["lr"]) * warm * (CFG["min_lr"] + (1 - CFG["min_lr"]) * cos)
 
 
-def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
-    device = pick_device()
-    run = RUN / arm
+def new_optimizer(model, arm: str) -> torch.optim.AdamW:
+    return torch.optim.AdamW(model.parameters(), lr=ARM_LR.get(arm, (CFG["lr"],))[0], betas=(0.9, 0.95),
+                             weight_decay=CFG["weight_decay"])
+
+
+def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True, *, name: str | None = None, device=None,
+          model=None, state: dict | None = None, sync=None, recompute: bool = True, validate: bool = True) -> None:
+    """One arm's training. Spec 0015 (DiLoCo worker): `name` is the run folder (default the arm), `model` and `state`
+    come from the coordinator, `sync(model, opt, state, shelves)` runs after every step and may replace the weights;
+    with `sync` nothing is saved here (the coordinator keeps the run)."""
+    device = device or pick_device()
+    name = name or arm
+    run = RUN / name
     run.mkdir(parents=True, exist_ok=True)
-    resume = CKPT / arm / "latest"
-    state = json.loads((run / "state.json").read_text()) if (run / "state.json").exists() else None
-    if state and resume.exists():
-        model, opt = checkpoint.load(resume, device, with_optimizer=True)
+    resume = CKPT / name / "latest"
+    if model is not None:
+        model, opt = model.to(device), new_optimizer(model, arm)
     else:
-        model = start_model(arm, device)
-        opt = torch.optim.AdamW(model.parameters(), lr=ARM_LR.get(arm, (CFG["lr"],))[0], betas=(0.9, 0.95), weight_decay=CFG["weight_decay"])
-        state = {"step": 0, "tokens": 0, "target_tokens": int(tokens), "params": model.num_params()}
-        (run / "state.json").write_text(json.dumps(state))     # the panel knows the target before the first save
+        state = json.loads((run / "state.json").read_text()) if (run / "state.json").exists() else None
+        if state and resume.exists():
+            model, opt = checkpoint.load(resume, device, with_optimizer=True)
+        else:
+            model = start_model(arm, device)
+            opt = new_optimizer(model, arm)
+            state = {"step": 0, "tokens": 0, "target_tokens": int(tokens), "params": model.num_params()}
+            (run / "state.json").write_text(json.dumps(state))     # the panel knows the target before the first save
     # the 99M arm keeps only block inputs and recomputes the rest: ~20 GB of activations at k=6 would push a
     # 32 GB Mac into swap, which costs far more than the ~30% recomputation
-    model.checkpointing = arm != "control"      # ~100M without recomputation ran out of GPU memory on the 16 GB M6
+    model.checkpointing = arm != "control" and recompute   # ~100M without it ran out of GPU memory on the 16 GB M6
     total_steps = int(state["target_tokens"] / (CFG["windows"] * CFG["seq_len"]))   # ~tokens per step, both kinds
     by_tokens = arm in BY_TOKENS
     progress = (lambda: state["tokens"] / state["target_tokens"]) if by_tokens else (lambda: state["step"] / total_steps)
@@ -496,6 +509,8 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
         recent.append((kind, loss.item()))
         state["step"] += 1
         state["tokens"] += n
+        if sync is not None:
+            sync(model, opt, state, shelves)
         if state["step"] % 100 == 0:
             release(device)
             sh = [v for c, v in recent if c == "shelf"]
@@ -505,26 +520,29 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
                    "lr": round(lr_now(), 6), "tok_s": round((state["tokens"] - t0_tokens) / max(1, time.time() - t0))}
             recent = []
             state["shelf_tokens"] = shelves.used
-            if state["step"] % 1000 == 0:
-                row["valid"] = validation(model, valid, kk["k_eval"])
+            state["last_loss"] = {"shelf_loss": row["shelf_loss"], "pair_loss": row["pair_loss"]}
+            if validate and state["step"] % 1000 == 0:
+                row["valid"] = state["last_valid"] = validation(model, valid, kk["k_eval"])
                 row["passes"] = shelves.passes()
                 model.train()
             log.write(json.dumps(row) + "\n")
             log.flush()
             print(row, flush=True)
             state["tok_s_last"] = row["tok_s"]
-        if time.time() - saved > CFG["save_minutes"] * 60:
-            save(model, opt, arm, state)
+        if sync is None and time.time() - saved > CFG["save_minutes"] * 60:
+            save(model, opt, name, state)
             saved = time.time()
     state["shelf_tokens"] = shelves.used
-    save(model, opt, arm, state)
+    if sync is not None:
+        return
+    save(model, opt, name, state)
     if progress() >= 1:
-        final = CKPT / arm / "final"
+        final = CKPT / name / "final"
         if final.exists():
             shutil.rmtree(final)
         checkpoint.save(model, final, parent=ARM_START.get(arm, START), meta={"final_test": {**state, "cfg": CFG, "shelves": shelf_mix,
                                                                           "pairs": ARM_PAIR_MIX.get(arm, PAIR_MIX)}})
-        print(f"{arm}: finished · {final}", flush=True)
+        print(f"{name}: finished · {final}", flush=True)
     else:
         print(f"{arm}: interrupted at step {state['step']} — run again to resume", flush=True)
 
@@ -671,9 +689,11 @@ def main() -> None:
     p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
+    p.add_argument("--name", help="train: run folder (default the arm), e.g. a baseline beside a DiLoCo run")
+    p.add_argument("--no-recompute", action="store_true", help="train: keep all activations (12 GB cards)")
     a = p.parse_args()
     if a.what == "train":
-        train(a.arm, a.tokens, bf16=not a.fp32)
+        train(a.arm, a.tokens, bf16=not a.fp32, name=a.name, recompute=not a.no_recompute)
     elif a.what == "probes":
         add_probes(a.arm)
     else:
