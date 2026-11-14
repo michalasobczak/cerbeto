@@ -132,7 +132,7 @@ MAX_PASSES = 4
 
 class ThermalPacer:
     """Keeps an NVIDIA card under `max_c` without root (`nvidia-smi -pl` needs it): every `every` steps it reads the
-    card's temperature and adjusts a pause after each step — longer while too hot, shorter once 3 degrees below.
+    card's temperature and adjusts a pause after each step — longer while too hot, shorter once below.
     2026-11-14: one RTX 3060 (fan at 0%) sat at 92 C and throttled itself to ~40%; a healthy one under a full
     matmul load reached 88 C at 100% fan."""
     def __init__(self, max_c: int, gpu: str | None = None, every: int = 10, read=None):
@@ -152,7 +152,7 @@ class ThermalPacer:
             c = self.last_c = self.read()
             if c is not None and c > self.max_c:
                 self.pause = min(5.0, max(0.05, self.pause * 1.5))
-            elif c is not None and c < self.max_c - 3:
+            elif c is not None and c < self.max_c:          # below the limit: give the speed back step by step
                 self.pause = 0.0 if self.pause < 0.02 else self.pause * 0.7
         if self.pause:
             time.sleep(self.pause)
