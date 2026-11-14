@@ -55,6 +55,7 @@ def coordinator(tmp_path, monkeypatch):
     monkeypatch.setattr(ft, "CKPT", tmp_path / "ckpt")
     monkeypatch.setattr(ft, "start_model", lambda arm, device: Student(TINY, seed=0))
     monkeypatch.setitem(d.OUTER, "every", 2)
+    monkeypatch.setitem(d.OUTER, "first_wait", 0.3)
 
     def make(workers=2, late_after=30.0, tokens=1e9):
         c = d.Coordinator("bil2", "t", tokens, workers, lr=0.7, momentum=0.9, late_after=late_after)
@@ -104,7 +105,7 @@ def test_round_with_two_workers(coordinator):
     [t.start() for t in ts]
     [t.join(10) for t in ts]
     ref = d.Outer(theta0.clone(), 0.7, 0.9)
-    ref.step(deltas)
+    ref.step(deltas, [1000, 2000])                                      # weighted by the tokens each read
     assert torch.equal(c.theta, ref.theta)
     for i in range(2):
         assert torch.equal(links[i].theta, c.theta)                       # every copy identical
@@ -131,6 +132,13 @@ def test_late_worker_gets_theta(coordinator):
     assert torch.equal(b.theta, c.theta)
     assert torch.equal(parameters_to_vector(m2.parameters()).detach(), c.theta)
     assert c.state["tokens"] == 10
+    assert b.state["step"] == 2 and 2 < b.next_sync <= 4                  # only the rest of round 1, not a whole one
+
+
+def test_weighted_mean():
+    outer = d.Outer(torch.zeros(3), lr=1.0, momentum=0.0)
+    outer.step([torch.ones(3), torch.zeros(3)], [3, 1])
+    assert torch.allclose(outer.theta, torch.full((3,), -0.75))
 
 
 def test_finish_and_resume(coordinator, tmp_path):

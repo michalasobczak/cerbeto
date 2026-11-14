@@ -487,12 +487,12 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True, *, name: st
             loss = F.cross_entropy(logits.float().transpose(1, 2), y, ignore_index=IGNORE)
             kind, n = "pairs", x.numel()
         else:
-            name = shelves.pick(rng)
-            w = shelves.streams[name].batch(CFG["windows"], rng, device)
+            shelf = shelves.pick(rng)
+            w = shelves.streams[shelf].batch(CFG["windows"], rng, device)
             with amp():
                 loss = model.loss(w[:, :-1], w[:, 1:], k)
             kind, n = "shelf", w[:, :-1].numel()
-            shelves.took(name, n)
+            shelves.took(shelf, n)
         opt.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)

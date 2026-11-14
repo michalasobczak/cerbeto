@@ -31,7 +31,7 @@ from cerbeto.model import checkpoint
 from cerbeto.train import final_test as ft
 
 PORT = 5960
-OUTER = {"lr": 0.7, "momentum": 0.9, "every": 500, "late_after": 120.0}
+OUTER = {"lr": 0.7, "momentum": 0.9, "every": 500, "late_after": 120.0, "first_wait": 900.0}
 
 
 # --- wire format: 8-byte header length, JSON header, 8-byte payload length, payload --------------------------
@@ -79,8 +79,10 @@ class Outer:
         self.theta, self.lr, self.momentum = theta, lr, momentum
         self.buf = buf if buf is not None else torch.zeros_like(theta)
 
-    def step(self, grads: list[torch.Tensor]) -> torch.Tensor:
-        g = torch.stack([x.float() for x in grads]).mean(0)
+    def step(self, grads: list[torch.Tensor], weights: list[float] | None = None) -> torch.Tensor:
+        w = torch.tensor(weights if weights else [1.0] * len(grads), dtype=torch.float32)
+        w = (w / w.sum()).view(-1, 1)
+        g = (torch.stack([x.float() for x in grads]) * w).sum(0)        # a shortened round counts less
         self.buf.mul_(self.momentum).add_(g)
         update = (self.lr * (g + self.momentum * self.buf)).to(torch.bfloat16)
         self.theta.sub_(update.float())
@@ -113,6 +115,7 @@ class Coordinator:
         self.pending: dict[int, tuple[torch.Tensor, dict]] = {}
         self.first_arrival = None
         self.result: dict[int, bytes] = {}           # round -> update bytes, kept for the round's stragglers
+        self.round_started, self.round_seconds = time.time(), None
         self.saved, self.t_last, self.tokens_last = time.time(), time.time(), self.state["tokens"]
         self.log = (self.run / "log.jsonl").open("a")
 
@@ -123,8 +126,14 @@ class Coordinator:
         return {k: self.state[k] for k in ("step", "tokens", "target_tokens", "round", "shelf_tokens")}
 
     def hello(self) -> tuple[dict, bytes]:
+        """The whole θ, and how much of the current round is left: a worker that joins or missed a round does only
+        that share of the steps, so it arrives with the others (2026-11-14: a late worker stayed late for good)."""
         with self.lock:
-            return {"kind": "theta", "state": self.public(), "every": OUTER["every"]}, to_bytes(self.theta)
+            left = 1.0
+            if self.round_seconds:
+                left = min(1.0, max(0.1, 1 - (time.time() - self.round_started) / self.round_seconds))
+            return ({"kind": "theta", "state": self.public(), "every": OUTER["every"], "left": round(left, 3)},
+                    to_bytes(self.theta))
 
     def contribute(self, rank: int, rnd: int, delta: torch.Tensor, info: dict) -> tuple[dict, bytes]:
         """Blocks until round `rnd` closes; returns the update, or the whole θ when the worker missed the round."""
@@ -134,7 +143,8 @@ class Coordinator:
             self.pending[rank] = (delta, info)
             self.first_arrival = self.first_arrival or time.time()
             while rnd == self.state["round"]:
-                late = time.time() - self.first_arrival > self.late_after
+                wait = self.late_after if self.state["round"] else OUTER["first_wait"]   # startup: wait for all
+                late = time.time() - self.first_arrival > wait
                 if len(self.pending) >= self.workers or (late and self.pending):
                     self.close_round()
                     break
@@ -145,8 +155,8 @@ class Coordinator:
 
     def close_round(self) -> None:
         ranks = sorted(self.pending)
-        update = self.outer.step([self.pending[r][0] for r in ranks])
         infos = [self.pending[r][1] for r in ranks]
+        update = self.outer.step([self.pending[r][0] for r in ranks], [max(1, i["tokens"]) for i in infos])
         st = self.state
         st["round"] += 1
         st["step"] = st["round"] * OUTER["every"]
@@ -156,6 +166,8 @@ class Coordinator:
                 st["shelf_tokens"][s] = st["shelf_tokens"].get(s, 0) + n
         self.result = {st["round"] - 1: (to_bytes(update), set(ranks))}
         self.pending, self.first_arrival = {}, None
+        now = time.time()
+        self.round_seconds, self.round_started = now - self.round_started, now
         self.write_log(ranks, infos)
         if self.done():
             self.save(final=True)
@@ -266,13 +278,15 @@ class Link:
             OUTER["every"] = header["every"]
         if header["kind"] == "theta":
             self.theta = from_bytes(payload, torch.float32).to(device)
+            self.next_sync = self.state["step"] + max(1, round(OUTER["every"] * header.get("left", 1.0)))
         else:
             self.theta.sub_(from_bytes(payload, torch.bfloat16).to(device).float())
+            self.next_sync = self.state["step"] + OUTER["every"]
         return header["kind"]
 
     def __call__(self, model, opt, state: dict, shelves) -> None:
         """The `sync` hook of final_test.train: every H steps."""
-        if state["step"] % OUTER["every"]:
+        if state["step"] < self.next_sync:
             return
         local = parameters_to_vector(model.parameters()).detach().float()
         delta = (self.theta - local).to(torch.bfloat16)
