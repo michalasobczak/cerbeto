@@ -311,7 +311,8 @@ class Link:
         self.shelves_at_sync = dict(shelves.used)
 
 
-def work(arm: str, host: str, rank: int, port: int = PORT, recompute: bool = True, bf16: bool = True) -> None:
+def work(arm: str, host: str, rank: int, port: int = PORT, recompute: bool = True, bf16: bool = True,
+         max_temp: int | None = None) -> None:
     device = ft.pick_device()
     link = Link(host, port, rank)
     link.hello()
@@ -326,7 +327,8 @@ def work(arm: str, host: str, rank: int, port: int = PORT, recompute: bool = Tru
     print(f"worker {rank}: round {link.state['round']} · {device}", flush=True)
     try:
         ft.train(arm, state["target_tokens"], seed=1_000_003 * (rank + 1), bf16=bf16, name=f"{arm}.w{rank}",
-                 device=device, model=model, state=state, sync=link, recompute=recompute, validate=rank == 0)
+                 device=device, model=model, state=state, sync=link, recompute=recompute, validate=rank == 0,
+                 max_temp=max_temp)
     except Finished:
         print(f"worker {rank}: the run is finished", flush=True)
 
@@ -343,12 +345,13 @@ def main() -> None:
     p.add_argument("--rank", type=int, default=0)
     p.add_argument("--port", type=int, default=PORT)
     p.add_argument("--no-recompute", action="store_true", help="worker: keep all activations (12 GB cards)")
+    p.add_argument("--max-temp", type=int, help="worker: pause between steps to keep the card under this (C)")
     a = p.parse_args()
     OUTER["every"] = a.every
     if a.what == "coordinator":
         coordinate(a.arm, a.name or f"{a.arm}-diloco", a.tokens, a.workers, a.port)
     else:
-        work(a.arm, a.coordinator, a.rank, a.port, recompute=not a.no_recompute)
+        work(a.arm, a.coordinator, a.rank, a.port, recompute=not a.no_recompute, max_temp=a.max_temp)
 
 
 if __name__ == "__main__":

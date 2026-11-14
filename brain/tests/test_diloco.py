@@ -204,3 +204,13 @@ def test_train_saves_under_its_run_name(tmp_path, monkeypatch):
     assert sorted(p.name for p in (tmp_path / "ckpt").iterdir()) == ["t1"]
     assert (tmp_path / "ckpt" / "t1" / "final" / "model.safetensors").exists()
     assert json.loads((tmp_path / "runs" / "t1" / "state.json").read_text())["tokens"] >= 1500
+
+
+def test_thermal_pacer(monkeypatch):
+    monkeypatch.setattr(ft.time, "sleep", lambda s: None)
+    temps = iter([90] * 5 + [70] * 20)
+    pacer = ft.ThermalPacer(85, gpu="1", every=1, read=lambda: next(temps))
+    pauses = [pacer() for _ in range(25)]
+    assert pauses[0] > 0 and pauses[4] > pauses[0]          # too hot: the pause grows
+    assert pauses[-1] == 0.0                                # cool again: back to full speed
+    assert max(pauses) <= 5.0

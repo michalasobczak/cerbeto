@@ -13,11 +13,13 @@ phrasings, graded by the teacher), the nursery conversation probe and the presch
 import argparse
 import contextlib
 import json
+import os
 import math
 import random
 import re
 import shutil
 import signal
+import subprocess
 import time
 
 import numpy as np
@@ -126,6 +128,35 @@ for _d in (ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_PAIR_ST
 ARM_START["honest"] = CKPT / "v16k" / "final"
 BY_TOKENS.add("honest")
 MAX_PASSES = 4
+
+
+class ThermalPacer:
+    """Keeps an NVIDIA card under `max_c` without root (`nvidia-smi -pl` needs it): every `every` steps it reads the
+    card's temperature and adjusts a pause after each step — longer while too hot, shorter once 3 degrees below.
+    2026-11-14: one RTX 3060 (fan at 0%) sat at 92 C and throttled itself to ~40%; a healthy one under a full
+    matmul load reached 88 C at 100% fan."""
+    def __init__(self, max_c: int, gpu: str | None = None, every: int = 10, read=None):
+        self.max_c, self.every, self.pause, self.n = max_c, every, 0.0, 0
+        self.gpu = gpu if gpu is not None else (os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")[0] or "0")
+        self.read = read or self._nvidia_smi
+        self.last_c = None
+
+    def _nvidia_smi(self) -> int | None:
+        out = subprocess.run(["nvidia-smi", f"--id={self.gpu}", "--query-gpu=temperature.gpu",
+                              "--format=csv,noheader,nounits"], capture_output=True, text=True).stdout.strip()
+        return int(out) if out.isdigit() else None
+
+    def __call__(self) -> float:
+        self.n += 1
+        if self.n % self.every == 0:
+            c = self.last_c = self.read()
+            if c is not None and c > self.max_c:
+                self.pause = min(5.0, max(0.05, self.pause * 1.5))
+            elif c is not None and c < self.max_c - 3:
+                self.pause = 0.0 if self.pause < 0.02 else self.pause * 0.7
+        if self.pause:
+            time.sleep(self.pause)
+        return self.pause
 
 
 def bf16_context(device, wanted: bool):
@@ -420,7 +451,8 @@ def new_optimizer(model, arm: str) -> torch.optim.AdamW:
 
 
 def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True, *, name: str | None = None, device=None,
-          model=None, state: dict | None = None, sync=None, recompute: bool = True, validate: bool = True) -> None:
+          model=None, state: dict | None = None, sync=None, recompute: bool = True, validate: bool = True,
+          max_temp: int | None = None) -> None:
     """One arm's training. Spec 0015 (DiLoCo worker): `name` is the run folder (default the arm), `model` and `state`
     come from the coordinator, `sync(model, opt, state, shelves)` runs after every step and may replace the weights;
     with `sync` nothing is saved here (the coordinator keeps the run)."""
@@ -466,6 +498,7 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True, *, name: st
     print(f"{arm}: {model.num_params():,} parameters · step {state['step']}/{total_steps} · {device} · {state['precision']}", flush=True)
     model.train()
     saved, t0, t0_tokens, recent = time.time(), time.time(), state["tokens"], []
+    pacer = ThermalPacer(max_temp) if max_temp and str(device).startswith("cuda") else None
     kk = ks(arm)
     embed_until, embed_x = ARM_EMBED_FIRST.get(arm, (0, 1.0))
     embed_phase = None
@@ -509,6 +542,8 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True, *, name: st
         recent.append((kind, loss.item()))
         state["step"] += 1
         state["tokens"] += n
+        if pacer is not None:
+            pacer()
         if sync is not None:
             sync(model, opt, state, shelves)
         if state["step"] % 100 == 0:
@@ -521,6 +556,8 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True, *, name: st
             recent = []
             state["shelf_tokens"] = shelves.used
             state["last_loss"] = {"shelf_loss": row["shelf_loss"], "pair_loss": row["pair_loss"]}
+            if pacer is not None:
+                row["gpu_c"], row["pause_s"] = pacer.last_c, round(pacer.pause, 3)
             if validate and state["step"] % 1000 == 0:
                 row["valid"] = state["last_valid"] = validation(model, valid, kk["k_eval"])
                 row["passes"] = shelves.passes()
@@ -691,9 +728,10 @@ def main() -> None:
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     p.add_argument("--name", help="train: run folder (default the arm), e.g. a baseline beside a DiLoCo run")
     p.add_argument("--no-recompute", action="store_true", help="train: keep all activations (12 GB cards)")
+    p.add_argument("--max-temp", type=int, help="train: pause between steps to keep the NVIDIA card under this (C)")
     a = p.parse_args()
     if a.what == "train":
-        train(a.arm, a.tokens, bf16=not a.fp32, name=a.name, recompute=not a.no_recompute)
+        train(a.arm, a.tokens, bf16=not a.fp32, name=a.name, recompute=not a.no_recompute, max_temp=a.max_temp)
     elif a.what == "probes":
         add_probes(a.arm)
     else:
