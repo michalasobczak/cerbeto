@@ -1,6 +1,10 @@
 """Spec 0015: DiLoCo — wire format, the outer step, the coordinator's rounds and the worker's sync hook (CPU)."""
+import json
 import socket
 import threading
+import types
+
+import numpy as np
 
 import pytest
 import torch
@@ -166,3 +170,37 @@ def test_not_a_sync_step_does_nothing(coordinator):
     link(m, None, {"step": 1, "tokens": 1}, Shelves())
     assert torch.equal(parameters_to_vector(m.parameters()).detach(), before)
     assert c.state["round"] == 0
+
+
+class FakeStream:
+    """A shelf of random tokens, as ShelfStream answers."""
+    def __init__(self, shelf, split, seq_len, vocab=8192):
+        self.seq_len, self.tokens = seq_len, np.zeros(50_000, dtype=np.uint16)
+
+    def batch(self, n, rng, device):
+        return torch.randint(0, TINY.vocab_size, (n, self.seq_len + 1), device=device)
+
+    def fixed_batches(self, n, batch_size, device, seed=0):
+        g = torch.Generator().manual_seed(seed)
+        return [torch.randint(0, TINY.vocab_size, (batch_size, self.seq_len + 1), generator=g) for _ in range(n)]
+
+
+def test_train_saves_under_its_run_name(tmp_path, monkeypatch):
+    """The whole final_test.train loop, a save after every step: everything lands in runs/<name> and
+    checkpoints/<name> (2026-11-14: a shelf name, then a parameter name, overwrote the run name at the first save)."""
+    monkeypatch.setattr(ft, "RUN", tmp_path / "runs")
+    monkeypatch.setattr(ft, "CKPT", tmp_path / "ckpt")
+    monkeypatch.setattr(ft, "start_model", lambda arm, device: Student(TINY, seed=0))
+    monkeypatch.setattr(ft, "ShelfStream", FakeStream)
+    monkeypatch.setattr(ft, "load_tokenizer", lambda vocab: None)
+    monkeypatch.setattr(ft, "Pairs", lambda *a, **k: types.SimpleNamespace(batch=lambda n: [None] * n))
+    monkeypatch.setattr(ft, "encode_dialogues", lambda d, tok, device, max_len: (
+        torch.randint(0, TINY.vocab_size, (len(d), 16)), torch.randint(0, TINY.vocab_size, (len(d), 16))))
+    monkeypatch.setitem(ft.CFG, "seq_len", 32)
+    monkeypatch.setitem(ft.CFG, "windows", 2)
+    monkeypatch.setitem(ft.CFG, "save_minutes", 0)
+    ft.train("bil2", 1500, name="t1", device=torch.device("cpu"), bf16=False)
+    assert sorted(p.name for p in (tmp_path / "runs").iterdir()) == ["t1"]
+    assert sorted(p.name for p in (tmp_path / "ckpt").iterdir()) == ["t1"]
+    assert (tmp_path / "ckpt" / "t1" / "final" / "model.safetensors").exists()
+    assert json.loads((tmp_path / "runs" / "t1" / "state.json").read_text())["tokens"] >= 1500

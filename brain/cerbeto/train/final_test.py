@@ -425,10 +425,10 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True, *, name: st
     come from the coordinator, `sync(model, opt, state, shelves)` runs after every step and may replace the weights;
     with `sync` nothing is saved here (the coordinator keeps the run)."""
     device = device or pick_device()
-    name = name or arm
-    run = RUN / name
+    run_name = name or arm              # not `name`: the loop below names shelves and parameters
+    run = RUN / run_name
     run.mkdir(parents=True, exist_ok=True)
-    resume = CKPT / name / "latest"
+    resume = CKPT / run_name / "latest"
     if model is not None:
         model, opt = model.to(device), new_optimizer(model, arm)
     else:
@@ -530,19 +530,19 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True, *, name: st
             print(row, flush=True)
             state["tok_s_last"] = row["tok_s"]
         if sync is None and time.time() - saved > CFG["save_minutes"] * 60:
-            save(model, opt, name, state)
+            save(model, opt, run_name, state)
             saved = time.time()
     state["shelf_tokens"] = shelves.used
     if sync is not None:
         return
-    save(model, opt, name, state)
+    save(model, opt, run_name, state)
     if progress() >= 1:
-        final = CKPT / name / "final"
+        final = CKPT / run_name / "final"
         if final.exists():
             shutil.rmtree(final)
         checkpoint.save(model, final, parent=ARM_START.get(arm, START), meta={"final_test": {**state, "cfg": CFG, "shelves": shelf_mix,
                                                                           "pairs": ARM_PAIR_MIX.get(arm, PAIR_MIX)}})
-        print(f"{name}: finished · {final}", flush=True)
+        print(f"{run_name}: finished · {final}", flush=True)
     else:
         print(f"{arm}: interrupted at step {state['step']} — run again to resume", flush=True)
 
