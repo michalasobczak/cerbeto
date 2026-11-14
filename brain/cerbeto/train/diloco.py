@@ -25,7 +25,7 @@ import threading
 import time
 
 import torch
-from torch.nn.utils import parameters_to_vector, vector_to_parameters
+from torch.nn.utils import parameters_to_vector
 
 from cerbeto.model import checkpoint
 from cerbeto.train import final_test as ft
@@ -69,6 +69,19 @@ def from_bytes(b: bytes, dtype: torch.dtype) -> torch.Tensor:
     if dtype == torch.bfloat16:
         return torch.frombuffer(bytearray(b), dtype=torch.int16).view(torch.bfloat16)
     return torch.frombuffer(bytearray(b), dtype=dtype)
+
+
+def load_vector(theta: torch.Tensor, params) -> None:
+    """Copies θ into the parameters. Not torch's vector_to_parameters: that makes every parameter a *view* of θ, so
+    training then wrote into the worker's θ too and from the second round every pseudo-gradient was zero
+    (2026-11-14: the merged model drifted on round 1's momentum while each worker trained on its own)."""
+    with torch.no_grad():
+        i = 0
+        for p in params:
+            n = p.numel()
+            p.copy_(theta[i:i + n].view_as(p))
+            i += n
+    assert i == theta.numel(), (i, theta.numel())
 
 
 # --- the outer step -------------------------------------------------------------------------------------------
@@ -204,7 +217,7 @@ class Coordinator:
             print(row, flush=True)
 
     def save(self, final: bool = False) -> None:
-        vector_to_parameters(self.theta, self.model.parameters())
+        load_vector(self.theta, self.model.parameters())
         tmp, latest = self.ckpt / "latest.tmp", self.ckpt / "latest"
         if tmp.exists():
             shutil.rmtree(tmp)
@@ -319,8 +332,7 @@ class Link:
 
     def adopt(self, model, state: dict, shelves) -> None:
         """θ into the model, the global counts into the loop's state."""
-        with torch.no_grad():
-            vector_to_parameters(self.theta.to(next(model.parameters()).dtype), model.parameters())
+        load_vector(self.theta, model.parameters())
         state["step"], state["tokens"] = self.state["step"], self.state["tokens"]
         for s in shelves.used:
             shelves.used[s] = int(self.state["shelf_tokens"].get(s, 0))
@@ -346,8 +358,7 @@ def validate(arm: str, host: str, port: int = PORT, every_rounds: int = 2, poll:
             done = st["tokens"] >= st["target_tokens"]
             if st["round"] and (last is None or st["round"] - last >= every_rounds or (done and last != st["round"])):
                 link.hello()
-                with torch.no_grad():
-                    vector_to_parameters(link.theta.to(device), model.parameters())
+                load_vector(link.theta, model.parameters())
                 v = ft.validation(model, valid, k)
                 send(link.sock, {"kind": "valid", "round": link.state["round"], "step": link.state["step"],
                                  "tokens": link.state["tokens"], "valid": v})
@@ -368,8 +379,7 @@ def work(arm: str, host: str, rank: int, port: int = PORT, recompute: bool = Tru
     link.hello()
     link.theta = link.theta.to(device)
     model = ft.start_model(arm, "cpu")
-    with torch.no_grad():
-        vector_to_parameters(link.theta.cpu(), model.parameters())
+    load_vector(link.theta.cpu(), model.parameters())
     state = {"step": link.state["step"], "tokens": link.state["tokens"], "target_tokens": link.state["target_tokens"],
              "params": model.num_params(), "shelf_tokens": link.state["shelf_tokens"]}
     link.tokens_at_sync = state["tokens"]

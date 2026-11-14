@@ -234,3 +234,33 @@ def test_validator_logs_theta_of_the_last_round(coordinator, monkeypatch):
     rows = [json.loads(x) for x in (ft.RUN / "t" / "log.jsonl").read_text().splitlines()]
     assert rows[-1]["round"] == 1 and set(rows[-1]["valid"]) == set(ft.ARM_VALID["bil2"])
     assert c.state["last_valid"] == rows[-1]["valid"]
+
+
+def test_training_after_a_sync_moves_the_model_not_theta(coordinator):
+    """After a sync the worker trains on: its θ copy must stay put, so the next pseudo-gradient is the real move
+    (2026-11-14: parameters were views of θ and every pseudo-gradient after round 1 was zero)."""
+    c, port = coordinator(workers=1)
+    link = d.Link("127.0.0.1", port, 0)
+    link.hello()
+    link.tokens_at_sync, link.shelves_at_sync = 0, {}
+    m = Student(TINY, seed=0)
+    d.load_vector(link.theta, m.parameters())
+    link(m, None, {"step": 2, "tokens": 10}, Shelves())         # round 1: θ into the model
+    theta_after = link.theta.clone()
+    with torch.no_grad():                                       # the inner steps of round 2
+        for p in m.parameters():
+            p.add_(0.01)
+    assert torch.equal(link.theta, theta_after)
+    before = c.theta.clone()
+    link(m, None, {"step": 4, "tokens": 20}, Shelves())         # round 2: the move reaches the coordinator
+    assert not torch.equal(c.theta, before)
+    assert (c.theta - before).mean() > 0                        # θ moved towards the trained weights (+0.01)
+
+
+def test_load_vector_copies():
+    m = Student(TINY, seed=0)
+    v = parameters_to_vector(m.parameters()).detach().clone() + 1
+    d.load_vector(v, m.parameters())
+    with torch.no_grad():
+        next(m.parameters()).add_(5)
+    assert torch.equal(v, parameters_to_vector(Student(TINY, seed=0).parameters()).detach() + 1)
