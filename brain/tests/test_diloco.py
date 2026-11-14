@@ -182,7 +182,8 @@ class FakeStream:
 
     def fixed_batches(self, n, batch_size, device, seed=0):
         g = torch.Generator().manual_seed(seed)
-        return [torch.randint(0, TINY.vocab_size, (batch_size, self.seq_len + 1), generator=g) for _ in range(n)]
+        return [torch.randint(0, TINY.vocab_size, (batch_size, self.seq_len + 1), generator=g).to(device)
+                for _ in range(n)]
 
 
 def test_train_saves_under_its_run_name(tmp_path, monkeypatch):
@@ -214,3 +215,22 @@ def test_thermal_pacer(monkeypatch):
     assert pauses[0] > 0 and pauses[4] > pauses[0]          # too hot: the pause grows
     assert pauses[-1] == 0.0                                # cool again: back to full speed
     assert max(pauses) <= 5.0
+
+
+def test_validator_logs_theta_of_the_last_round(coordinator, monkeypatch):
+    monkeypatch.setattr(ft, "ShelfStream", FakeStream)
+    monkeypatch.setattr(ft, "pick_device", lambda: torch.device("cpu"))
+    monkeypatch.setitem(ft.CFG, "seq_len", 32)
+    c, port = coordinator(workers=1, tokens=5)
+    link = d.Link("127.0.0.1", port, 0)
+    link.hello()
+    link.tokens_at_sync, link.shelves_at_sync = 0, {}
+    with pytest.raises(d.Finished):                             # one round, and the run is done
+        link(Student(TINY, seed=0), None, {"step": 2, "tokens": 10}, Shelves())
+    t = threading.Thread(target=d.validate, args=("bil2", "127.0.0.1", port), kwargs={"poll": 0.05})
+    t.start()
+    t.join(20)
+    assert not t.is_alive()
+    rows = [json.loads(x) for x in (ft.RUN / "t" / "log.jsonl").read_text().splitlines()]
+    assert rows[-1]["round"] == 1 and set(rows[-1]["valid"]) == set(ft.ARM_VALID["bil2"])
+    assert c.state["last_valid"] == rows[-1]["valid"]

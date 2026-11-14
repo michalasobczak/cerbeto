@@ -193,6 +193,16 @@ class Coordinator:
         self.log.flush()
         print(row, flush=True)
 
+    def record_valid(self, h: dict) -> None:
+        """A validator's result on θ of a round, as a log row of its own (the panel reads `valid` rows)."""
+        with self.lock:
+            row = {"time": time.strftime("%H:%M:%S"), "step": h["step"], "tokens": h["tokens"], "round": h["round"],
+                   "valid": h["valid"]}
+            self.state["last_valid"] = h["valid"]
+            self.log.write(json.dumps(row) + "\n")
+            self.log.flush()
+            print(row, flush=True)
+
     def save(self, final: bool = False) -> None:
         vector_to_parameters(self.theta, self.model.parameters())
         tmp, latest = self.ckpt / "latest.tmp", self.ckpt / "latest"
@@ -225,8 +235,15 @@ def serve(coord: Coordinator, host: str = "0.0.0.0", port: int = PORT) -> socket
                 while True:
                     h, payload = receive(sock)
                     if h["kind"] == "hello":
-                        print(f"worker {h['rank']} joined from {self.client_address[0]}", flush=True)
+                        if h["rank"] >= 0:
+                            print(f"worker {h['rank']} joined from {self.client_address[0]}", flush=True)
                         send(sock, *coord.hello())
+                    elif h["kind"] == "status":
+                        with coord.lock:
+                            send(sock, {"kind": "status", "state": coord.public()})
+                    elif h["kind"] == "valid":
+                        coord.record_valid(h)
+                        send(sock, {"kind": "ok"})
                     elif h["kind"] == "delta":
                         send(sock, *coord.contribute(h["rank"], h["round"], from_bytes(payload, torch.bfloat16),
                                                      h["info"]))
@@ -311,8 +328,41 @@ class Link:
         self.shelves_at_sync = dict(shelves.used)
 
 
+def validate(arm: str, host: str, port: int = PORT, every_rounds: int = 2, poll: float = 30.0) -> None:
+    """The validator (a GPU too weak to train: 2026-11-14, a 3060 with a dead fan): every `every_rounds` rounds it
+    fetches θ and computes the arm's validation, so no worker stops for it; the coordinator logs the result."""
+    device = ft.pick_device()
+    link = Link(host, port, rank=-1)
+    model = ft.start_model(arm, "cpu").to(device)
+    vocab = model.cfg.vocab_size
+    valid = {s: ft.ShelfStream(s, "valid", ft.CFG["seq_len"], vocab=vocab).fixed_batches(8, 8, device, seed=1)
+             for s in ft.ARM_VALID.get(arm, ("s0_speech", "s0_stories"))}
+    k, last = ft.ks(arm)["k_eval"], None
+    print(f"validator: {device} · {len(valid)} shelves every {every_rounds} rounds", flush=True)
+    try:
+        while True:
+            send(link.sock, {"kind": "status"})
+            st = receive(link.sock)[0]["state"]
+            done = st["tokens"] >= st["target_tokens"]
+            if st["round"] and (last is None or st["round"] - last >= every_rounds or (done and last != st["round"])):
+                link.hello()
+                with torch.no_grad():
+                    vector_to_parameters(link.theta.to(device), model.parameters())
+                v = ft.validation(model, valid, k)
+                send(link.sock, {"kind": "valid", "round": link.state["round"], "step": link.state["step"],
+                                 "tokens": link.state["tokens"], "valid": v})
+                receive(link.sock)
+                last = link.state["round"]
+            if done and last == st["round"]:
+                break
+            time.sleep(poll)
+    except ConnectionError:
+        pass
+    print("validator: the run is finished", flush=True)
+
+
 def work(arm: str, host: str, rank: int, port: int = PORT, recompute: bool = True, bf16: bool = True,
-         max_temp: int | None = None) -> None:
+         max_temp: int | None = None, own_validation: bool = True) -> None:
     device = ft.pick_device()
     link = Link(host, port, rank)
     link.hello()
@@ -327,7 +377,7 @@ def work(arm: str, host: str, rank: int, port: int = PORT, recompute: bool = Tru
     print(f"worker {rank}: round {link.state['round']} · {device}", flush=True)
     try:
         ft.train(arm, state["target_tokens"], seed=1_000_003 * (rank + 1), bf16=bf16, name=f"{arm}.w{rank}",
-                 device=device, model=model, state=state, sync=link, recompute=recompute, validate=rank == 0,
+                 device=device, model=model, state=state, sync=link, recompute=recompute, validate=own_validation and rank == 0,
                  max_temp=max_temp)
     except Finished:
         print(f"worker {rank}: the run is finished", flush=True)
@@ -335,7 +385,7 @@ def work(arm: str, host: str, rank: int, port: int = PORT, recompute: bool = Tru
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("what", choices=["coordinator", "worker"])
+    p.add_argument("what", choices=["coordinator", "worker", "validator"])
     p.add_argument("arm", help="the recipe from final_test (e.g. bil2)")
     p.add_argument("--name", help="coordinator: run folder (default <arm>-diloco)")
     p.add_argument("--tokens", type=float, default=1e8)
@@ -346,12 +396,17 @@ def main() -> None:
     p.add_argument("--port", type=int, default=PORT)
     p.add_argument("--no-recompute", action="store_true", help="worker: keep all activations (12 GB cards)")
     p.add_argument("--max-temp", type=int, help="worker: pause between steps to keep the card under this (C)")
+    p.add_argument("--no-validate", action="store_true", help="worker: rank 0 skips validation (a validator runs)")
+    p.add_argument("--every-rounds", type=int, default=2, help="validator: validate θ every n rounds")
     a = p.parse_args()
     OUTER["every"] = a.every
     if a.what == "coordinator":
         coordinate(a.arm, a.name or f"{a.arm}-diloco", a.tokens, a.workers, a.port)
+    elif a.what == "validator":
+        validate(a.arm, a.coordinator, a.port, a.every_rounds)
     else:
-        work(a.arm, a.coordinator, a.rank, a.port, recompute=not a.no_recompute, max_temp=a.max_temp)
+        work(a.arm, a.coordinator, a.rank, a.port, recompute=not a.no_recompute, max_temp=a.max_temp,
+             own_validation=not a.no_validate)
 
 
 if __name__ == "__main__":

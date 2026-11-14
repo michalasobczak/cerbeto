@@ -2,7 +2,8 @@
 # Spec 0015: start a DiLoCo run from the MacBook — the coordinator on .13, two workers (one per RTX 3060) on .14 and
 # .15. Logs: ~/cerbeto/logs/<name>-*.log on each host. Stop: scripts/gpu/diloco.sh stop.
 #   [EVERY=500] [SLOTS="10.10.12.14:1 10.10.12.15:0"] scripts/gpu/diloco.sh bil2 d1 1e8 [extra worker flags]
-# SLOTS: host:gpu per worker (default all four cards).
+# SLOTS: host:gpu per worker (default all four cards). VALIDATOR=host:gpu runs the validation on its own card and
+# the workers skip it (pass --no-validate among the worker flags).
 set -euo pipefail
 user=sobczam
 coord=10.10.12.13
@@ -24,4 +25,8 @@ for slot in "${slots[@]}"; do
   ssh -f "$user@$h" "cd ~/cerbeto/model/brain && CUDA_VISIBLE_DEVICES=$gpu nohup ~/.local/bin/uv run python -m cerbeto.train.diloco worker $arm --coordinator $coord_lan --rank $rank $extra > ~/cerbeto/logs/$name-w$rank.log 2>&1 < /dev/null &"
   rank=$((rank + 1))
 done
+if [ -n "${VALIDATOR:-}" ]; then
+  h=${VALIDATOR%%:*}; gpu=${VALIDATOR##*:}
+  ssh -f "$user@$h" "cd ~/cerbeto/model/brain && CUDA_VISIBLE_DEVICES=$gpu nohup ~/.local/bin/uv run python -m cerbeto.train.diloco validator $arm --coordinator $coord_lan > ~/cerbeto/logs/$name-validator.log 2>&1 < /dev/null &"
+fi
 echo "started $name: coordinator on $coord, workers 0-$((rank - 1))"
