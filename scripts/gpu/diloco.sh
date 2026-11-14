@@ -2,6 +2,7 @@
 # Spec 0015: start a DiLoCo run from the MacBook — the coordinator on .13, two workers (one per RTX 3060) on .14 and
 # .15. Logs: ~/cerbeto/logs/<name>-*.log on each host. Stop: scripts/gpu/diloco.sh stop.
 #   [EVERY=500] [SLOTS="10.10.12.14:1 10.10.12.15:0"] scripts/gpu/diloco.sh bil2 d1 1e8 [extra worker flags]
+# OUTER_LR / OUTER_M: the outer step (1 / 0 = plain averaging; 2026-11-14: 0.7 / 0.9 overshot with 1-3 workers).
 # SLOTS: host:gpu per worker (default all four cards). VALIDATOR=host:gpu runs the validation on its own card and
 # the workers skip it (pass --no-validate among the worker flags).
 set -euo pipefail
@@ -16,8 +17,14 @@ if [ "${1:-}" = "stop" ]; then
 fi
 arm=$1; name=$2; tokens=$3; shift 3
 extra="$*"
-for h in "$coord" "${gpus[@]}"; do ssh "$user@$h" 'cd ~/cerbeto/model && git pull -q --ff-only && mkdir -p ~/cerbeto/logs'; done
-ssh -f "$user@$coord" "cd ~/cerbeto/model/brain && nohup ~/.local/bin/uv run python -m cerbeto.train.diloco coordinator $arm --name $name --tokens $tokens --workers ${#slots[@]} --every ${EVERY:-500} > ~/cerbeto/logs/$name-coordinator.log 2>&1 < /dev/null &"
+for h in "$coord" "${gpus[@]}"; do                 # the VPN drops now and then: three tries per host
+  for try in 1 2 3; do
+    ssh -o ConnectTimeout=10 "$user@$h" 'cd ~/cerbeto/model && git pull -q --ff-only origin main && mkdir -p ~/cerbeto/logs' && break
+    [ "$try" = 3 ] && { echo "cannot reach $h"; exit 1; }
+    sleep 10
+  done
+done
+ssh -f "$user@$coord" "cd ~/cerbeto/model/brain && nohup ~/.local/bin/uv run python -m cerbeto.train.diloco coordinator $arm --name $name --tokens $tokens --workers ${#slots[@]} --every ${EVERY:-500} --outer-lr ${OUTER_LR:-0.7} --outer-momentum ${OUTER_M:-0.9} > ~/cerbeto/logs/$name-coordinator.log 2>&1 < /dev/null &"
 sleep 20                                        # the coordinator loads the start checkpoint
 rank=0
 for slot in "${slots[@]}"; do

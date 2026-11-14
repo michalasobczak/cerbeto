@@ -401,6 +401,9 @@ def main() -> None:
     p.add_argument("--tokens", type=float, default=1e8)
     p.add_argument("--workers", type=int, default=4)
     p.add_argument("--every", type=int, default=OUTER["every"], help="inner steps between syncs (H)")
+    p.add_argument("--outer-lr", type=float, default=OUTER["lr"], help="coordinator: outer learning rate")
+    p.add_argument("--outer-momentum", type=float, default=OUTER["momentum"],
+                   help="coordinator: Nesterov momentum (0 with lr 1 = plain averaging of the workers' weights)")
     p.add_argument("--coordinator", default="172.31.115.13")
     p.add_argument("--rank", type=int, default=0)
     p.add_argument("--port", type=int, default=PORT)
@@ -409,7 +412,7 @@ def main() -> None:
     p.add_argument("--no-validate", action="store_true", help="worker: rank 0 skips validation (a validator runs)")
     p.add_argument("--every-rounds", type=int, default=2, help="validator: validate θ every n rounds")
     a = p.parse_args()
-    OUTER["every"] = a.every
+    OUTER["every"], OUTER["lr"], OUTER["momentum"] = a.every, a.outer_lr, a.outer_momentum
     if a.what == "coordinator":
         coordinate(a.arm, a.name or f"{a.arm}-diloco", a.tokens, a.workers, a.port)
     elif a.what == "validator":
