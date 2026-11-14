@@ -1,6 +1,6 @@
 # 0015 — DiLoCo: one model on four GPUs in two machines
 
-Status: draft (2026-11-13), awaiting the user's agreement · Depends on: 0014 (recipe, data, start checkpoint) · Unblocks: longer runs (2–5B tokens)
+Status: running (2026-11-14) — `bil2-avg`, 3 workers + a validator, plain averaging, ~33,000 tok/s; see §8 · Depends on: 0014 (recipe, data, start checkpoint) · Unblocks: longer runs (2–5B tokens)
 
 ## 1. TL;DR
 Two GPU machines with 2× RTX 3060 12 GB each train **one** model together. Each GPU trains on its own for H steps,
@@ -58,3 +58,21 @@ used 3.6 of 12 GB, so activation recomputation (needed on the 16 GB M6) can be o
 - A worker restart loses its AdamW state (a short bump, as at a warm restart); acceptable.
 - 1 GbE into the coordinator: 4 × 224 MB in, 4 × 224 MB out ≈ 16 s per round, ~7% of a ~220 s round at H = 500;
   H = 1,000 halves it.
+
+## 8. What happened (2026-11-14)
+- **Hardware:** .14's second card (subsystem 10de:2503, no maker, the oldest VBIOS) reports its fan at 0%; under a
+  matmul load it goes 26 → 7 TFLOPS at 92 C and ~48 W (driver thermal slowdown), while a healthy ASUS card holds
+  25 TFLOPS at 91 C, fan 100%. It is left out of training and runs the validator (`diloco validator`).
+- **Speed:** without activation recomputation one 3060 does ~12,200 tok/s (8,200 with it); three workers give
+  ~33,000 tok/s with H = 500, all three in every round (13× the M6).
+- **Bugs found on the cluster** (each now has a test): the workers ended the run themselves near the target; a late
+  worker stayed late for good (now it does only the rest of the round, and the mean is weighted by tokens); in
+  `final_test.train` a shelf name, then a parameter name, overwrote the run name at the first save; and the worst —
+  `vector_to_parameters` made the parameters views of the worker's θ, so after round 1 every pseudo-gradient was
+  zero and the merged model only drifted on round 1's momentum. D1 and the first `bil2-diloco` run are void.
+- **Outer step:** with the fix, Nesterov 0.7 / 0.9 overshot (1–3 workers moving the same way: up to ~7× each
+  round's move): edu 3.90 → 4.2 at 31M tokens. Plain averaging (lr 1, momentum 0) learns steadily: edu 3.90 → 3.73,
+  textbooks 2.60 → 2.56, speech 3.14 → 3.10 at 71M tokens (nats per token), stories flat.
+- **Thermal pacer** (`--max-temp`): at 83 C it slowed a healthy worker and so every round; the healthy cards now run
+  without it.
+- **Still open:** the quality comparison with plain single-GPU training at equal tokens (D1 again).
