@@ -94,3 +94,36 @@ shelves:
     min_edu_score: 3
     sources:
       - {kind: fineweb_parquet, path: "fineweb_edu/sample10BT_*.parquet", license: "ODC-By 1.0 (FineWeb-Edu)"}
+  # spec 0016: ten billion tokens — the harder text the first two billions left out, and Cosmopedia's textbooks
+  s4_edu_12:
+    stage: 4
+    description: Educational web text (FineWeb-Edu, the 14 shards of the 10BT sample, edu score >= 3), paragraphs of grade 8-12
+    fk_min: 8.0
+    fk_max: 12.0
+    exclude_valid_of: {shelf: s3_edu_plus, fk_max: 7.0}
+    exclude_exam_prompts: true
+    min_words: 20
+    min_edu_score: 3
+    sources:
+      - {kind: fineweb_parquet, path: "fineweb_edu/sample10BT_*.parquet", license: "ODC-By 1.0 (FineWeb-Edu)"}
+  s4_stories:
+    stage: 4
+    description: Synthetic stories for every audience but young children (Cosmopedia stories), paragraphs up to grade 12
+    fk_max: 12.0
+    exclude_exam_prompts: true
+    min_words: 12
+    sources:
+      - {kind: cosmopedia_parquet, path: "cosmopedia/stories/*.parquet", skip_audiences: [young_children], license: "Apache 2.0 (Cosmopedia, Hugging Face)"}
+  s4_textbooks:
+    stage: 4
+    description: Synthetic textbooks and lessons (Cosmopedia stanford, openstax, khanacademy, wikihow, auto_math_text, part of web_samples_v2), paragraphs up to grade 12
+    fk_max: 12.0
+    exclude_exam_prompts: true
+    min_words: 12
+    sources:
+      - {kind: cosmopedia_parquet, path: "cosmopedia/stanford/*.parquet", license: "Apache 2.0 (Cosmopedia, Hugging Face)"}
+      - {kind: cosmopedia_parquet, path: "cosmopedia/openstax/*.parquet", license: "Apache 2.0 (Cosmopedia, Hugging Face)"}
+      - {kind: cosmopedia_parquet, path: "cosmopedia/khanacademy/*.parquet", license: "Apache 2.0 (Cosmopedia, Hugging Face)"}
+      - {kind: cosmopedia_parquet, path: "cosmopedia/wikihow/*.parquet", license: "Apache 2.0 (Cosmopedia, Hugging Face)"}
+      - {kind: cosmopedia_parquet, path: "cosmopedia/auto_math_text/*.parquet", license: "Apache 2.0 (Cosmopedia, Hugging Face)"}
+      - {kind: cosmopedia_parquet, path: "cosmopedia/web_samples_v2/*.parquet", license: "Apache 2.0 (Cosmopedia, Hugging Face)"}

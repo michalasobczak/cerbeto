@@ -9,3 +9,4 @@ __pycache__/
 .DS_Store
 .env
 /brain/cerbeto/tokenizer/artifacts/trial_*
+/scripts/gpu/hosts.env

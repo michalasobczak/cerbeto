@@ -17,6 +17,7 @@ def test_cosmopedia_keeps_only_given_audiences(tmp_path):
     f = tmp_path / "c.parquet"
     pq.write_table(pa.table({"text": ["a", "b", "c"], "audience": ["young_children", "general", "young_children"]}), f)
     assert list(sources.cosmopedia_parquet(f, audiences=["young_children"])) == ["a", "c"]
+    assert list(sources.cosmopedia_parquet(f, skip_audiences=["young_children"])) == ["b"]
 
 
 def test_glob_source_lists_shards_in_order(tmp_path, monkeypatch):

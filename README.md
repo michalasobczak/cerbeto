@@ -12,8 +12,8 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 - tests: the proof, derived from each specification's control gates;
 - [MANIFESTO.md](MANIFESTO.md): implementation principles for every specification.
 
-## Current state (2026-11-13)
-**Where we are:** the deep, thin D student (106.8M) **passed preschool** on 2026-11-07 (stage 1 of 3), read **one billion tokens** of textbooks, Wikipedia and conversations, and was tuned to answer questions: **v6** on Hugging Face answers 117 of 160 sampled chat questions (v5: 55) and remembers every name it is told. It now reads **a second billion**. The school student `v0017` (34.6M) is still in preschool.
+## Current state (2026-11-15)
+**Where we are:** the deep, thin D student (106.8M) **passed preschool** on 2026-11-07 (stage 1 of 3), read **one billion tokens** of textbooks, Wikipedia and conversations, and was tuned to answer questions: **v6** on Hugging Face answers 117 of 160 sampled chat questions (v5: 55) and remembers every name it is told. It read **a second billion** (`bil2-avg`, level with v6) and will next read **ten billion** tokens of a new data set. The school student `v0017` (34.6M) is still in preschool.
 - **Nursery done:** 300M tokens, 6.9M → 29.9M parameters, BLiMP 65.9%.
 - **School running** (LLM teacher → sleep → exam, on a laptop, offline): preschool ~22% after the nursery → **60.5%** by day 7, flat on days 9–16, **68.5%** after day 18.
 - **Plateau cause:** lessons were 97% right; the missing points were knowledge and question forms the lessons never gave.
@@ -27,8 +27,9 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 - **One billion tokens (2026-11-07 → 11-11):** [0010](specs/0010-one-billion-tokens.md) — D read textbooks, Wikipedia and conversations; every validation shelf fell, stopped at 982M when the loss was flat. Public since 2026-11-09 on Hugging Face as versions `v1`–`v5` with a chat in the browser. The chat did not grow with the tokens (v4 69, v5 55 of 160): the knowledge was there in "complete the sentence" form, not as answers — see [E](#e-one-billion-tokens--d-reads-textbooks-wikipedia-and-conversations-done).
 - **Conversation tuning (2026-11-11 → 11-12):** [0011](specs/0011-conversation-tuning.md) — 50M tokens of questions with short answers (17,400 written by a local teacher), conversations that keep facts, "I don't know" about made-up words, every other step the 1B shelves. **v6-1032M:** chat 55 → 117 of 160, memory 19 → 40 of 40, nothing forgotten. At learning rate 1e-4 the first try forgot (shelf validation +0.2–0.3); 3e-5, where the 1B run ended, did not.
 - **A larger vocabulary did not pay off yet (2026-11-12):** [0012](specs/0012-larger-vocabulary.md) — moving v6 to 16,384 tokens (text 7% shorter) or extending its 8k by 4,096 frequent merges (5% shorter) and training 60M tokens left it behind v6 in bits per byte; the loss sat in the new, rarer words — see [F](#f-a-larger-vocabulary--what-did-not-work).
-- **A second billion tokens (since 2026-11-12):** [0014](specs/0014-second-billion.md) — from v6 on the 16k vocabulary, mostly text the first billion did not reach (a new shelf of grade 7–8 educational paragraphs, ~440M tokens); ends ~2026-11-17 — see [G](#g-a-second-billion-tokens-in-progress).
-- **Next:** conversation tuning on the result → v7; then honest answers ([0013](specs/0013-honest-answers.md): answer what it knows, "I don't know" about the rest, instead of guessing).
+- **A second billion tokens (2026-11-12 → 11-15):** [0014](specs/0014-second-billion.md) — from v6 on the 16k vocabulary, mostly text the first billion did not reach (a new shelf of grade 7–8 educational paragraphs, ~440M tokens). Stopped on the M6 at 459M tokens because the way data is fed changes; the same recipe trained with DiLoCo ([0015](specs/0015-diloco.md)) to 1B ends level with v6 — see [G](#g-a-second-billion-tokens-stopped-on-the-m6).
+- **Ten billion tokens (in preparation):** [0016](specs/0016-ten-billion.md) — a new training on other commodity hardware, non-stop for ~3.5 days, from a new data set built where the training runs: ~14B tokens of text (FineWeb-Edu grade 8–12 ~4B, Cosmopedia textbooks ~5B and stories ~3B, earlier shelves ~2B) — see [H](#h-ten-billion-tokens-in-preparation).
+- **Next:** conversation tuning on the ten-billion result → v7; then honest answers ([0013](specs/0013-honest-answers.md): answer what it knows, "I don't know" about the rest, instead of guessing).
 
 **Specifications**
 
@@ -47,7 +48,9 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 | [0011](specs/0011-conversation-tuning.md) conversation tuning: answer the question, keep the facts | done: v6-1032M (2026-11-12), chat 55 → 117 of 160 |
 | [0012](specs/0012-larger-vocabulary.md) a larger vocabulary, 8k → 16k | closed without a release: `v16k` and `vext` stayed behind v6 after 60M tokens; the 16k vocabulary goes on in 0014 |
 | [0013](specs/0013-honest-answers.md) honest answers: "I don't know" instead of guessing | paused (2026-11-12): facts test written; waits for 0014 |
-| [0014](specs/0014-second-billion.md) a second billion tokens | **in progress:** since 2026-11-12, ends ~11-17 |
+| [0014](specs/0014-second-billion.md) a second billion tokens | stopped on the M6 at 459M (2026-11-15); continued as `bil2-avg` (0015), level with v6 |
+| [0015](specs/0015-diloco.md) DiLoCo: one model trained by several GPUs that rarely talk | built and tested (2026-11-14) |
+| [0016](specs/0016-ten-billion.md) ten billion tokens: a new data set on other commodity hardware | **in preparation** |
 
 <details>
 <summary><b>Hypotheses</b></summary>
@@ -441,14 +444,38 @@ Every shelf fell to the end; textbooks and dialogue gained most (−0.89 and −
 
 **Reading the result:** a new vocabulary on a trained model is new knowledge, not a format change — it pays off with a long training, not a short tuning. The 16k vocabulary therefore goes on in the second billion ([G](#g-a-second-billion-tokens-in-progress)), where its words get hundreds of millions of tokens.
 
-## G. A second billion tokens (in progress)
+## G. A second billion tokens (stopped on the M6)
 [0014](specs/0014-second-billion.md): v6 has read ~10 tokens per parameter (SmolLM-135M read 600B), and the first billion did not reach most of its own library — edu ~40%, stories ~20%, dialogue ~45%. A new shelf adds the FineWeb-Edu paragraphs of grade 7–8 from the shards already on disk (`s3_edu_8`, ~440M tokens; edu had grade ≤ 7), apart from edu's paragraphs and its validation.
 
 - **Start:** `v16k/final` (v6 on the 16k vocabulary); 1B tokens on the M6, ~2,550 tokens/s, ends ~2026-11-17.
 - **Stream:** three of four steps shelves (edu 8 30%, edu 22%, textbooks 12%, dialogue 12%, stories 10%, speech 6%, books 5%, wiki 3%), the fourth v6's conversations so it keeps answering.
 - **Learning rate** warmed up again to 1e-4 over 1,000 steps, cosine to 1e-5.
 
-**So far (88M, 2026-11-13):** edu falls (1.360 → 1.331 bits per byte); the warm restart lifted stories and dialogue by ~0.05 within 10M tokens, flat since — as in the first billion, where stories and speech first rose and fell below the start after ~370–400M. Checked again at ~300M. Afterwards: conversation tuning as v6, the spot check, and v7 if it is better.
+**So far (88M, 2026-11-13):** edu falls (1.360 → 1.331 bits per byte); the warm restart lifted stories and dialogue by ~0.05 within 10M tokens, flat since — as in the first billion, where stories and speech first rose and fell below the start after ~370–400M. 
+
+**Stopped at 459M (2026-11-15):** the run on the M6 is stopped because the way data is fed changes (0016 builds a much larger data set where the training runs). Checkpoint `checkpoints/final/bil2/latest` (459M tokens, with the optimizer state). Bits per byte at 456M against the start and v6:
+
+| bits per byte | start (`v16k`) | `bil2` 456M | `bil2-avg` 1B (0015) | v6 |
+|---|---|---|---|---|
+| edu | 1.352 | 1.278 | **1.226** | 1.258 |
+| textbooks | 0.821 | 0.825 | 0.770 | **0.753** |
+| dialogue | 0.550 | 0.563 | **0.505** | 0.518 |
+| speech | 1.065 | 1.075 | 1.031 | **1.029** |
+| stories | 0.502 | 0.540 | 0.488 | **0.483** |
+
+Edu fell clearly; the other shelves had not recovered the warm-restart bump by 456M. The same recipe trained to 1B with DiLoCo ([0015](specs/0015-diloco.md)) ends level with v6: better on edu and dialogue, worse on textbooks, and in chat hard to tell apart from it. It is the start of the next run.
+
+## H. Ten billion tokens (in preparation)
+[0016](specs/0016-ten-billion.md): a new training on other commodity hardware, non-stop for ~3.5 days, **10B tokens** from `bil2-avg` — four times everything the student has read so far. The data set is new and is built on the training machine itself:
+
+| shelf | what | planned tokens |
+|---|---|---|
+| `s4_edu_12` | FineWeb-Edu paragraphs of grade 8–12 (the first two billions stopped at grade 8) | ~4B |
+| `s4_textbooks` | Cosmopedia synthetic textbooks and lessons (Stanford, OpenStax, Khan Academy, WikiHow, math, web samples) | ~5B |
+| `s4_stories` | Cosmopedia stories for older readers | ~3B |
+| earlier shelves | edu, textbooks, dialogue, stories, speech, books, wiki | ~2B |
+
+Three of four steps read shelves (new 80%, earlier 20%), the fourth v6's conversations. Afterwards: conversation tuning, the spot check against v6, and v7 if it is better.
 
 ## Next phases and their expected effects
 <details>

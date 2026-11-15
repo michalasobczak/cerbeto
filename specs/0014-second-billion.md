@@ -1,6 +1,6 @@
 # 0014 — A second billion tokens: new edu text, the 16k vocabulary
 
-Status: in progress (2026-11-13) — `bil2` training on the M6 since the night (shelf `s3_edu_8` built); G2 failed by the letter, the user chose to go on; next check at ~300M tokens · Depends on: 0010, 0011, 0012 · Unblocks: v7, 0013
+Status: stopped (2026-11-15) at 459M tokens on the M6 — the way data is fed changes; the second billion went on as `bil2-avg` (0015) and 0016 follows; see §8 · Depends on: 0010, 0011, 0012 · Unblocks: v7, 0013
 
 ## 1. TL;DR
 v6 knows little of the world because it has read little: ~1B tokens for 107M parameters (~10 per parameter; SmolLM-135M
@@ -54,6 +54,22 @@ Edu and textbook validation clearly below v6 (more knowledge, the 16k words lear
 chat at v6's level after tuning.
 
 ## 8. Additional Information
+- **Stopped at 459M (2026-11-15):** the run on the M6 is stopped; the way the data is fed has to change (the shelves are
+  now built where the training runs, from a much larger set: 0016). Checkpoint: `checkpoints/final/bil2/latest`
+  (459M tokens, with the optimizer state). Bits per byte at 456M (`cerbeto.tokenizer.vocab bpb`, the first 300 KB of
+  each shelf's validation) against the start and v6:
+
+  | | start (`v16k`) | `bil2` 456M | v6 |
+  |---|---|---|---|
+  | edu | 1.352 | 1.278 | 1.258 |
+  | textbooks | 0.821 | 0.825 | 0.753 |
+  | dialogue | 0.550 | 0.563 | 0.518 |
+  | speech | 1.065 | 1.075 | 1.029 |
+  | stories | 0.502 | 0.540 | 0.483 |
+
+  Edu fell clearly; textbooks, dialogue, speech and stories stayed at or above the start (the warm-restart bump of G2
+  was not paid back by 456M). The same recipe continued as `bil2-avg` (0015, 1B tokens) ends level with v6: edu 1.226,
+  textbooks 0.770, dialogue 0.505, speech 1.031, stories 0.488.
 - **The learning rate (2026-11-12):** 0011 showed 1e-4 knocks a student out of its minimum within a few million tokens;
   over a billion tokens of the same kind of text that is the usual price of a warm restart, paid back long before the end,
   and the shelves the student already read keep ~40% of the mix.

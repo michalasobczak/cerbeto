@@ -13,11 +13,13 @@ phrasings, graded by the teacher), the nursery conversation probe and the presch
 import argparse
 import contextlib
 import json
+import os
 import math
 import random
 import re
 import shutil
 import signal
+import subprocess
 import time
 
 import numpy as np
@@ -125,7 +127,50 @@ for _d in (ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_PAIR_ST
     _d["honest"] = _d["v16k"]
 ARM_START["honest"] = CKPT / "v16k" / "final"
 BY_TOKENS.add("honest")
+# spec 0016 (`bil10`): ten billion tokens from bil2-avg/final (the second billion, trained by DiLoCo). Most of it new: the
+# grade 8-12 paragraphs of FineWeb-Edu (s4_edu_12), Cosmopedia's stories for older audiences (s4_stories) and its
+# textbooks (s4_textbooks); the earlier shelves keep ~20% so nothing is forgotten. Shares follow the shelves' sizes, so
+# the new ones are read about once. Conversations every fourth step as in bil2; 1e-4 after 2,000 steps, cosine to 1e-5.
+ARM_START["bil10"] = CKPT / "bil2-avg" / "final"
+ARM_K["bil10"] = ARM_K["bil"]
+ARM_SHELF_MIX["bil10"] = {"s4_edu_12": 0.30, "s4_textbooks": 0.28, "s4_stories": 0.22, "s3_edu_8": 0.05,
+                          "s3_edu_plus": 0.05, "s2_textbooks": 0.03, "s0_dialogue": 0.03, "s0_stories": 0.015,
+                          "s0_speech": 0.01, "s1_books": 0.01, "s2_wiki_plus": 0.005}
+ARM_VALID["bil10"] = (*ARM_VALID["bil2"], "s4_edu_12", "s4_textbooks", "s4_stories")
+ARM_TURNS["bil10"] = ARM_TURNS["talk"]
+ARM_PAIR_MIX["bil10"] = ARM_PAIR_MIX["talk"]
+ARM_PAIR_STEPS["bil10"] = (1, 4)
+ARM_LR["bil10"] = (1e-4, 2000)
+BY_TOKENS.add("bil10")
 MAX_PASSES = 4
+
+
+class ThermalPacer:
+    """Keeps an NVIDIA card under `max_c` without root (`nvidia-smi -pl` needs it): every `every` steps it reads the
+    card's temperature and adjusts a pause after each step — longer while too hot, shorter once below (for a card
+    whose cooling fails and which would otherwise throttle itself)."""
+    def __init__(self, max_c: int, gpu: str | None = None, every: int = 10, read=None):
+        self.max_c, self.every, self.pause, self.n = max_c, every, 0.0, 0
+        self.gpu = gpu if gpu is not None else (os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")[0] or "0")
+        self.read = read or self._nvidia_smi
+        self.last_c = None
+
+    def _nvidia_smi(self) -> int | None:
+        out = subprocess.run(["nvidia-smi", f"--id={self.gpu}", "--query-gpu=temperature.gpu",
+                              "--format=csv,noheader,nounits"], capture_output=True, text=True).stdout.strip()
+        return int(out) if out.isdigit() else None
+
+    def __call__(self) -> float:
+        self.n += 1
+        if self.n % self.every == 0:
+            c = self.last_c = self.read()
+            if c is not None and c > self.max_c:
+                self.pause = min(5.0, max(0.05, self.pause * 1.5))
+            elif c is not None and c < self.max_c:          # below the limit: give the speed back step by step
+                self.pause = 0.0 if self.pause < 0.02 else self.pause * 0.7
+        if self.pause:
+            time.sleep(self.pause)
+        return self.pause
 
 
 def bf16_context(device, wanted: bool):
@@ -414,22 +459,36 @@ def lr_at(step: int, total: int, peak: float | None = None, warmup: int | None =
     return (peak or CFG["lr"]) * warm * (CFG["min_lr"] + (1 - CFG["min_lr"]) * cos)
 
 
-def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
-    device = pick_device()
-    run = RUN / arm
+def new_optimizer(model, arm: str) -> torch.optim.AdamW:
+    return torch.optim.AdamW(model.parameters(), lr=ARM_LR.get(arm, (CFG["lr"],))[0], betas=(0.9, 0.95),
+                             weight_decay=CFG["weight_decay"])
+
+
+def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True, *, name: str | None = None, device=None,
+          model=None, state: dict | None = None, sync=None, recompute: bool = True, validate: bool = True,
+          max_temp: int | None = None) -> None:
+    """One arm's training. Spec 0015 (DiLoCo worker): `name` is the run folder (default the arm), `model` and `state`
+    come from the coordinator, `sync(model, opt, state, shelves)` runs after every step and may replace the weights;
+    with `sync` nothing is saved here (the coordinator keeps the run)."""
+    device = device or pick_device()
+    run_name = name or arm              # not `name`: the loop below names shelves and parameters
+    run = RUN / run_name
     run.mkdir(parents=True, exist_ok=True)
-    resume = CKPT / arm / "latest"
-    state = json.loads((run / "state.json").read_text()) if (run / "state.json").exists() else None
-    if state and resume.exists():
-        model, opt = checkpoint.load(resume, device, with_optimizer=True)
+    resume = CKPT / run_name / "latest"
+    if model is not None:
+        model, opt = model.to(device), new_optimizer(model, arm)
     else:
-        model = start_model(arm, device)
-        opt = torch.optim.AdamW(model.parameters(), lr=ARM_LR.get(arm, (CFG["lr"],))[0], betas=(0.9, 0.95), weight_decay=CFG["weight_decay"])
-        state = {"step": 0, "tokens": 0, "target_tokens": int(tokens), "params": model.num_params()}
-        (run / "state.json").write_text(json.dumps(state))     # the panel knows the target before the first save
+        state = json.loads((run / "state.json").read_text()) if (run / "state.json").exists() else None
+        if state and resume.exists():
+            model, opt = checkpoint.load(resume, device, with_optimizer=True)
+        else:
+            model = start_model(arm, device)
+            opt = new_optimizer(model, arm)
+            state = {"step": 0, "tokens": 0, "target_tokens": int(tokens), "params": model.num_params()}
+            (run / "state.json").write_text(json.dumps(state))     # the panel knows the target before the first save
     # the 99M arm keeps only block inputs and recomputes the rest: ~20 GB of activations at k=6 would push a
     # 32 GB Mac into swap, which costs far more than the ~30% recomputation
-    model.checkpointing = arm != "control"      # ~100M without recomputation ran out of GPU memory on the 16 GB M6
+    model.checkpointing = arm != "control" and recompute   # ~100M without it ran out of GPU memory on the 16 GB M6
     total_steps = int(state["target_tokens"] / (CFG["windows"] * CFG["seq_len"]))   # ~tokens per step, both kinds
     by_tokens = arm in BY_TOKENS
     progress = (lambda: state["tokens"] / state["target_tokens"]) if by_tokens else (lambda: state["step"] / total_steps)
@@ -453,10 +512,11 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
     print(f"{arm}: {model.num_params():,} parameters · step {state['step']}/{total_steps} · {device} · {state['precision']}", flush=True)
     model.train()
     saved, t0, t0_tokens, recent = time.time(), time.time(), state["tokens"], []
+    pacer = ThermalPacer(max_temp) if max_temp and str(device).startswith("cuda") else None
     kk = ks(arm)
     embed_until, embed_x = ARM_EMBED_FIRST.get(arm, (0, 1.0))
     embed_phase = None
-    while progress() < 1 and not stop["now"]:
+    while (sync is not None or progress() < 1) and not stop["now"]:     # a DiLoCo worker ends when the coordinator says
         step = state["step"]
         first = state["tokens"] < embed_until
         if first != embed_phase:            # spec 0012: only the new embedding learns at first, then everything
@@ -474,12 +534,12 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
             loss = F.cross_entropy(logits.float().transpose(1, 2), y, ignore_index=IGNORE)
             kind, n = "pairs", x.numel()
         else:
-            name = shelves.pick(rng)
-            w = shelves.streams[name].batch(CFG["windows"], rng, device)
+            shelf = shelves.pick(rng)
+            w = shelves.streams[shelf].batch(CFG["windows"], rng, device)
             with amp():
                 loss = model.loss(w[:, :-1], w[:, 1:], k)
             kind, n = "shelf", w[:, :-1].numel()
-            shelves.took(name, n)
+            shelves.took(shelf, n)
         opt.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -496,6 +556,10 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
         recent.append((kind, loss.item()))
         state["step"] += 1
         state["tokens"] += n
+        if pacer is not None:
+            pacer()
+        if sync is not None:
+            sync(model, opt, state, shelves)
         if state["step"] % 100 == 0:
             release(device)
             sh = [v for c, v in recent if c == "shelf"]
@@ -505,26 +569,31 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True) -> None:
                    "lr": round(lr_now(), 6), "tok_s": round((state["tokens"] - t0_tokens) / max(1, time.time() - t0))}
             recent = []
             state["shelf_tokens"] = shelves.used
-            if state["step"] % 1000 == 0:
-                row["valid"] = validation(model, valid, kk["k_eval"])
+            state["last_loss"] = {"shelf_loss": row["shelf_loss"], "pair_loss": row["pair_loss"]}
+            if pacer is not None:
+                row["gpu_c"], row["pause_s"] = pacer.last_c, round(pacer.pause, 3)
+            if validate and state["step"] % 1000 == 0:
+                row["valid"] = state["last_valid"] = validation(model, valid, kk["k_eval"])
                 row["passes"] = shelves.passes()
                 model.train()
             log.write(json.dumps(row) + "\n")
             log.flush()
             print(row, flush=True)
             state["tok_s_last"] = row["tok_s"]
-        if time.time() - saved > CFG["save_minutes"] * 60:
-            save(model, opt, arm, state)
+        if sync is None and time.time() - saved > CFG["save_minutes"] * 60:
+            save(model, opt, run_name, state)
             saved = time.time()
     state["shelf_tokens"] = shelves.used
-    save(model, opt, arm, state)
+    if sync is not None:
+        return
+    save(model, opt, run_name, state)
     if progress() >= 1:
-        final = CKPT / arm / "final"
+        final = CKPT / run_name / "final"
         if final.exists():
             shutil.rmtree(final)
         checkpoint.save(model, final, parent=ARM_START.get(arm, START), meta={"final_test": {**state, "cfg": CFG, "shelves": shelf_mix,
                                                                           "pairs": ARM_PAIR_MIX.get(arm, PAIR_MIX)}})
-        print(f"{arm}: finished · {final}", flush=True)
+        print(f"{run_name}: finished · {final}", flush=True)
     else:
         print(f"{arm}: interrupted at step {state['step']} — run again to resume", flush=True)
 
@@ -671,9 +740,12 @@ def main() -> None:
     p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
+    p.add_argument("--name", help="train: run folder (default the arm), e.g. a baseline beside a DiLoCo run")
+    p.add_argument("--no-recompute", action="store_true", help="train: keep all activations (12 GB cards)")
+    p.add_argument("--max-temp", type=int, help="train: pause between steps to keep the NVIDIA card under this (C)")
     a = p.parse_args()
     if a.what == "train":
-        train(a.arm, a.tokens, bf16=not a.fp32)
+        train(a.arm, a.tokens, bf16=not a.fp32, name=a.name, recompute=not a.no_recompute, max_temp=a.max_temp)
     elif a.what == "probes":
         add_probes(a.arm)
     else:

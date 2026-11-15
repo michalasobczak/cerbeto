@@ -107,10 +107,12 @@ def fineweb_parquet(path: Path, min_edu_score: int = 0, **_) -> Iterator[str]:
             yield row["text"]
 
 
-def cosmopedia_parquet(path: Path, audiences: list[str] | None = None, **_) -> Iterator[str]:
-    """Cosmopedia (synthetic textbooks, stories, lessons); only the given audiences, e.g. young_children."""
+def cosmopedia_parquet(path: Path, audiences: list[str] | None = None, skip_audiences: list[str] | None = None,
+                       **_) -> Iterator[str]:
+    """Cosmopedia (synthetic textbooks, stories, lessons); only the given audiences (e.g. young_children), or all but
+    `skip_audiences` (spec 0016: the stories young_children already fill s2_textbooks with)."""
     for row in _parquet_texts(path, ["text", "audience"]):
-        if not audiences or row["audience"] in audiences:
+        if (not audiences or row["audience"] in audiences) and row["audience"] not in (skip_audiences or ()):
             yield row["text"]
 
 

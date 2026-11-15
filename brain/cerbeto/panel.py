@@ -196,7 +196,7 @@ def _checkpoints(arm: str) -> list[dict]:
 BYTES_PER_TOKEN = {8192: {"s3_edu_plus": 3.754, "s2_textbooks": 4.145, "s0_dialogue": 4.029, "s0_stories": 4.035, "s0_speech": 3.488},
                    16384: {"s3_edu_plus": 4.156, "s2_textbooks": 4.608, "s0_dialogue": 4.216, "s0_stories": 4.092, "s0_speech": 3.604},
                    12288: {"s3_edu_plus": 4.034, "s2_textbooks": 4.501, "s0_dialogue": 4.182, "s0_stories": 4.068, "s0_speech": 3.559}}
-ARM_VOCAB = {"v16k": 16384, "vext": 12288, "bil2": 16384, "honest": 16384}
+ARM_VOCAB = {"v16k": 16384, "vext": 12288, "bil2": 16384, "honest": 16384, "bil2-avg": 16384, "bil10": 16384}
 
 
 def _bpb(row: dict, vocab: int) -> dict:
