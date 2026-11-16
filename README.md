@@ -516,9 +516,6 @@ The grade-12 limit kept much less of Cosmopedia than estimated, so the shares fo
 
 </details>
 
-## MVP critical path
-0001 library and tokenizer → 0002 student → 0003 nursery + baseline → 0004 curriculum and exams → 0005 school (MVP priority: `ood` improvement after learning cycles) → 0006 admin panel (on hold) → 0007 offline distribution (someday, maybe).
-
 ## Repository layout
 <details>
 <summary>Details</summary>
