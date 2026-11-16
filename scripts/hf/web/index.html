@@ -13,6 +13,7 @@ a{color:var(--acc)}
 .wrap{max-width:1380px;height:100%;margin:0 auto;padding:14px 16px;display:grid;gap:14px;grid-template-columns:290px minmax(0,1fr) 270px;grid-template-rows:auto minmax(0,1fr)}
 header{grid-column:1/4;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
 header h1{font-size:21px;margin:0;line-height:1.15}header .ver{font-size:13px;font-weight:600;padding:1px 8px;border-radius:99px;background:var(--acc);color:#fff;vertical-align:middle}header .trained{font-size:12.5px;color:var(--mut);font-variant-numeric:tabular-nums}header .sub{color:var(--mut);font-size:13.5px;flex:1 1 380px}
+header select{font:inherit;font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--fg);max-width:100%}
 .badges{display:flex;flex-wrap:wrap;gap:6px}.badge{font-size:12px;padding:2px 9px;border-radius:99px;background:var(--accSoft);color:var(--acc);white-space:nowrap}
 aside{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;overflow-y:auto;min-height:0}
 aside h2{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:9px 0 4px}aside h2:first-child{margin-top:0}
@@ -66,7 +67,8 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}.phone{display:none}
   <div><h1>🐣 Cerbeto:106M <span class="ver" id="ver"></span></h1><div class="trained" id="trained"></div></div>
   <div class="sub">A small language model trained from scratch on one Mac mini and raised like a child. It runs entirely in your browser.
     <a href="https://huggingface.co/michalasobczak/cerbeto" target="_blank">Model card</a> · <a href="https://github.com/michalasobczak/cerbeto" target="_blank">GitHub</a></div>
-  <div class="badges"><span class="badge">106.8M parameters</span><span class="badge">🇬🇧 English only</span><span class="badge">version {TAG}</span></div>
+  <label class="pick">model <select id="model" title="each model is downloaded once (~110 MB) and kept by the browser"></select></label>
+  <div class="badges"><span class="badge">106.8M parameters</span><span class="badge">🇬🇧 English only</span></div>
 </header>
 
 <aside>
@@ -82,7 +84,7 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}.phone{display:none}
     <div class="what" id="what"></div>
   </div>
   <div id="log">
-    <div class="lang">🇬🇧 <b>English only.</b> Cerbeto learned only English — write to it in simple English.<br>You are talking to <b>version {TAG}</b>.</div>
+    <div class="lang">🇬🇧 <b>English only.</b> Cerbeto learned only English — write to it in simple English.<br>You are talking to <b id="talkto"></b>.</div>
     <div class="sys" id="status">Loading the model (~110 MB, once — the browser keeps it)…<div class="bar"><i id="prog"></i></div></div>
   </div>
   <form id="f"><input type="text" id="q" placeholder="Write in English… e.g. Tell me a story about a cat." autocomplete="off" disabled><button class="send" id="send" disabled>Send</button></form>
@@ -93,7 +95,7 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}.phone{display:none}
     <button class="link" id="reset" type="button">new conversation</button>
     <button class="link phone" id="toex" type="button">examples ↓</button>
   </div>
-  <footer>Version {TAG} ({TOKENS} of the 1B-token run). Answers come from a tiny model and are often wrong. PolyForm Noncommercial 1.0.0.</footer>
+  <footer><span id="about"></span> Answers come from a tiny model and are often wrong. PolyForm Noncommercial 1.0.0.</footer>
 </main>
 
 <aside class="hard">
@@ -115,8 +117,8 @@ self.onmessage = async ({ data }) => {
   try {
     if (data.type === "load") {
       env.allowRemoteModels = false; env.allowLocalModels = true; env.localModelPath = data.base;
-      tok = await AutoTokenizer.from_pretrained("models/{TAG}");
-      model = await AutoModelForCausalLM.from_pretrained("models/{TAG}", { dtype: "q8", device: "wasm",
+      tok = await AutoTokenizer.from_pretrained("models/" + data.tag);
+      model = await AutoModelForCausalLM.from_pretrained("models/" + data.tag, { dtype: "q8", device: "wasm",
         progress_callback: p => { if (p.status === "progress" && p.total) self.postMessage({ type: "progress", file: p.file, loaded: p.loaded, total: p.total }); } });
       STOPS = ["<|eos|>", "<|human|>", "<|student|>"].map(t => tok.model.tokens_to_ids.get(t));
       self.postMessage({ type: "ready" });
@@ -272,14 +274,25 @@ $("#f").onsubmit = async e => { e.preventDefault(); if (busy || !q.value.trim())
 $("#shuffle").onclick = examples;
 $("#toex").onclick = () => $("aside").scrollIntoView();
 
-// how many tokens the model has read in its whole life: nursery + preschool and the 1B run on a 2B scale, 1000B for comparison
+// models.json lists the models of this Space (published versions and previews of the run in progress), the default first;
+// the choice is in the address (?m=tag) and remembered by this browser
+const MODELS = await (await fetch("models.json", { cache: "no-cache" })).json();
+const store = { get: () => { try { return localStorage.getItem("cerbeto-model"); } catch { return null; } },
+                set: v => { try { localStorage.setItem("cerbeto-model", v); } catch {} } };
+const want = new URLSearchParams(location.search).get("m") || store.get();
+const MODEL = MODELS.find(m => m.tag === want) || MODELS[0];
+for (const m of MODELS) { const o = document.createElement("option"); o.value = m.tag; o.textContent = m.label; o.selected = m === MODEL; $("#model").appendChild(o); }
+$("#model").onchange = e => { store.set(e.target.value); location.search = "?m=" + encodeURIComponent(e.target.value); };
+$("#talkto").textContent = MODEL.label;
+$("#about").textContent = MODEL.note ? MODEL.note + "." : "";
+
+// how many tokens the model has read in its whole life, on a 20B scale, 1000B for comparison
 // (only the tokens already read are filled; the orange tick = the model in this page)
-const BASE = 391e6, RUN = parseFloat("{TOKENS}") * 1e6, NOW = BASE + RUN, END = BASE + 1e9;
+const BASE = 391e6, NOW = MODEL.tokens;
 const M = x => x >= 1e12 ? x / 1e12 + "T" : x >= 1e9 ? (x / 1e9).toFixed(2).replace(/\.?0+$/, "") + "B" : Math.round(x / 1e6) + "M";
 const STAGES = [
-  ["Nursery + preschool", BASE, 0, 2e9, `<b>${M(BASE)} tokens</b> — nursery 300M, preschool 11M, first conversations 80M.`],
-  ["1B run", NOW, 0, 2e9, `<b>${M(NOW)} tokens</b> so far: ${M(BASE)} before + ${M(RUN)} of the 1B run (ends at ${M(END)}).`],
-  ["Next stages", NOW, 0, 20e9, `<b>20B tokens</b> — realistic on one Mac mini (~3 months at today's speed).`],
+  ["Nursery + preschool", BASE, 0, 20e9, `<b>${M(BASE)} tokens</b> — nursery 300M, preschool 11M, first conversations 80M.`],
+  ["This model", NOW, 0, 20e9, `<b>${M(NOW)} tokens</b> read in its whole life by the model on this page.`],
   ["Big labs", NOW, 0, 1e12, `Big labs train models this size on <b>1–2T tokens</b>; Cerbeto is the tick at the left.`]];
 function stage(i) {
   const [, v, , scale, text] = STAGES[i];
@@ -289,20 +302,20 @@ function stage(i) {
   $("#what").innerHTML = text;
   document.querySelectorAll("#stages button").forEach((b, j) => b.classList.toggle("on", j === i));
 }
-for (const [goal, idx] of [["2B goal", [0, 1]], ["20B goal", [2]], ["1000B reference", [3]]]) {     // a bracket per goal
+for (const [goal, idx] of [["20B scale", [0, 1]], ["1000B reference", [2]]]) {     // a bracket per goal
   const g = document.createElement("div"); g.className = "grp"; g.innerHTML = `<span>${goal}</span>`;
   for (const i of idx) { const b = document.createElement("button"); b.type = "button"; b.textContent = STAGES[i][0]; b.onclick = () => stage(i); g.appendChild(b); }
   $("#stages").appendChild(g);
   g.style.minWidth = (g.firstChild.offsetWidth + 20) + "px";     // the bracket at least as wide as its label
 }
 stage(1);
-$("#ver").textContent = "{TAG}".split("-")[0];                                  // v1, v2, … next to the name
+$("#ver").textContent = MODEL.short;                                       // v6, preview … next to the name
 $("#trained").textContent = `${(NOW / 1e6).toFixed(0)}M tokens trained`;     // under the name: tokens read in the model's life
 $("#temp").oninput = e => $("#tv").textContent = e.target.value;
 $("#reset").onclick = () => { if (busy) return; history = []; [...log.querySelectorAll(".msg:not(.lang)")].forEach(m => m.remove()); add("sys", "New conversation."); };
 examples();
 worker.onerror = e => { $("#status") && ($("#status").textContent = "Could not start the model: " + e.message); };
-worker.postMessage({ type: "load", base: new URL("./", location.href).href });
+worker.postMessage({ type: "load", tag: MODEL.tag, base: new URL("./", location.href).href });
 </script>
 </body>
 </html>

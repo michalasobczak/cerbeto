@@ -1,8 +1,10 @@
 """Step 2: Cerbeto (K = 1) → LlamaForCausalLM: same math; our RoPE pairs (2i, 2i+1), Llama pairs (i, i + d/2), so q and k rows are permuted per head.
-Checks that the logits match, then saves a transformers model + tokenizer to OUT.
+Checks that the logits match, then saves a transformers model + tokenizer to OUT. Without CHECKPOINT the newest version on the hub (main);
+with a local checkpoint folder (model.safetensors + architecture.json) that checkpoint, with this repo's student.py and the tokenizer of its
+vocabulary size.
 
     uv run --no-project --python 3.12 --with torch --with transformers --with safetensors --with tokenizers --with huggingface_hub \
-        python scripts/hf/to_llama.py /tmp/web/cerbeto_hf
+        python scripts/hf/to_llama.py /tmp/web/cerbeto_hf [CHECKPOINT]
 """
 import importlib.util, json, shutil, sys
 from pathlib import Path
@@ -13,11 +15,19 @@ from transformers import LlamaConfig, LlamaForCausalLM
 from tokenizers import Tokenizer
 
 REPO, OUT = "michalasobczak/cerbeto", sys.argv[1]
-spec = importlib.util.spec_from_file_location("student", hf_hub_download(REPO, "student.py"))
+HERE = Path(__file__).resolve().parents[2] / "brain/cerbeto"
+if len(sys.argv) > 2:                               # a local checkpoint
+    ck = Path(sys.argv[2])
+    files = {"student.py": HERE / "model/student.py", "architecture.json": ck / "architecture.json", "model.safetensors": ck / "model.safetensors"}
+else:
+    files = {f: hf_hub_download(REPO, f) for f in ["student.py", "architecture.json", "model.safetensors", "tokenizer.json"]}
+spec = importlib.util.spec_from_file_location("student", files["student.py"])
 student = importlib.util.module_from_spec(spec); spec.loader.exec_module(student)
-arch = json.load(open(hf_hub_download(REPO, "architecture.json")))
+arch = json.load(open(files["architecture.json"]))
 cfg = student.StudentConfig.from_dict(arch["config"])
-src = student.Student(cfg).eval(); src.load_state_dict(load_file(hf_hub_download(REPO, "model.safetensors")))
+if "tokenizer.json" not in files:
+    files["tokenizer.json"] = HERE / "tokenizer/artifacts" / ("tokenizer.json" if cfg.vocab_size == 8192 else f"tokenizer_{cfg.vocab_size}.json")
+src = student.Student(cfg).eval(); src.load_state_dict(load_file(files["model.safetensors"]))
 blocks = list(src.blocks())
 print("blocks", len(blocks), cfg)
 
@@ -25,7 +35,7 @@ lc = LlamaConfig(vocab_size=cfg.vocab_size, hidden_size=cfg.d_model, intermediat
                  num_attention_heads=cfg.n_heads, num_key_value_heads=cfg.n_heads, head_dim=cfg.head_dim, max_position_embeddings=cfg.max_seq_len,
                  rms_norm_eps=cfg.norm_eps, rope_theta=cfg.rope_theta, tie_word_embeddings=True, attention_bias=False, mlp_bias=False,
                  hidden_act="silu", torch_dtype="float32")
-tok = Tokenizer.from_file(hf_hub_download(REPO, "tokenizer.json"))
+tok = Tokenizer.from_file(str(files["tokenizer.json"]))
 EOS = tok.token_to_id("<|eos|>")
 lc.bos_token_id = lc.eos_token_id = lc.pad_token_id = EOS
 dst = LlamaForCausalLM(lc).eval()
@@ -59,7 +69,7 @@ print("greedy 40 tokens identical:", g1 == g2)
 dst.generation_config.eos_token_id = [EOS, tok.token_to_id("<|human|>"), tok.token_to_id("<|student|>")]
 dst.save_pretrained(OUT, safe_serialization=True)
 specials = [t for t in tok.get_vocab() if t.startswith("<|") and t.endswith("|>") and t != "<|eos|>"]
-shutil.copy(hf_hub_download(REPO, "tokenizer.json"), Path(OUT) / "tokenizer.json")
+shutil.copy(files["tokenizer.json"], Path(OUT) / "tokenizer.json")
 tc = {"tokenizer_class": "PreTrainedTokenizerFast", "bos_token": "<|eos|>", "eos_token": "<|eos|>", "pad_token": "<|eos|>",
       "additional_special_tokens": sorted(specials), "model_max_length": cfg.max_seq_len, "clean_up_tokenization_spaces": False}
 (Path(OUT) / "tokenizer_config.json").write_text(json.dumps(tc, indent=2))
