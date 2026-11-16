@@ -129,13 +129,14 @@ ARM_START["honest"] = CKPT / "v16k" / "final"
 BY_TOKENS.add("honest")
 # spec 0016 (`bil10`): ten billion tokens from bil2-avg/final (the second billion, trained by DiLoCo). Most of it new: the
 # grade 8-12 paragraphs of FineWeb-Edu (s4_edu_12), Cosmopedia's stories for older audiences (s4_stories) and its
-# textbooks (s4_textbooks); the earlier shelves keep ~20% so nothing is forgotten. Shares follow the shelves' sizes, so
-# the new ones are read about once. Conversations every fourth step as in bil2; 1e-4 after 2,000 steps, cosine to 1e-5.
+# textbooks (s4_textbooks). Shares follow the built shelves' sizes (2026-11-15: edu 12 2.41B, stories 1.12B, textbooks
+# 0.88B, the earlier ones 1.87B), so every shelf is read ~1.25 times in the ~7.5B shelf tokens; the young children's
+# stories less. Conversations every fourth step as in bil2; 1e-4 after 2,000 steps, cosine to 1e-5.
 ARM_START["bil10"] = CKPT / "bil2-avg" / "final"
 ARM_K["bil10"] = ARM_K["bil"]
-ARM_SHELF_MIX["bil10"] = {"s4_edu_12": 0.30, "s4_textbooks": 0.28, "s4_stories": 0.22, "s3_edu_8": 0.05,
-                          "s3_edu_plus": 0.05, "s2_textbooks": 0.03, "s0_dialogue": 0.03, "s0_stories": 0.015,
-                          "s0_speech": 0.01, "s1_books": 0.01, "s2_wiki_plus": 0.005}
+ARM_SHELF_MIX["bil10"] = {"s4_edu_12": 0.40, "s4_textbooks": 0.15, "s4_stories": 0.19, "s3_edu_8": 0.06,
+                          "s3_edu_plus": 0.08, "s2_textbooks": 0.03, "s0_dialogue": 0.03, "s0_stories": 0.04,
+                          "s0_speech": 0.012, "s1_books": 0.006, "s2_wiki_plus": 0.002}
 ARM_VALID["bil10"] = (*ARM_VALID["bil2"], "s4_edu_12", "s4_textbooks", "s4_stories")
 ARM_TURNS["bil10"] = ARM_TURNS["talk"]
 ARM_PAIR_MIX["bil10"] = ARM_PAIR_MIX["talk"]

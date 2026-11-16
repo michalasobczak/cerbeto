@@ -15,7 +15,7 @@ echo "shelves ready $(date)"
 s "$DATA_HOST" 'tail -8 ~/cerbeto/logs/bil10_data.log'
 for peer in $PEERS; do
   h=${peer%%:*}; ip=${peer##*:}
-  s "$h" "mkdir -p ~/cerbeto/model/data/shelves ~/cerbeto/model/checkpoints/final/bil2-avg; pkill -f '[n]c -l 5999' ; (nc -l 5999 | tar x -C ~/cerbeto/model/data/shelves) > /dev/null 2>&1 < /dev/null &"
+  s "$h" "mkdir -p ~/cerbeto/model/data/shelves ~/cerbeto/model/checkpoints/final/bil2-avg; pkill -x nc; (nc -l 5999 | tar x -C ~/cerbeto/model/data/shelves) > /dev/null 2>&1 < /dev/null &" || { echo "listener on $h failed"; exit 1; }
   sleep 5
   s "$DATA_HOST" "cd ~/cerbeto/model/data/shelves && tar c --exclude=train.jsonl s4_edu_12 s4_stories s4_textbooks | nc -N $ip 5999" || { echo "copy to $h failed"; exit 1; }
   s "$h" 'du -sh ~/cerbeto/model/data/shelves/s4_*'

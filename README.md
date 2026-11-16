@@ -28,7 +28,7 @@ A small neural network of our own, trained from random weights (6.9M → 34.6M p
 - **Conversation tuning (2026-11-11 → 11-12):** [0011](specs/0011-conversation-tuning.md) — 50M tokens of questions with short answers (17,400 written by a local teacher), conversations that keep facts, "I don't know" about made-up words, every other step the 1B shelves. **v6-1032M:** chat 55 → 117 of 160, memory 19 → 40 of 40, nothing forgotten. At learning rate 1e-4 the first try forgot (shelf validation +0.2–0.3); 3e-5, where the 1B run ended, did not.
 - **A larger vocabulary did not pay off yet (2026-11-12):** [0012](specs/0012-larger-vocabulary.md) — moving v6 to 16,384 tokens (text 7% shorter) or extending its 8k by 4,096 frequent merges (5% shorter) and training 60M tokens left it behind v6 in bits per byte; the loss sat in the new, rarer words — see [F](#f-a-larger-vocabulary--what-did-not-work).
 - **A second billion tokens (2026-11-12 → 11-15):** [0014](specs/0014-second-billion.md) — from v6 on the 16k vocabulary, mostly text the first billion did not reach (a new shelf of grade 7–8 educational paragraphs, ~440M tokens). Stopped on the M6 at 459M tokens because the way data is fed changes; the same recipe trained with DiLoCo ([0015](specs/0015-diloco.md)) to 1B ends level with v6 — see [G](#g-a-second-billion-tokens-stopped-on-the-m6).
-- **Ten billion tokens (in preparation):** [0016](specs/0016-ten-billion.md) — a new training on other commodity hardware, non-stop for ~3.5 days, from a new data set built where the training runs: ~14B tokens of text (FineWeb-Edu grade 8–12 ~4B, Cosmopedia textbooks ~5B and stories ~3B, earlier shelves ~2B) — see [H](#h-ten-billion-tokens-in-preparation).
+- **Ten billion tokens (in preparation):** [0016](specs/0016-ten-billion.md) — a new training on other commodity hardware, non-stop for ~3.5 days, from a new data set built where the training runs: 6.3B tokens of text (FineWeb-Edu grade 8–12 2.41B, Cosmopedia stories 1.12B and textbooks 0.88B, earlier shelves 1.87B), each read ~1.25 times — see [H](#h-ten-billion-tokens-in-preparation).
 - **Next:** conversation tuning on the ten-billion result → v7; then honest answers ([0013](specs/0013-honest-answers.md): answer what it knows, "I don't know" about the rest, instead of guessing).
 
 **Specifications**
@@ -468,14 +468,14 @@ Edu fell clearly; the other shelves had not recovered the warm-restart bump by 4
 ## H. Ten billion tokens (in preparation)
 [0016](specs/0016-ten-billion.md): a new training on other commodity hardware, non-stop for ~3.5 days, **10B tokens** from `bil2-avg` — four times everything the student has read so far. The data set is new and is built on the training machine itself:
 
-| shelf | what | planned tokens |
-|---|---|---|
-| `s4_edu_12` | FineWeb-Edu paragraphs of grade 8–12 (the first two billions stopped at grade 8) | ~4B |
-| `s4_textbooks` | Cosmopedia synthetic textbooks and lessons (Stanford, OpenStax, Khan Academy, WikiHow, math, web samples) | ~5B |
-| `s4_stories` | Cosmopedia stories for older readers | ~3B |
-| earlier shelves | edu, textbooks, dialogue, stories, speech, books, wiki | ~2B |
+| shelf | what | planned | built |
+|---|---|---|---|
+| `s4_edu_12` | FineWeb-Edu paragraphs of grade 8–12 (the first two billions stopped at grade 8) | ~4B | 2.41B |
+| `s4_textbooks` | Cosmopedia synthetic textbooks and lessons (Stanford, OpenStax, Khan Academy, WikiHow, math, web samples) | ~5B | 0.88B |
+| `s4_stories` | Cosmopedia stories for older readers | ~3B | 1.12B |
+| earlier shelves | edu, textbooks, dialogue, stories, speech, books, wiki | ~2B | 1.87B |
 
-Three of four steps read shelves (new 80%, earlier 20%), the fourth v6's conversations. Afterwards: conversation tuning, the spot check against v6, and v7 if it is better.
+The grade-12 limit kept much less of Cosmopedia than estimated, so the shares follow the built shelves and each is read ~1.25 times. Three of four steps read shelves (new 74%, earlier 26%), the fourth v6's conversations. Afterwards: conversation tuning, the spot check against v6, and v7 if it is better.
 
 ## Next phases and their expected effects
 <details>

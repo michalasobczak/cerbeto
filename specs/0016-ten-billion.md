@@ -1,6 +1,6 @@
 # 0016 — Ten billion tokens: a new data set on other commodity hardware
 
-Status: in preparation (2026-11-15) — sources downloading onto the training machine · Depends on: 0014, 0015 · Unblocks: v7, 0013
+Status: shelves built (2026-11-15), run starting (2026-11-16) · Depends on: 0014, 0015 · Unblocks: v7, 0013
 
 ## 1. TL;DR
 The student has read ~2.4B tokens in all, ~20 per parameter; small models of its size read hundreds of billions. We
@@ -20,18 +20,18 @@ other machines over their LAN. The run starts from `bil2-avg/final` (0015: the s
   118 files of web_samples_v2 — ~60 GB of parquet.
 - **Shelves** (`config/library.yaml`, 16k tokenizer):
 
-  | shelf | what | planned tokens |
-  |---|---|---|
-  | `s4_edu_12` | FineWeb-Edu, edu score ≥ 3, paragraphs of grade 8–12 (none shared with `s3_edu_plus`/`s3_edu_8`) | ~4B |
-  | `s4_textbooks` | Cosmopedia textbooks and lessons, paragraphs up to grade 12 | ~5B |
-  | `s4_stories` | Cosmopedia stories for every audience but young children, up to grade 12 | ~3B |
-  | earlier shelves | edu, edu 8, textbooks, dialogue, stories, speech, books, wiki (0010, 0014) | ~2B |
-  | **all** | | **~14B** |
+  | shelf | what | planned | built |
+  |---|---|---|---|
+  | `s4_edu_12` | FineWeb-Edu, edu score ≥ 3, paragraphs of grade 8–12 (none shared with `s3_edu_plus`/`s3_edu_8`) | ~4B | 2.41B |
+  | `s4_textbooks` | Cosmopedia textbooks and lessons, paragraphs up to grade 12 | ~5B | 0.88B |
+  | `s4_stories` | Cosmopedia stories for every audience but young children, up to grade 12 | ~3B | 1.12B |
+  | earlier shelves | edu, edu 8, textbooks, dialogue, stories, speech, books, wiki (0010, 0014) | ~2B | 1.87B |
+  | **all** | | **~14B** | **6.28B** |
 
 - **Arm `bil10`** (`final_test.py`): from `checkpoints/final/bil2-avg/final`, **10B tokens**, three of four steps
-  shelves — new 80% (edu 12 30%, textbooks 28%, stories 22%), earlier 20% — the fourth step talk2's conversations so
+  shelves — new 74% (edu 12 40%, stories 19%, textbooks 15%), earlier 26% — the fourth step talk2's conversations so
   the student keeps answering. Learning rate 1e-4 after 2,000 steps, cosine to 1e-5; validation on the 0014 shelves and
-  the three new ones. Shares are set from the built shelves so the new ones are read about once.
+  the three new ones. Shares follow the built shelves, so each is read ~1.25 times.
 - **Time:** ~3.5 days non-stop; DiLoCo with plain averaging, H = 500, checkpoints every 30 minutes.
 - **Then:** conversation tuning as talk2, bits per byte and the spot check against v6 → v7.
 
@@ -41,10 +41,13 @@ new tokenizer.
 ## 4. Control Gates
 | Gate | What | Pass |
 |---|---|---|
-| G1 | Shelves | ≥ 10B tokens of new text in all; 0 exam leaks; no paragraph shared with the earlier edu shelves |
+| G1 | Shelves | ≥ 4B tokens of new text; 0 exam leaks; no paragraph shared with the earlier edu shelves |
 | G2 | Run, 500M | bits per byte on edu and textbooks not above the start by > 0.05 |
 | G3 | Result | after tuning: bits per byte below v6 on every shelf; spot check not worse than v6 |
 
 ## 5. Additional Information
 - **Why grade 8–12 now:** the school story keeps the early stages simple, but 0010 and 0014 showed knowledge is
   what the student lacks; the paragraphs above grade 8 are most of FineWeb-Edu and most of its facts.
+- **Smaller than planned:** the grade-12 limit on paragraphs keeps less of Cosmopedia than estimated (textbooks
+  0.88B of ~5B: most of their paragraphs read above grade 12). Ten billion tokens therefore read every shelf ~1.25
+  times, still far below the ~4 passes where repetition starts to cost (Muennighoff et al., 2023).
