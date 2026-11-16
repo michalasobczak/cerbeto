@@ -220,7 +220,7 @@ def final() -> dict:
         total = int(state.get("target_tokens", 0) / 4096) or None
         target = state.get("target_tokens") or 0
         # 0009 and earlier ended at a step count (target / 4096), 0010 at the token target
-        progress = (rows[-1]["tokens"] / target if d.name in ("bil", "bil2", "talk", "talk2", "v16k", "vext", "honest") else rows[-1]["step"] / total) if rows and total else 0
+        progress = (rows[-1]["tokens"] / target if d.name in ("bil", "bil2", "bil2-avg", "bil10", "talk", "talk2", "v16k", "vext", "honest") else rows[-1]["step"] / total) if rows and total else 0
         passes = [r["passes"] for r in rows if "passes" in r]
         arms.append({"name": d.name, "state": state, "total_steps": total, "rows": _thin(rows),
                      "last": rows[-1] if rows else None, "valid": [{**r, "valid_bpb": _bpb(r, ARM_VOCAB.get(d.name, 8192))} for r in rows if "valid" in r],
