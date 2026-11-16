@@ -2,6 +2,349 @@
 
 What has actually been delivered, by date (newest first). Intent of changes: `specs/`. Proof: tests.
 
+## 2026-11-16 — ten billion tokens running; a model picker in the chat; a quick benchmark
+
+[0016](specs/0016-ten-billion.md): a new training on other commodity hardware, non-stop for ~3.5 days, **10B tokens** from `bil2-avg` — four times everything the student has read so far. The data set is new and is built on the training machine itself:
+
+| shelf | what | planned | built |
+|---|---|---|---|
+| `s4_edu_12` | FineWeb-Edu paragraphs of grade 8–12 (the first two billions stopped at grade 8) | ~4B | 2.41B |
+| `s4_textbooks` | Cosmopedia synthetic textbooks and lessons (Stanford, OpenStax, Khan Academy, WikiHow, math, web samples) | ~5B | 0.88B |
+| `s4_stories` | Cosmopedia stories for older readers | ~3B | 1.12B |
+| earlier shelves | edu, textbooks, dialogue, stories, speech, books, wiki | ~2B | 1.87B |
+
+The grade-12 limit kept much less of Cosmopedia than estimated, so the shares follow the built shelves and each is read ~1.25 times. Three of four steps read shelves (new 74%, earlier 26%), the fourth v6's conversations. Started 2026-11-16 at ~33,000 tokens/s; previews every 2B tokens go to the chat Space's model picker. Afterwards: conversation tuning, the spot check against v6, and v7 if it is better.
+
+**Also on 2026-11-15/16**
+- `scripts/final/bil10_data.sh`, `bil10_launch.sh`: the shelves are downloaded and built on the training machine and sent to the second one over their LAN; the launcher's `pkill` matched its own shell and stopped the first copy (fixed).
+- `bil10` shares follow the built shelves (6.28B in all instead of the planned ~14B: the grade-12 limit kept 0.88B of Cosmopedia's textbooks); every shelf is read ~1.25 times.
+- Panel: tab *H:10Bt run*; progress by tokens for `bil2-avg` and `bil10`.
+- Chat Space: a model picker (`models.json`); the Space keeps every model: v6 (default) and the preview `bil2-avg`; `scripts/final/bil10_previews.sh` adds a `bil10` preview every 2B tokens. `to_llama.py` converts a local checkpoint; the 16k models export to ONNX int8 with the same greedy output as PyTorch.
+- `scripts/hf/bench.py`: 100 questions asked once, greedy. v6 **62/100**, `bil2-avg` **72/100** (knowledge 16 → 19 of 30, completing 11 → 16 of 20, yes/no 10 → 12 of 15; arithmetic 0 of 10 both).
+- README reduced to the table of checkpoints; the phases moved here, the school path and related work to [docs/background.md](docs/background.md), the specification index to [specs/README.md](specs/README.md).
+
+## 2026-11-12 → 11-15 — a second billion tokens; DiLoCo
+
+[0014](specs/0014-second-billion.md): v6 has read ~10 tokens per parameter (SmolLM-135M read 600B), and the first billion did not reach most of its own library — edu ~40%, stories ~20%, dialogue ~45%. A new shelf adds the FineWeb-Edu paragraphs of grade 7–8 from the shards already on disk (`s3_edu_8`, ~440M tokens; edu had grade ≤ 7), apart from edu's paragraphs and its validation.
+
+- **Start:** `v16k/final` (v6 on the 16k vocabulary); 1B tokens on the M6, ~2,550 tokens/s, ends ~2026-11-17.
+- **Stream:** three of four steps shelves (edu 8 30%, edu 22%, textbooks 12%, dialogue 12%, stories 10%, speech 6%, books 5%, wiki 3%), the fourth v6's conversations so it keeps answering.
+- **Learning rate** warmed up again to 1e-4 over 1,000 steps, cosine to 1e-5.
+
+**So far (88M, 2026-11-13):** edu falls (1.360 → 1.331 bits per byte); the warm restart lifted stories and dialogue by ~0.05 within 10M tokens, flat since — as in the first billion, where stories and speech first rose and fell below the start after ~370–400M. 
+
+**Stopped at 459M (2026-11-15):** the run on the M6 is stopped because the way data is fed changes (0016 builds a much larger data set where the training runs). Checkpoint `checkpoints/final/bil2/latest` (459M tokens, with the optimizer state). Bits per byte at 456M against the start and v6:
+
+| bits per byte | start (`v16k`) | `bil2` 456M | `bil2-avg` 1B (0015) | v6 |
+|---|---|---|---|---|
+| edu | 1.352 | 1.278 | **1.226** | 1.258 |
+| textbooks | 0.821 | 0.825 | 0.770 | **0.753** |
+| dialogue | 0.550 | 0.563 | **0.505** | 0.518 |
+| speech | 1.065 | 1.075 | 1.031 | **1.029** |
+| stories | 0.502 | 0.540 | 0.488 | **0.483** |
+
+Edu fell clearly; the other shelves had not recovered the warm-restart bump by 456M. The same recipe trained to 1B with DiLoCo ([0015](specs/0015-diloco.md)) ends level with v6: better on edu and dialogue, worse on textbooks, and in chat hard to tell apart from it. It is the start of the next run.
+
+## 2026-11-12 — a larger vocabulary: what did not work
+
+[0012](specs/0012-larger-vocabulary.md): the 8,192-token vocabulary (chosen for the nursery) is the smallest among models of this size, so after v6 we tried a larger one **on the trained model**. Text measured in bytes per token on each shelf's validation text: 16,384 tokens make the 1B mix **7.1% shorter** (edu 9.7%, textbooks 10.0%); words such as *photosynthesis* (6 pieces) or *Jupiter* (3) become one token. Models with different vocabularies are compared in **bits per byte** (lower is better).
+
+- **`v16k`:** a new 16k byte-level BPE; every weight copied from v6, each new token's embedding the mean of its 8k pieces; 60M tokens of v6's tuning stream (5M only the embedding, then everything at 3e-5).
+- **`vext`:** the 8k vocabulary *kept* (same tokens, ids and rows), only its 4,096 most frequent new merges added (12,288 tokens, 5.2% shorter, the rarest new token seen 308 times in 200 MB); the new rows learn 10× faster.
+
+![F: training loss of v16k — shelf windows 3.0 → 2.77 per 16k token, request → reply pairs 0.56 → 0.39](docs/img/f-v16k-training.webp)
+
+![F: training loss of vext — shelf windows 2.80 → 2.67 per 12k token, request → reply pairs 0.47 → 0.38](docs/img/f-vext-training.webp)
+
+| bits per byte | v6 | `v16k` (60M) | `vext` (58M) |
+|---|---|---|---|
+| edu | **1.246** | 1.360 | 1.300 |
+| textbooks | **0.742** | 0.814 | 0.784 |
+| dialogue | **0.496** | 0.521 | 0.504 |
+| stories | **0.469** | 0.485 | 0.473 |
+| speech | **1.245** | 1.256 | 1.273 |
+
+**Where `v16k` loses** (`cerbeto.tokenizer.vocab where`: both tokenizers cut text at the same word boundaries, so each word's loss can be compared exactly): on words both vocabularies cut the same, `v16k` is 1–3% worse than v6; on words the 16k vocabulary made into one new token, **25–85% worse** (edu 1.42 → 1.84 bits per byte) — ~80% of the gap. The network kept what it knew; the new words were too rare to learn in 60M tokens. Keeping the old tokens and adding fewer, more frequent ones (`vext`) roughly halved the gap on edu and textbooks but did not close it.
+
+**Reading the result:** a new vocabulary on a trained model is new knowledge, not a format change — it pays off with a long training, not a short tuning. The 16k vocabulary therefore goes on in the second billion ([G](#g-a-second-billion-tokens-in-progress)), where its words get hundreds of millions of tokens.
+
+## 2026-11-07 → 11-12 — one billion tokens, conversation tuning, v1–v6 on Hugging Face
+
+[0010](specs/0010-one-billion-tokens.md): the D student (106.8M, unchanged) trained on 1B new tokens on the Mac mini M6, bf16, batch 8 × 512, ~2,570 tokens/s, cosine learning rate; started 2026-11-07, stopped by the user at 982M on 2026-11-11 20:07 (learning rate 3e-5, validation moving by thousandths). Before the run D had read 391M tokens (nursery 300M, preschool 11M, conversations 80M).
+
+![E: training loss of the 1B run — shelf windows 3.0 → 2.47, request → reply pairs 0.82 → 0.61](docs/img/e-1b-training.webp)
+
+**Validation loss** (`runs/final/bil/log.jsonl`, lower is better):
+
+| Tokens of the run | edu | textbooks | dialogue | stories | speech |
+|---|---|---|---|---|---|
+| 4M (start) | 4.031 | 3.037 | 2.369 | 1.576 | 3.253 |
+| 110M | 3.732 | 2.631 | 1.862 | 1.665 | 3.312 |
+| 220M | 3.650 | 2.553 | 1.812 | 1.640 | 3.275 |
+| 330M | 3.572 | 2.462 | 1.736 | 1.591 | 3.257 |
+| 440M (≈ v1) | 3.527 | 2.421 | 1.670 | 1.566 | 3.209 |
+| 473M (≈ v2) | 3.507 | 2.384 | 1.656 | 1.550 | 3.203 |
+| 525M (≈ v3) | 3.476 | 2.367 | 1.624 | 1.516 | 3.194 |
+| 554M (≈ v4) | 3.449 | 2.349 | 1.617 | 1.502 | 3.170 |
+| 982M (end, `bil/final`) | 3.243 | 2.149 | 1.408 | 1.336 | 3.021 |
+
+Every shelf fell to the end; textbooks and dialogue gained most (−0.89 and −0.96 from the start). Stories and speech first rose (new shelves pushed them aside), then fell below the start after ~370–400M. Wikipedia was read once by ~555M; from there it repeats.
+
+**Published versions** on Hugging Face — model <https://huggingface.co/michalasobczak/cerbeto> (tag per version), chat in the browser <https://huggingface.co/spaces/michalasobczak/cerbeto-chat> (ONNX int8, ~110 MB, transformers.js); publishing: [scripts/hf/README.md](scripts/hf/README.md):
+
+| Version | Tokens of the run | Tokens in all | Published | Note |
+|---|---|---|---|---|
+| `v1-439M` | 439M | 830M | 2026-11-09 | first public model (tagged `bil-439M`) |
+| `v2-472M` | 472M | 863M | 2026-11-09 | (tagged `bil-472M`) |
+| `v3-523M` | 523M | 914M | 2026-11-09 | |
+| `v4-555M` | 555M | 946M | 2026-11-09 | chat better than v3 (below) |
+| `v5-704M` | 704M | 1,095M | 2026-11-10 | published on request although the chat is weaker than v4: completing 26 → 35, chat 69 → 55, memory 23 → 19 (below) |
+| **`v6-1032M`** | **982M + 50M tuning** | **1,423M** | 2026-11-12 | conversation tuning (spec 0011, `talk2`): chat 55 → 117, completing 35 → 38, memory 19 → 40 (below) |
+
+**Chat spot check, v3 → v4** (2026-11-09, each question asked 10 times at temperature 0.7, K = 1, answers checked by a pattern; v4 measured at 551M):
+
+| Part | v3 (523M) | **v4 (551M)** |
+|---|---|---|
+| **chat: 16 questions** | 47 / 160 | **65 / 160** |
+| completing a sentence: 8 | 23 / 80 | 22 / 80 |
+| memory: 4 conversations of 3 turns | 20 / 40 | 19 / 40 |
+
+**Per question**
+
+| Question (correct if) | v3 | v4 |
+|---|---|---|
+| Is fire hot? (yes) | 3 | 1 |
+| Is the sun hot? (yes) | 0 | 0 |
+| Is ice cold? (yes) | 2 | 1 |
+| Is snow cold? (yes) | 1 | 0 |
+| The sky is green. Is that right? (no) | 10 | 10 |
+| **A cat can fly. True or false?** (no / false) | 0 | **9** |
+| **A fish can swim. True or false?** (yes / true) | 0 | **8** |
+| Is a dog an animal? (yes) | 10 | 10 |
+| Is a carrot a fruit or a vegetable? (vegetable) | 0 | 0 |
+| **Where do fish live?** (water, sea, pond …) | 1 | **6** |
+| What do bees make? (honey) | 0 | 0 |
+| How many legs does a bird have? (two) | 0 | 0 |
+| What color is grass? (green) | 10 | 10 |
+| What is the capital of France? (Paris) | 0 | 0 |
+| What do cows give us? (milk) | 0 | 0 |
+| What is the opposite of hot? (cold) | 10 | 10 |
+| … Water freezes and turns into (ice) | 1 | 1 |
+| … The Moon goes around the (Earth) | 8 | 4 |
+| … The capital of France is (Paris) | 0 | 0 |
+| … Bees make (honey) | 0 | 2 |
+| … The heart pumps (blood) | 5 | 9 |
+| … Plants need sunlight and (water) | 9 | 6 |
+| … A baby cat is called a (kitten) | 0 | 0 |
+| … The largest planet in our solar system is (Jupiter) | 0 | 0 |
+| memory: name, then *a cat called Tom* → cat's name | 0 | 0 |
+| memory: name, then *a horse called Sunny* → horse's name | 0 | 0 |
+| memory: *I am Zoe*, *my bird is called Kiwi* → bird's name | 10 | 9 |
+| memory: name, then *a dog called Rex* → my name | 10 | 10 |
+
+**Spot check v4 → 640M (2026-11-10, not published):** chat 69 → 52 of 160, completing 26 → 25 of 80, memory 23 → 10 of 40. The 640M checkpoint lost "A cat can fly. True or false?" (10 → 0), "Where do fish live?" (9 → 0) and the pet names (bird 9 → 0), although every validation loss was lower. The same v4 scored 65 and 69 of 160 on two days: the sampling noise is about ±5, these drops are not. Validation loss does not measure the chat; a version is published only when the spot check is better.
+
+**Spot check v4 → 687M (2026-11-10, not published):** chat 69 → 60, completing 26 → 29, memory 23 → 12. "A cat can fly" is back (10 → 10), "Where do fish live?" (9 → 1), "A fish can swim" (6 → 1) and the pet names (bird 9 → 2, horse 4 → 0) are still lost.
+
+**Spot check v4 → v5-704M (2026-11-10, the published v5):** chat 69 → 55 of 160, completing 26 → 35 of 80, memory 23 → 19 of 40. v5 knows more facts when it completes a sentence ("The heart pumps" 7 → 10, "Bees make" 0 → 3, "Water freezes and turns into" 2 → 4) and remembers the bird again (Kiwi 9 → 9), but lost "Where do fish live?" (9 → 0), "A fish can swim" (6 → 0) and the horse (4 → 0). Published on request, against the rule above.
+
+**Spot check v5 → 783M (2026-11-10 evening, not published):** chat 55 → 54 of 160, completing 35 → 25 of 80, memory 19 → 18 of 40. "A fish can swim" came back (0 → 5), "Plants need sunlight and" fell (8 → 2); "Where do fish live?" and the horse stay at 0. Within the noise for chat and memory, worse at completing: the chat does not grow with the tokens in this mix (69 → 52 → 60 → 55 → 54 since v4).
+
+**Spot check v5 → 982M, the end of the 1B run (2026-11-11 evening, not published):** the run was stopped by the user at 982M tokens (learning rate 3e-5, shelf loss flat at ~2.45, validation moving by thousandths); `bil/final` is that checkpoint. Chat 55 → 62 of 160, completing 35 → 33 of 80, memory 19 → 13 of 40. "A fish can swim" 0 → 10, "Where do fish live?" 0 → 3, but "A cat can fly" 10 → 3 and the bird Kiwi 9 → 3. Chat a little above the noise, memory worse: not published. Conversation tuning (spec 0011, arm `talk`, 50M tokens) started from it at 20:08.
+
+![E: training loss of `talk`, the first tuning try at learning rate 1e-4 — shelf windows rise 2.59 → 2.76 while request → reply pairs fall 0.88 → 0.49](docs/img/e-talk-training.webp)
+
+**Conversation tuning, spot check (2026-11-12 early morning, `talk2` published as v6):** two runs from 982M on the same data (spec 0011). `talk` at learning rate 1e-4 lifted shelf validation by 0.2–0.3 and was stopped at 25M; `talk2` at 3e-5 with every other step on the shelves ran the full 50M, and its shelf validation ended slightly *below* 982M (edu 3.243 → 3.242, textbooks 2.149 → 2.132, dialogue 1.408 → 1.386). Against v5 (55/35/19): `talk` chat 116 of 160, completing 40 of 80, memory 40 of 40; `talk2` chat 117, completing 38, memory 40. Both pass G3 by far: "Where do fish live?" 0 → 10, a carrot is a vegetable 0 → 10, all four pets remembered 10 of 10. Still wrong in both: the capital of France, "A baby cat is called a", the largest planet. `talk2` is published as **v6-1032M** (same scores, no forgetting).
+
+**Can do now (v4)**
+- **Think before a true/false answer**, also in the new form "… True or false?": *"A cat can fly. True or false?"* → 💭 *"A cat cannot fly. So that is wrong, and the answer is no."* → *"No. A cat cannot fly."*
+- **Hold a short conversation:** greets by name, remembers the name and a pet named in its own sentence.
+- **Tell stories** that differ from each other (v3 told the cat and the dog the same story about an apple).
+
+**Cannot do yet**
+- **Answer world questions it can complete:** "The heart pumps …" → *blood*, but most "What …?" questions get a preschool pattern (*"A bee says buzz"*). The knowledge is there; the question-and-answer form is missing.
+- **Recall the right fact while thinking:** "Is the sun hot?" → 💭 *"The sun is yellow. So that is wrong"* → *"No."*
+- **Keep two names apart:** a cat or a horse gets the human's name.
+- **Empathy and "I don't know":** "I feel sad today." → *"That's nice!"*; "What is a zorblat?" → *"A zorblat is a fruit."*
+
+## 2026-11-07 — D: a deep, thin ~100M student that learns conversations
+
+**Spec:** [0009](specs/0009-deep-100m-conversations.md). **Status:** closed 2026-11-07, success (`python -m cerbeto.train.final_test train mid`, panel tab *D:80Mt run*, `runs/final/mid/`, `checkpoints/final/mid/`).
+
+**Question:** with the lessons of C — smaller and faster, copies that start apart, no dead attention, and conversations of several turns — does the student learn to keep turns apart and use what was said?
+
+**Architecture: the same idea as C, a different shape**
+
+| | `v0017` | C (283M, stopped) | **D (~107M)** |
+|---|---|---|---|
+| width (d) | 512 | 896 | **640** |
+| heads | 16 × 32 | 28 × 32 | **20 × 32** |
+| MLP | 1,792 | 3,072 | **1,792** |
+| blocks | 2 + 4 (K = 4) + 2 | 2 + 20 + 2 | **2 + 16 + 2 = 20** |
+| core passes (K) | 1–6 / 4 | 1 | **1** |
+
+Deep and thin like MobileLLM-125M; ~2.7× faster than C, so a night shows several times more tokens per parameter.
+
+**What changes from C**
+- **Copies start apart:** the core run 4 times is unrolled into 16 blocks, each copy after the first with 1% Gaussian noise on its weights (within the Δ loss guard).
+- **Dead attention renewed:** in every copy of `v0017`'s core 3, q, k and v start fresh and the output o at zero, so the block learns to attend instead of averaging.
+- **Conversations:** a third of the request → reply steps are conversations of 2–5 turns that change the subject — a story, a question about it ("What was the dog's name?" → "The dog's name was Max."), who the student is, a lesson — every student turn learned, no human turn. The rest: a story on request 30%, preschool lessons 25%, who the student is 15% (18 questions instead of 8).
+- **One turn format** in training and in the chat (`cerbeto chat --memory`): `<|human|> …\n<|student|><|answer|> …<|eos|>` per turn.
+- **A conversation probe** in the evaluation: 10 held-out conversations (a story, then "Do you remember the cat's name?"; a story, then "Who are you?"; a fact after a story …).
+
+**Training result — the first real long-run gain.** The full run finished on 2026-11-07 at 05:00: 19,531 steps, **69.4M tokens** (the step count was planned for 80M; the request → reply steps carry fewer tokens than shelf windows), ~2,630 tokens/s, ~7.3 h on the M6.
+
+![D: training and validation loss of the ~107M student](docs/img/d-100m-training.webp)
+
+| Step (tokens) | speech | stories |
+|---|---|---|
+| `v0017` | 3.17 | 1.38 |
+| C, 283M, step 4,000 (13.9M) | 3.20 | 1.50 |
+| 1,000 (3.6M) | 3.21 | 1.47 |
+| 5,000 (17.8M) | 3.20 | 1.49 |
+| 10,000 (35.5M) | 3.17 | 1.46 |
+| 15,000 (53.3M) | 3.11 | 1.40 |
+| **19,000 (67.5M)** | **3.09** | **1.38** |
+
+- **Speech better than `v0017`** (3.09 vs 3.17) — the first growth that beats the school's best version; C never did.
+- **Stories back to `v0017`'s level:** after growth and the new data mix they rose to ~1.50 and needed the whole run to come back.
+- **Still falling at the end**, with the learning rate already at its minimum: the student is not saturated; 69M tokens is ~3% of ~20 tokens per parameter. More data should help.
+- **Request → reply pairs:** loss down from ~1.1 to ~0.9 (C stayed flat at ~1.25).
+
+**Evaluation — `mid` beats `v0017` on every measure** (2026-11-07, same settings, M6, teacher `gemma4:e4b-mlx`; `runs/final/eval_*.json`):
+
+| Measure | `v0017` (34.6M) | **D (106.8M)** |
+|---|---|---|
+| validation loss: speech / stories | 3.17 / 1.38 | **3.09** / 1.38 |
+| conversation probe (10 held-out conversations) | 2 / 10 | **8 / 10** |
+| stories on request (teacher's grade 1–5) | 1.5 | **4.3** (90% graded ≥ 4) |
+| nursery conversation probe | 84% | **88%** |
+| **preschool exam** | 68.5% | **76.3%** |
+| **preschool passed** (rule of [0004](specs/0004-curriculum-and-exams.md)) | no | **yes** |
+
+**Preschool passed.** The rule for moving to the next grade: every code-graded skill ≥ 85% `id`, mean `ood_hard` ≥ 70%, no skill below 50% `ood_hard`. D: `id` 89.7–100% in all seven code-graded skills, mean `ood_hard` **78.5%**, lowest `ood_hard` **50.0%** (facts — exactly at the floor). `v0017` failed it on agree/disagree (57% `id`). The rule does not count new combinations (`ood_combo`), where D is weak (opposites 0%, agree/disagree 42%) — see *Cannot do yet*.
+
+**Can do now**
+- **Keep turns apart:** "Tell me a story." → a story; "Who are you?" → *"I'm Cerbeto. I'm a little student, and I'm learning to talk."* (`v0017` and C went on with the story).
+- **Use an earlier turn:** a story about a bear named Ben, then "Is a cat an animal?", then "What was the bear's name?" → *"The bear's name was Ben."*
+- **Tell stories on request** (`v0017`: *"Thank you!"*), and know itself: "Are you a bird?" → *"No, I'm not a bird. I'm a little student."*
+- **Preschool +7.8 pp without a school night** — more than days 9–18 of school gave `v0017`: categories 66 → 100% and agree/disagree 57 → 90% as taught, opinion with a reason 90% in new combinations (was 46%).
+
+**Cannot do yet**
+- **Compose:** new combinations of facts and opposites fell (51% and 0%) — knowledge is memorised, not combined.
+- **Resist a leading question:** a story about a fox named Red, then "Was the story about a dog?" → *"Yes, it was about a dog named Red."*
+- **Unseen phrasings:** "Do you remember the cat's name?" → *"No, I do not remember the cat's name."*
+
+**Reading the result:** the conversation format gave the turns, the self and the stories; the size and depth carried them without forgetting. Validation was still falling at ~0.6 tokens per parameter, so data is the limit now → [0010](specs/0010-one-billion-tokens.md): 1B tokens with new data for vocabulary, knowledge and conversations. Details: [0009](specs/0009-deep-100m-conversations.md) §9.
+
+## 2026-11-06 — growth experiment C stopped (100M → 283M)
+
+**Stopped 2026-11-06:** `v0017` grown to a wide 99M, then a deep 283M student; after 18.3M tokens no gain over `v0017` — the unrolled blocks stayed copies, four of them a dead attention.
+
+**Spec:** [0008](specs/0008-growth-experiment-100m.md). **Status:** stopped on 2026-11-06 at step 5,243 (18.3M tokens): no gain over `v0017`; replaced by **D** (`runs/final/deep/`, panel tab *C:100-300Mp fail*; checkpoint deleted 2026-11-07). Outside the school; its 40M limit stays.
+
+**Question:** preschool sits at ~68% and no night setting moves it. Is the student short of **capacity** or of **data** (300M tokens, mostly stories, plus 10.7M in school)? Do request → reply pairs make it usable in a talk?
+
+**From 100M to 300M:** the experiment started with `v0017` grown to a **wide 99M** student (width 896, still 8 blocks with the recurrent core). At learning rate 1e-3 it forgot within ~600 steps (speech validation loss 3.17 → 3.48); at 3e-4 it was stable but no better than `v0017` (step 1,000: speech 3.22, stories 1.47 vs 3.17 / 1.38). We stopped it at 4.8M tokens and changed the architecture: at this size deep-and-thin beats wide (MobileLLM, SmolLM; Qwen2.5-0.5B has 24 blocks at width 896), so the core is unrolled into separate blocks and the student grows to **~300M**. The planned same-size control arm was dropped: only the target size runs.
+
+**Architecture: change from `v0017`**
+
+| | `v0017` (preschool) | first: wide 99M (dropped) | **now: deep 283M** |
+|---|---|---|---|
+| parameters | 34.6M | 99.1M | **282.6M** |
+| width (d) | 512 | 896 | **896** |
+| heads | 16 × 32 | 28 × 32 | **28 × 32** |
+| MLP | 1,792 | 3,072 | **3,072** |
+| blocks: prelude + core + coda | 2 + 4 + 2 = 8 | 2 + 4 + 2 = 8 | **2 + 20 + 2 = 24** |
+| core passes (K) | 1–6 in training, 4 at answer time | 1–6 / 4 | **none: K = 1** |
+| effective depth | 20 at K = 4 | 20 | **24** |
+
+The recurrent core is unrolled: its 4 blocks × K = 4 become 16 separate blocks with their own weights, plus 4 new blocks. After growth the student answers exactly like `v0017`. Vocabulary 8,192, context 512, embedding tied to the output. Activation checkpointing on.
+
+**Stream, 80M tokens:** two of three steps are shelf windows (stories 40%, speech 30%, books 18%, edu 9%, Wikipedia 3%; every token learned); every third step is request → reply pairs (story on request 55%, preschool lessons 40% — never an exam prompt, who the student is 5%; student's turn learned). Learning rate 3e-4, warm-up 300 steps, cosine to 10%.
+
+**What 80M shows from each shelf:**
+
+| Shelf | Has | Will see | Passes |
+|---|---|---|---|
+| stories (`s0_stories`) | 544M | ~21M | 0.04× |
+| speech (`s0_speech`) | 83M | ~16M | 0.2× |
+| books (`s1_books`) | 37M | ~10M | 0.3× |
+| education (`s3_edu`) | 4.4M | ~5M | 1.1× |
+| Wikipedia (`s2_world`) | 0.8M | ~1.6M | 2× |
+
+The rest are request → reply pairs. Seeing all 670M once needs a ~10× longer run.
+
+**New hardware: Mac mini M6, 16 GB, bf16**
+- Started on the MacBook (M1 Pro, fp32, ~810 tokens/s); moved at step 2,963 to a **Mac mini M6** (16 GB), now the main machine: data, checkpoints, runs, training and the panel live there (the code arrives with `git push`: the Mac mini checkout is a second push target of `origin`, next to GitHub). Training resumes from the last save (weights, optimizer, step).
+- **bf16 mixed precision** (from step 3,171): forward and backward in bfloat16, weights and the optimizer stay fp32 — the checkpoint is not converted. The M1 has no native bf16; the M6 does. `--fp32` turns it off.
+
+| Machine | Precision | Tokens/s | 80M tokens |
+|---|---|---|---|
+| MacBook Pro M1 Pro, 32 GB | fp32 | ~810 | ~27 h |
+| Mac mini M6, 16 GB | fp32 | ~950 | ~23 h |
+| **Mac mini M6, 16 GB** | **bf16** | **~1,390** | **~16 h** |
+
+16 GB is tight for 283M with AdamW (~4.5 GB of weights, gradients and optimizer state plus activations): ~1.4 GB of swap, stable.
+
+**Validation loss (lower is better):**
+
+| Step (tokens) | speech | stories |
+|---|---|---|
+| `v0017` | 3.17 | 1.38 |
+| 1,000 (3.5M) | 3.23 | 1.50 |
+| 2,000 (7.0M) | 3.23 | 1.50 |
+| 3,000 (10.4M) | 3.20 | 1.51 |
+| 4,000 (13.9M) | 3.20 | 1.50 |
+
+**Reading the result**
+- **80M is little for 283M parameters:** the Chinchilla rule of thumb is ~20 tokens per parameter (~5.7B); 80M is ~1.4%. No gain at 80M does **not** show that size does not help.
+- **More data, before any crawling:** more FineWeb-Edu shards (one gave 4.4M tokens at grade ≤ 4, there are hundreds); a reading-level limit rising with each passed grade; synthetic child-level textbooks (Cosmopedia *young children*, or texts by the local teacher for the curriculum). Every new shelf passes the same filters and the exam leak check. Repeating a shelf helps up to ~4 passes.
+
+**Result: no improvement.** After 18M tokens the 283M student was no better than `v0017`:
+- **Validation flat** for 4,000 steps and still slightly worse than `v0017` (speech 3.20 vs 3.17, stories 1.50 vs 1.38); the loss on request → reply pairs flat at ~1.25 from step 100.
+- **One new skill, from the data, not the size:** asked for a story it tells one (`v0017`: "Thank you!"). But after a story it goes on with it when asked "who are you?", and its facts got worse ("what color is the sky?" → "blue. The blue bird was red…"): it never saw more than one turn.
+- **The new capacity was not used** (`cerbeto chat /stats`, weight norms): the 16 unrolled core blocks were still copies of `v0017`'s four (weight norms equal to 0.5%), and four of them a **dead attention** — core 3 of `v0017` has q and k ~3.5× smaller than the other blocks and spreads its attention evenly over every token (spread 1.00), copied four times. Only 3 of 672 heads pointed at one token, none at "sky" or "color": the answer comes from memory in the MLPs, not from reading the question.
+- **Too slow for the data we have:** ~1,390 tokens/s on the M6; 80M tokens is ~1.4% of the ~20 tokens per parameter rule of thumb.
+
+## 2026-11-06 — preschool: what `v0017` can do
+
+**`v0017`** (34.6M, day 18): preschool exam **68.5%**, not passed — strong on routines, facts and sizes; weak on yes/no and new combinations.
+
+**Last promoted version:** `checkpoints/school/v0017` (34.6M, day 18, 2026-11-06), preschool exam **68.5%** (after the nursery ~22%). **Not passed:** it needs mastery of every skill (`id`) and transfer (`ood`).
+
+| Skill | `id` (as taught) | `ood_hard` (harder) | `ood_combo` (new combinations) |
+|---|---|---|---|
+| Polite routines | **97%** | 77% | 74% |
+| Opinion with a reason (form only, checked by code) | 90% | 73% | 46% |
+| Asking for clarification | **100%** | 52% | 45% |
+| Agree / disagree | 57% | 56% | 57% |
+| Facts (colours, body parts, animals) | **95%** | 57% | 69% |
+| Opposites | **94%** | **85%** | 13% |
+| Sizes (bigger / smaller) | **98%** | 69% | 50% |
+| Categories (is X a Y?) | 66% | 74% | 53% |
+
+Examples from the exam of `v0017` (prompts never seen in lessons); "thinks" is its `<|think|>` before the answer.
+
+**Can do**
+- **Polite routines:** *"You can have a candy."* → *"Thank you!"*; *"Grandma gives you an apple. What do you say?"* → *"Thank you!"*
+- **Ask when a request is unclear:** *"There is a yellow bag and a blue bag. Can you bring me the bag?"* → *"Which one? The yellow bag or the blue…"*
+- **Say "I don't know"** when the answer is not known: *"Anna has a dog. What is the name of Anna's dog?"* → *"I don't know."*
+- **Taught facts and opposites:** *"Which part of your body helps you chew?"* → *"I chew with my teeth."*; *"Tell me the opposite of long."* → *"…short."*; also inside a story: *"Anna draws the sky. Which crayon does Anna need?"* → *"The crayon is blue."*
+- **Compare sizes, also of three things:** *"Which is the biggest: a mouse, a dog or a cow?"* → *"A cow is the biggest."*
+- **Opinion with a reason:** *"Do you like dogs?"* → *"Yes, I like dogs because they are soft."*
+- **Think claim → fact → decision** before yes/no: *"Ducks can't swim. Right?"* → thinks *"Ducks can swim. So that is wrong"* → *"No."*
+
+**Cannot do yet**
+- **Decide yes/no reliably** — weakest skill. Right fact, wrong decision: *"A lemon is a fruit. Right?"* → thinks *"A lemon is a fruit. So that is wrong"* → *"No."*
+- **Clarify in a new form:** with two coats → *"Here is the coat."*
+- **Combine operations:** *"the opposite of the opposite of big"* → *"small"* (13%).
+- **Keep the question's direction:** *"Which is smaller, a whale or a lion?"* → *"A whale is smaller."*; *"Your friend says thank you for the toy."* → *"Thank you!"*
+- **Answer the question asked:** *"You hear with your ears. What do you clap with?"* → *"I hear with my ears."*
+- **Rarer words:** *"the opposite of in"* → *"in"*; *"You clap with your what?"* → *"I clap with my clums."*
+
+Details: `runs/school/exams/v0017.json`, [specs/0005](specs/0005-school-day-sleep-exam.md) §9.
+
 ## 2026-11-06 — night bench: what a school night does
 
 ### Added
@@ -68,6 +411,35 @@ What has actually been delivered, by date (newest first). Intent of changes: `sp
 - Exam pools balance "yes" and "no" in every pool (a pool had 226 "no" and 18 "yes"); more rare category members; no "Is a car a toy?" statements (toy cars exist) — exam set rebuilt (`c907cac02b624b535c7eb4f2`) — [0004].
 - Grader: a "no" that restates the false statement ("No. A cloud is green.") is wrong — found while browsing lessons in the panel; the school's `v0001` exam was regraded (56.1% → 55.1%) — [0004].
 - Grader: simple inflections of the accepted word count (roars, chirping, closed); a reason after "because"/"than" may name the other options — [0004].
+
+## 2026-11-01 — nursery: what the student can do
+
+**Done 2026-11-01:** 300M tokens, 6.9M → 29.9M parameters, BLiMP 65.9%, conversation probe 80%. Language, but no knowledge or sense of truth yet.
+
+**Nursery exam** (`cerbeto exam nursery`, `checkpoints/growing/v0032`, 29.9M, 2026-11-01):
+
+| Exam | Result | Gate | Note |
+|---|---|---|---|
+| BLiMP — grammar, minimal pairs (BabyLM filtered, 67 phenomena) | **65.9%** | ≥ 65% — passed | best: anaphor agreement, principle A, wh-vs-that without a gap (96–100%); below chance: long-distance dependencies, islands, NPI licensing (9–22%) |
+| Conversation probe — 50 everyday situations graded by the teacher | **80%** fitting replies | ≥ 60% — passed | overrated: the teacher grades whether a reply fits, not whether it is true (*"Cats can fly, right?"* → *"yeah."* got 4/5); strictly, about half fit and are true — a baseline, not a blocking gate |
+
+Details: [specs/0003](specs/0003-nursery-stage-0-pretraining.md) §9. In conversation with the same checkpoint: **language, but no knowledge or sense of truth yet.**
+
+**Can do**
+- **Tell stories** — its strongest skill. From *"Once upon a time, there was a little dog named Max."* it writes a paragraph with correct grammar, cause and effect (*"Max felt sad because…"*), dialogue and a new character. Over longer stretches it loses logic (*"a big, wet ball that looked like a ball"*), repeats and jumps between places.
+- **Keep a short conversation on topic:**
+  > Adult: Hi! What are you doing? — Child: I'm playing with the dolls. · Adult: Is it fun? — Child: yeah. I am. · Adult: Can I play too? — Child: yeah! I'm playing with the dolls. · Adult: What should we build? — Child: um we're making a castle. · Adult: Okay, bye bye! — Child: bye. we made a castle.
+
+  Five turns on one topic; past tense once the play is over — untaught.
+- **Polite routines:** greets, says goodbye, *"yes please"*, *"I'm sorry"*.
+- **"Thinking longer" sometimes helps** (temperature 0): *"What does a cow say?"* → *"yeah."* at K = 1, *"moo."* at K = 2–8; *"The sky is green."* → repeated at K = 1, *"The sky is blue."* at K = 2–8, *"green"* again at K = 12 (beyond the trained K ≤ 6). Most of 15 probe questions do not change with K — a weak sign, not a measured effect.
+
+**Cannot do yet**
+- **Reliable facts:** *"What color is the grass?"* five times → yeah / yellow / green / yellow / green. The most likely answer is right for very common facts and *"I don't know."* for less common ones (*"What color is a banana?"*).
+- **Tell true from false:** a *"yeah"* reflex on yes/no, also for false statements (*"Cats can fly, right?"* → *"yeah."*); occasional disagreement (*"The sky is green."* → *"is it blue?"*).
+- **Give reasons:** form without content — *"Why?"* → *"'cause I'm thirsty."*
+- **Know itself or count:** *"Who are you?"* → *"no."*; *"Can you count to five?"* → *"no."* (untaught).
+- **Talk about a story:** writes stories, but *"What did the bear want?"* → *"I don't know."*
 
 ## 2026-11-01 — nursery results, curriculum and exams
 
