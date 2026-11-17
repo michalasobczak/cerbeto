@@ -29,7 +29,7 @@ for n in ${@:-2000 4000 6000 8000 10000}; do
   ssh "$m" "cd $repo && export PATH=\$HOME/.local/bin:\$PATH && rm -rf /tmp/web/cerbeto_hf \
     && uv run --no-project --python 3.12 --with torch --with transformers --with safetensors --with tokenizers --with huggingface_hub python scripts/hf/to_llama.py /tmp/web/cerbeto_hf \$HOME/$dst \
     && uv run --no-project --python 3.12 --with optimum-onnx --with onnxruntime --with torch python scripts/hf/export_web.py \
-    && cd brain && uv run --with huggingface_hub python ../scripts/hf/publish_space.py bil10-${life}M --short preview --tokens ${life}e6 --replace \
+    && cd brain && uv run --with huggingface_hub python ../scripts/hf/publish_space.py bil10-${life}M --short preview --tokens ${life}e6 --replace --default \
        --label 'preview - $(printf %.1f "$(echo "$life / 1000" | bc -l)")B tokens (10B run, ${ran}B of 10B)' \
        --note 'Preview, not a release: the run of ten billion tokens of new text (FineWeb-Edu grade 8-12, Cosmopedia), ${ran}B of 10B'" 2>&1 \
     | grep -E "logit|identical|int8|PUBLISHED|Error|error" || { echo "preview $name failed"; ssh "$m" "rm -rf $dst"; exit 1; }
