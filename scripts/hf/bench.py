@@ -38,7 +38,7 @@ CHAT = {
                   ("What is the closest star to Earth?", r"\bsun\b"), ("What do plants need to grow?", r"water|sun|light"),
                   ("What gas do we breathe in?", r"oxygen"), ("What does the heart do?", r"pump|blood"),
                   ("What is ice made of?", r"water"), ("What do caterpillars turn into?", r"butterfl|moth"),
-                  ("What is a baby dog called?", r"pupp"), ("What is a baby cat called?", r"kitten"),
+                  ("What is a baby dog called?", r"\bpup"), ("What is a baby cat called?", r"kitten"),
                   ("What is a baby cow called?", r"calf"), ("How many days are in a week?", r"seven|\b7\b"),
                   ("How many months are in a year?", r"twelve|\b12\b"), ("What season comes after winter?", r"spring"),
                   ("What do we use to see?", r"\beyes?\b"), ("What do we use to hear?", r"\bears?\b"),
