@@ -6,6 +6,8 @@ every model in models.json, so visitors can compare them; --default puts this on
     uv run --with huggingface_hub python ../scripts/hf/publish_space.py bil2-avg --short preview --tokens 2485e6 \
         --label "preview — 2.5B tokens" --note "..."
 --keep: the model folder is already in the Space (only models.json and the page change). --remove: drop the tag from the list.
+--replace: this preview replaces every other preview (list and files), then the history is squashed: the Space has 1 GB in all,
+history included, so it holds the published version and the newest preview.
 """
 import argparse, json, shutil
 from pathlib import Path
@@ -24,6 +26,7 @@ ap.add_argument("--note", default="", help="one sentence under the chat")
 ap.add_argument("--default", action="store_true")
 ap.add_argument("--keep", action="store_true")
 ap.add_argument("--remove", action="store_true")
+ap.add_argument("--replace", action="store_true", help="drop every other preview, then squash the Space's history")
 a = ap.parse_args()
 
 here, model = Path(__file__).parent, Path("/tmp/web/model")
@@ -35,6 +38,8 @@ except EntryNotFoundError:
     models = []
 old = next((m for m in models if m["tag"] == a.tag), None)
 models = [m for m in models if m["tag"] != a.tag]
+gone = [m["tag"] for m in models if a.replace and m["short"] == "preview"]
+models = [m for m in models if m["tag"] not in gone]
 if not a.remove:
     entry = {"tag": a.tag, "short": a.short or old["short"], "label": a.label or old["label"],
              "tokens": a.tokens or old["tokens"], "note": a.note or (old or {}).get("note", "")}
@@ -52,5 +57,7 @@ for f in ["index.html", "README.md"]:
 (site / "models.json").write_text(json.dumps(models, indent=1))
 hub.upload_folder(folder_path=str(site), repo_id=SPACE, repo_type="space",
                   commit_message=f"{'remove' if a.remove else 'add'} {a.tag} ({len(models)} models)",
-                  delete_patterns=[f"models/{a.tag}/**"] if a.remove else None)
-print("PUBLISHED", f"https://huggingface.co/spaces/{SPACE}", [m["tag"] for m in models])
+                  delete_patterns=[f"models/{t}/**" for t in ([a.tag] if a.remove else gone)] or None)
+if a.remove or gone:                # deleted files still count against the 1 GB until no commit refers to them
+    hub.super_squash_history(SPACE, repo_type="space", commit_message=f"{len(models)} models: " + ", ".join(m["tag"] for m in models))
+print("PUBLISHED", f"https://huggingface.co/spaces/{SPACE}", [m["tag"] for m in models], "removed", gone)
