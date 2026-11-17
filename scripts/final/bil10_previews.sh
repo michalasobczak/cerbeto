@@ -22,13 +22,14 @@ for n in 2 4 6 8 10; do
     sleep 60
   done
   life=$(ssh "$m" "python3 -c \"import json; print(round(($START * 1e6 + json.load(open('$dst/architecture.json'))['final_test']['tokens']) / 1e6))\"")
-  echo "preview ${n}B: ${life}M tokens in all $(date)"
+  ran=$(echo "scale=1; ($life - $START) / 1000" | bc)                # the run's own tokens: latest may be past n·1e9
+  echo "preview ${n}B: ${ran}B of the run, ${life}M tokens in all $(date)"
   ssh "$m" "cd $repo && export PATH=\$HOME/.local/bin:\$PATH && rm -rf /tmp/web/cerbeto_hf \
-    && uv run --no-project --python 3.12 --with torch --with transformers --with safetensors --with tokenizers --with huggingface_hub python scripts/hf/to_llama.py /tmp/web/cerbeto_hf $dst \
+    && uv run --no-project --python 3.12 --with torch --with transformers --with safetensors --with tokenizers --with huggingface_hub python scripts/hf/to_llama.py /tmp/web/cerbeto_hf \$HOME/$dst \
     && uv run --no-project --python 3.12 --with optimum-onnx --with onnxruntime --with torch python scripts/hf/export_web.py \
     && cd brain && uv run --with huggingface_hub python ../scripts/hf/publish_space.py bil10-${life}M --short preview --tokens ${life}e6 \
-       --label 'preview - $(echo "scale=1; $life / 1000" | bc)B tokens (10B run, ${n}B of 10B)' \
-       --note 'Preview, not a release: the run of ten billion tokens of new text (FineWeb-Edu grade 8-12, Cosmopedia), ${n}B of 10B'" 2>&1 \
+       --label 'preview - $(echo "scale=1; $life / 1000" | bc)B tokens (10B run, ${ran}B of 10B)' \
+       --note 'Preview, not a release: the run of ten billion tokens of new text (FineWeb-Edu grade 8-12, Cosmopedia), ${ran}B of 10B'" 2>&1 \
     | grep -E "logit|identical|int8|PUBLISHED|Error|error" || { echo "preview ${n}B failed"; ssh "$m" "rm -rf $dst"; exit 1; }
 done
 echo "all previews published"
