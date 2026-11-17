@@ -21,7 +21,8 @@ model above the chat) · weights: **[michalasobczak/cerbeto](https://huggingface
 | **`final/bil2-avg`** | 11-14 | 1.0B / 2.49B | second billion, trained by DiLoCo on three GPUs | – | level with v6 in bits per byte · bench **73**/100 |
 | `final/bil10` | running, ends ~11-19 | → 10B / → 12.5B | ten billion tokens of a new data set, from `bil2-avg` | newest preview only | – |
 | `bil10-5014M` | 11-17 | 2.5B / 5.0B | preview of `bil10` at 2.5B, before conversation tuning | – | bench 59/100: more school text, conversation drifted |
-| `bil10-5676M` | 11-17 | 3.2B / 5.7B | preview of `bil10` at 3.2B (`checkpoints/final/bil10/preview-3191M` on the mini) | ✅ default | – |
+| `bil10-5676M` | 11-17 | 3.2B / 5.7B | preview of `bil10` at 3.2B (`checkpoints/final/bil10/preview-3191M` on the mini) | – | – |
+| `bil10-6520M` | 11-17 | 4.0B / 6.5B | preview of `bil10` at 4B | ✅ default | – |
 
 **Tokens: run / in all** — tokens read in that run / in the model's whole life. **Chat** — 160 sampled questions, counted right by a
 pattern (`scripts/hf/spot_check.py`). **Bench** — 100 questions asked once, greedy (`scripts/hf/bench.py`). Validation is compared in bits
