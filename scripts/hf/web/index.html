@@ -22,6 +22,10 @@ aside .hint{font-size:12.5px;color:var(--mut);margin:0 0 8px}aside.hard{border-c
 .ex:hover:not(:disabled){border-color:var(--acc)}.ex:disabled{opacity:.5;cursor:default}
 .ex small{color:var(--mut);font-size:12px}
 main{display:flex;flex-direction:column;min-height:0}
+.chathead{background:var(--card);border:1px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0;padding:10px 14px 9px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.chathead .nm{font-size:20px;font-weight:700;line-height:1.2}.chathead .ver{font-size:13px;font-weight:600;padding:1px 9px;border-radius:99px;background:var(--acc);color:#fff}
+.chathead .lb{font-size:14px;font-weight:600}.chathead .sm{flex-basis:100%;font-size:12.5px;color:var(--mut)}
+.chathead+#log{border-top-left-radius:0;border-top-right-radius:0}
 #log{flex:1;min-height:0;overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:9px}
 .msg{max-width:82%;padding:8px 12px;border-radius:15px;white-space:pre-wrap;word-wrap:break-word}
 .me{align-self:flex-end;background:var(--me);color:#fff;border-bottom-right-radius:4px}
@@ -54,7 +58,7 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}.phone{display:none}
   main{display:contents}
   header{order:0;gap:2px 10px}header h1{font-size:18px}header>div:first-child{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
   header .sub,header .badges{display:none}
-  #log{order:1;flex:none;height:calc(100dvh - 214px);min-height:300px;padding:10px}.msg{max-width:90%}
+  .chathead{order:1;padding:8px 10px}.chathead .nm{font-size:18px}#log{order:1;flex:none;height:calc(100dvh - 214px);min-height:300px;padding:10px}.msg{max-width:90%}
   form{order:2;margin-top:0}.opts{order:3;margin-top:0;gap:4px 14px}
   aside{order:4;max-height:none;overflow:visible}.tok{order:5;margin:0}aside.hard{order:6}footer{order:7}
   .ex{white-space:normal}.phone{display:inline}
@@ -83,6 +87,8 @@ footer{color:var(--mut);font-size:12px;margin-top:6px}.phone{display:none}
     <div class="tbar"><i id="fill"></i><b id="now" title="this model"></b></div>
     <div class="what" id="what"></div>
   </div>
+  <div class="chathead"><span class="nm">🐣 Cerbeto</span><span class="ver" id="ver2"></span><span class="lb" id="hlabel"></span>
+    <span class="sm">106.8M parameters, trained from scratch · runs in your browser · huggingface.co/spaces/michalasobczak/cerbeto-chat</span></div>
   <div id="log">
     <div class="lang">🇬🇧 <b>English only.</b> Cerbeto learned only English — write to it in simple English.<br>You are talking to <b id="talkto"></b>.</div>
     <div class="sys" id="status">Loading the model (~110 MB, once — the browser keeps it)…<div class="bar"><i id="prog"></i></div></div>
@@ -309,7 +315,8 @@ for (const [goal, idx] of [["20B scale", [0, 1]], ["1000B reference", [2]]]) {  
   g.style.minWidth = (g.firstChild.offsetWidth + 20) + "px";     // the bracket at least as wide as its label
 }
 stage(1);
-$("#ver").textContent = MODEL.short;                                       // v6, preview … next to the name
+$("#ver").textContent = $("#ver2").textContent = MODEL.short;
+$("#hlabel").textContent = MODEL.label.replace(/^\S+ - /, "");          // "preview - 5.7B tokens (…)" → "5.7B tokens (…)" next to the badge
 $("#trained").textContent = `${(NOW / 1e6).toFixed(0)}M tokens trained`;     // under the name: tokens read in the model's life
 $("#temp").oninput = e => $("#tv").textContent = e.target.value;
 $("#reset").onclick = () => { if (busy) return; history = []; [...log.querySelectorAll(".msg:not(.lang)")].forEach(m => m.remove()); add("sys", "New conversation."); };
