@@ -143,6 +143,16 @@ ARM_PAIR_MIX["bil10"] = ARM_PAIR_MIX["talk"]
 ARM_PAIR_STEPS["bil10"] = (1, 4)
 ARM_LR["bil10"] = (1e-4, 2000)
 BY_TOKENS.add("bil10")
+# spec 0017 (`talk10`): conversation tuning of the bil10 result, talk2's recipe (the one that made v6): every other step
+# request -> reply (the talk mix: teacher questions, memory, unknown words, feelings), the other the bil10 shelves in
+# bil10's shares so the new knowledge is not forgotten; 3e-5 after 100 steps, cosine to 3e-6. Validation as bil10.
+for _d in (ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS):
+    _d["talk10"] = _d["bil10"]
+ARM_START["talk10"] = CKPT / "bil10" / "final"
+ARM_PAIR_MIX["talk10"] = ARM_PAIR_MIX["talk2"]
+ARM_PAIR_STEPS["talk10"] = ARM_PAIR_STEPS["talk2"]
+ARM_LR["talk10"] = ARM_LR["talk2"]
+BY_TOKENS.add("talk10")
 MAX_PASSES = 4
 
 
@@ -738,7 +748,7 @@ def add_probes(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval", "probes"])
-    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest | bil10 | talk10 (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     p.add_argument("--name", help="train: run folder (default the arm), e.g. a baseline beside a DiLoCo run")
