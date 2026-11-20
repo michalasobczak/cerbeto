@@ -26,7 +26,7 @@ model above the chat) · weights: **[michalasobczak/cerbeto](https://huggingface
 | `bil10-8507M`, `bil10-10494M` | 11-18 → 11-19 | 6.0B, 8.0B / 8.5B, 10.5B | previews of `bil10` at 6B and 8B | – | – |
 | **`final/bil10`** (`bil10-12488M`) | 11-19 | 10.0B / 12.5B | ten billion tokens of a new data set, from `bil2-avg` | ✅ default | bench **64**/100: validation down on every new shelf (edu 3.64 → 3.35, textbooks 3.24 → 2.40), dialogue up (1.41 → 1.51) |
 | `final/talk10` | 11-20 | 50M / 12.5B | conversation tuning of `bil10` at v6's learning rate (3e-5) | – | bench **68**/100, but shelf validation +0.07–0.15: forgot, not v7 |
-| `final/talk10b` | running 11-20 | → 50M / → 12.6B | the same at 1e-5, the rate `bil10` ended with | – | – |
+| `final/talk10b` | 11-20 | 50M / 12.6B | the same at 1e-5, the rate `bil10` ended with | – | bench **66**/100, shelf validation +0.03–0.06: less forgetting, still not v7 |
 
 **Tokens: run / in all** — tokens read in that run / in the model's whole life. **Chat** — 160 sampled questions, counted right by a
 pattern (`scripts/hf/spot_check.py`). **Bench** — 100 questions asked once, greedy (`scripts/hf/bench.py`). Validation is compared in bits
@@ -39,12 +39,12 @@ per byte, which does not depend on the vocabulary.
   10B. The jumps come from conversation tuning (v5 → v6: chat 55 → 117 of 160 at the same size).
 - Conversation tuning must start at the learning rate the run ended with: `talk10` at 3e-5 with a fresh optimizer lifted
   validation by +0.2 within 3M tokens and only partly came back ([0017](specs/0017-talk10.md)); `talk10b` at 1e-5 was
-  +0.04 at the same point.
+  +0.04 at the same point and ended at +0.03–0.06 with benchmark 66; neither passed, so there is no v7 yet.
 - Facts are still missing (the capital of France, the largest planet; "Which is smaller, an ant or a horse?" → "A horse"):
   partly the answering form, partly perhaps capacity.
 
 **Next:**
-1. `talk10b` → **v7** if it passes [0017](specs/0017-talk10.md) (benchmark above v6, shelves within 0.02 of `bil10`).
+1. ~~`talk10b` → v7~~: failed [0017](specs/0017-talk10.md) G1 (shelves +0.03–0.06); `bil10` stays the chat's default.
 2. **More data at the same size:** one run of ~30B tokens on the 107M student (~10 days at today's speed), new
    FineWeb-Edu and Cosmopedia, no shelf read more than ~4 times; then conversation tuning as in 1.
 3. **More parameters only if knowledge stays flat:** a ~300M student *grown* from this one (not from scratch), the most

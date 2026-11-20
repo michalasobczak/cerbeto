@@ -6,7 +6,7 @@
 set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 source "$here/../gpu/hosts.env"
-u=$GPU_USER c="$GPU_USER@$COORD" d="$GPU_USER@$DATA_HOST" m=${MINI:?MINI=user@host of the Mac mini}
+c="$GPU_USER@$COORD" d="$GPU_USER@$DATA_HOST" m=${MINI:?MINI=user@host of the Mac mini}
 tokens=${1:-50e6} arm=${2:-talk10} gpu=${GPU:-0}
 ck=cerbeto/model/checkpoints/final repo=Work/indatify/platformy/model
 s(){ for try in 1 2 3 4 5; do ssh -o ConnectTimeout=15 "$1" "$2" && return 0; sleep 30; done; return 1; }
@@ -15,7 +15,7 @@ s(){ for try in 1 2 3 4 5; do ssh -o ConnectTimeout=15 "$1" "$2" && return 0; sl
 until s "$c" "test -f $ck/bil10/final/model.safetensors" && ! s "$d" 'pgrep -f "[c]erbeto.train.diloco" > /dev/null'; do sleep 300; done
 echo "bil10 ended $(date)"
 
-# 2. the start checkpoint on the data host, the code with arm talk10
+# 2. the start checkpoint on the data host, the code with the arm
 s "$d" "mkdir -p $ck/bil10 ~/cerbeto/logs && rm -f ~/cerbeto/logs/$arm.log && cd ~/cerbeto/model && git fetch -q origin && git reset -q --hard origin/main" || { echo "data host unreachable"; exit 1; }
 s "$d" "test -s $ck/bil10/final/model.safetensors" || scp -3 -rq "$c:$ck/bil10/final" "$d:$ck/bil10/"; s "$d" "ls -l $ck/bil10/final && test -s $ck/bil10/final/model.safetensors" \
   || { echo "copy of bil10/final failed"; exit 1; }
@@ -30,9 +30,9 @@ s "$d" "tail -3 ~/cerbeto/logs/$arm.log"
 # 4. to the mini (bil10/final too, for the comparison) and the quick benchmark
 for run in bil10 $arm; do
   ssh "$m" "test -s $repo/checkpoints/final/$run/final/model.safetensors" && [ $run = bil10 ] && continue
-  ssh "$m" "mkdir -p $repo/checkpoints/final/$run"
+  s "$m" "mkdir -p $repo/checkpoints/final/$run" || { echo "mini unreachable"; exit 1; }
   scp -3 -rq "$d:$ck/$run/final" "$m:$repo/checkpoints/final/$run/" || { echo "copy of $run to the mini failed"; exit 1; }
 done
 echo "on the mini $(date)"
-ssh "$m" "cd $repo/brain && export PATH=\$HOME/.local/bin:\$PATH && caffeinate -i uv run --with huggingface_hub python ../scripts/hf/bench.py \
+s "$m" "cd $repo/brain && export PATH=\$HOME/.local/bin:\$PATH && caffeinate -i uv run --with huggingface_hub python ../scripts/hf/bench.py \
   v6-1032M checkpoints/final/bil10/final checkpoints/final/$arm/final 2>&1 | grep -v Warning | tail -9"

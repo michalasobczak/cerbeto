@@ -20,6 +20,6 @@ One file per change, in Rondo's sections (TL;DR, Abstract, Objective, … Contro
 | [0014](0014-second-billion.md) a second billion tokens | stopped on the M6 at 459M (2026-11-15); continued as `bil2-avg` (0015): level with v6 in bits per byte, 72 vs 62 of 100 in the quick benchmark |
 | [0015](0015-diloco.md) DiLoCo: one model trained by several GPUs that rarely talk | built and tested (2026-11-14); runs 0016 |
 | [0016](0016-ten-billion.md) ten billion tokens: a new data set on other commodity hardware | done (2026-11-19 22:33): 10.0B tokens, `bil10/final` = `bil10-12488M`, benchmark 64 |
-| [0017](0017-talk10.md) conversation tuning of the ten-billion student → v7 | `talk10` (3e-5): benchmark 68 but shelves +0.07–0.15, failed G1; `talk10b` (1e-5) running |
+| [0017](0017-talk10.md) conversation tuning of the ten-billion student → v7 | both arms failed G1: `talk10` (3e-5) benchmark 68, shelves +0.07–0.15; `talk10b` (1e-5) 66, +0.03–0.06; no v7 |
 
 Source document of the MVP: [source-mvp-specification.md](source-mvp-specification.md).
