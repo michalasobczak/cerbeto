@@ -326,7 +326,7 @@ const FINAL_TABS={
     note:`Start: bil10/final (12.5B tokens read in all). After ten billion tokens validation still fell on every new shelf, so the same
       student reads 20B more on the same shelves in bil10's shares (~2.5 passes more, ~3.75 in all, below the ~4 where repetition starts
       to cost); conversations every fourth step. Learning rate warmed up again to 1e-4 over 2,000 steps, cosine to 1e-5; ~6.5 days on
-      other commodity hardware. Validation in bits per byte against v6 (legend). Gate at 1B: every shelf back at or below bil10/final.`},
+      other commodity hardware. Validation in bits per byte against v6 (legend). Gate: validation falls after the re-warm-up jump; compared with bil10/final at the end.`},
   vext:{arms:n=>n==="vext",evals:n=>n==="vext",title:"v6 with the 8k vocabulary extended to 12,288 tokens (spec 0012)",
     note:`v16k lost almost only on its 8,192 new (and often rare) words. Here the 8k vocabulary stays as it is — same tokens, same ids, same
       embedding rows — and only the 4,096 most frequent new merges of the 1B mix are added on top (each seen ≥ 300 times in 200 MB).
