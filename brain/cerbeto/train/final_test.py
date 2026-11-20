@@ -159,6 +159,13 @@ for _d in (ARM_START, ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, 
     _d["talk10b"] = _d["talk10"]
 ARM_LR["talk10b"] = (1e-5, 100)
 BY_TOKENS.add("talk10b")
+# spec 0018 (`bil20`, 2026-11-20): twenty billion more tokens from bil10/final on the same shelves in bil10's shares
+# (bil10 read each ~1.25 times; 20B more is ~2.5 passes, ~3.75 in all, below the ~4 where repetition starts to cost).
+# Only the length changes: conversations every fourth step, 1e-4 after 2,000 steps (re-warmed), cosine to 1e-5.
+for _d in (ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_PAIR_STEPS, ARM_LR):
+    _d["bil20"] = _d["bil10"]
+ARM_START["bil20"] = CKPT / "bil10" / "final"
+BY_TOKENS.add("bil20")
 MAX_PASSES = 4
 
 
@@ -754,7 +761,7 @@ def add_probes(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval", "probes"])
-    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest | bil10 | talk10 | talk10b (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest | bil10 | talk10 | talk10b | bil20 (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     p.add_argument("--name", help="train: run folder (default the arm), e.g. a baseline beside a DiLoCo run")
