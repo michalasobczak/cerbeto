@@ -2364,7 +2364,7 @@
 "part": "preschool",
 "kind": "chat",
 "q": "Which is older, a baby or a grandfather?",
-"ok": "grandfather",
+"ok": "grandfather|grandpa|grandad|granddad",
 "not": "baby"
 },
 {
@@ -5630,7 +5630,7 @@
 "I like to play football.",
 "What sport do I like?"
 ],
-"ok": "football"
+"ok": "football|soccer"
 },
 {
 "part": "memory",

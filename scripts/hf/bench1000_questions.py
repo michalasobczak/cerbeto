@@ -449,6 +449,11 @@ while sum(1 for x in new if x["part"] == "memory") < 135:
     mem.add(conv)
     new.append({"part": "memory", "kind": "memory", "q": [*turns, ask], "ok": ok})
 
+# synonyms the first run on v6 showed (2026-11-21): "grandpa" for grandfather, "soccer" for football
+SYN = {"grandfather": "grandfather|grandpa|grandad|granddad", "football": "football|soccer"}
+for x in new:
+    x["ok"] = SYN.get(x["ok"], x["ok"])
+
 # ---- leave out what the student was tuned on, and duplicates ----
 norm = lambda s: re.sub(r"[^a-z0-9 ]", "", s.lower()).strip()
 seen_q = set()
