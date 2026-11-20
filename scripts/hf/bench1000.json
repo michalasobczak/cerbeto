@@ -1,0 +1,6765 @@
+[
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is fire hot?",
+"ok": "^(yes|true)",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is ice cold?",
+"ok": "^(yes|true)",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is the sun hot?",
+"ok": "^(yes|true)",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a dog an animal?",
+"ok": "^(yes|true)",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a rose a plant?",
+"ok": "^(yes|true)",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a fish swim?",
+"ok": "^(yes|true)",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a bird fly?",
+"ok": "^(yes|true)",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a cat fly?",
+"ok": "^(no|false)",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is the sky green?",
+"ok": "^(no|false)",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is snow hot?",
+"ok": "^(no|false)",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do cows lay eggs?",
+"ok": "^(no|false)",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a whale a fish?",
+"ok": "^(no|false)",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "A cat can fly. True or false?",
+"ok": "^(no|false)",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "The sun is cold. True or false?",
+"ok": "^(no|false)",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Water is wet. True or false?",
+"ok": "^(yes|true)",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of hot?",
+"ok": "cold",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of big?",
+"ok": "small|little",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of up?",
+"ok": "down",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of happy?",
+"ok": "sad",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of fast?",
+"ok": "slow",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of day?",
+"ok": "night",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of open?",
+"ok": "clos|shut",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of old?",
+"ok": "new|young",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of wet?",
+"ok": "dry",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of full?",
+"ok": "empty",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is the sky?",
+"ok": "blue",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is grass?",
+"ok": "green",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is snow?",
+"ok": "white",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a banana?",
+"ok": "yellow",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a tomato?",
+"ok": "red",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a cow say?",
+"ok": "moo",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a dog say?",
+"ok": "woof|bark|ruff",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a cat say?",
+"ok": "meow|miaow|purr",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a duck say?",
+"ok": "quack",
+"core": true
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, an elephant or a mouse?",
+"ok": "elephant",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where do fish live?",
+"ok": "water|sea|river|lake|pond|ocean",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do bees make?",
+"ok": "honey",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do cows give us?",
+"ok": "milk",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many legs does a dog have?",
+"ok": "four|\\b4\\b",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many legs does a bird have?",
+"ok": "two|\\b2\\b",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many legs does a spider have?",
+"ok": "eight|\\b8\\b",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of France?",
+"ok": "paris",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of England?",
+"ok": "london",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Italy?",
+"ok": "rome",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Japan?",
+"ok": "tokyo",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the largest planet?",
+"ok": "jupiter",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What planet do we live on?",
+"ok": "earth",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the closest star to Earth?",
+"ok": "\\bsun\\b",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do plants need to grow?",
+"ok": "water|sun|light",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What gas do we breathe in?",
+"ok": "oxygen",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What does the heart do?",
+"ok": "pump|blood",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is ice made of?",
+"ok": "water",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do caterpillars turn into?",
+"ok": "butterfl|moth",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby dog called?",
+"ok": "\\bpup",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby cat called?",
+"ok": "kitten",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby cow called?",
+"ok": "calf",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many days are in a week?",
+"ok": "seven|\\b7\\b",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many months are in a year?",
+"ok": "twelve|\\b12\\b",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What season comes after winter?",
+"ok": "spring",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we use to see?",
+"ok": "\\beyes?\\b",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we use to hear?",
+"ok": "\\bears?\\b",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which animal is called the king of the jungle?",
+"ok": "lion",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the biggest animal in the ocean?",
+"ok": "whale",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Is a carrot a fruit or a vegetable?",
+"ok": "vegetable",
+"core": true
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Who wrote Romeo and Juliet?",
+"ok": "shakespeare",
+"core": true
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is one plus one?",
+"ok": "two|\\b2\\b",
+"core": true
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is two plus three?",
+"ok": "five|\\b5\\b",
+"core": true
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is four plus four?",
+"ok": "eight|\\b8\\b",
+"core": true
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is ten minus three?",
+"ok": "seven|\\b7\\b",
+"core": true
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is three plus five?",
+"ok": "eight|\\b8\\b",
+"core": true
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is two plus two?",
+"ok": "four|\\b4\\b",
+"core": true
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is five minus two?",
+"ok": "three|\\b3\\b",
+"core": true
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is six plus one?",
+"ok": "seven|\\b7\\b",
+"core": true
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is nine minus four?",
+"ok": "five|\\b5\\b",
+"core": true
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is 7 plus 5?",
+"ok": "twelve|\\b12\\b",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Water freezes and turns into",
+"ok": "ice",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The Moon goes around the",
+"ok": "earth",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The capital of France is",
+"ok": "paris",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Bees make",
+"ok": "honey",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The heart pumps",
+"ok": "blood",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Plants need sunlight and",
+"ok": "water",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A baby cat is called a",
+"ok": "kitten",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The largest planet in our solar system is",
+"ok": "jupiter",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The Earth goes around the",
+"ok": "\\bsun\\b",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Fish breathe through their",
+"ok": "gill",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Rain falls from the",
+"ok": "cloud|sky",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A triangle has three",
+"ok": "side|corner|angle|point",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The opposite of hot is",
+"ok": "cold",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Cows give us",
+"ok": "milk",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The color of the sky is",
+"ok": "blue",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Birds have feathers and",
+"ok": "wing|fly|beak|lay",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "One, two, three, four,",
+"ok": "five",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Monday, Tuesday,",
+"ok": "wednesday",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "January, February,",
+"ok": "march",
+"core": true
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Ice is frozen",
+"ok": "water",
+"core": true
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Anna.",
+"I have a cat called Tom.",
+"What is my cat's name?"
+],
+"ok": "tom",
+"core": true
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"My name is Jack.",
+"I have a horse called Sunny.",
+"What is my horse called?"
+],
+"ok": "sunny",
+"core": true
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"I am Zoe.",
+"My bird is called Kiwi.",
+"What is my bird called?"
+],
+"ok": "kiwi",
+"core": true
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"My name is Leo.",
+"I have a dog called Rex.",
+"What is my name?"
+],
+"ok": "leo",
+"core": true
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"My name is Mia.",
+"My favourite color is red.",
+"What is my favourite color?"
+],
+"ok": "red",
+"core": true
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a fox an animal?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a cow an animal?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a wolf an animal?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a pig an animal?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a cat an animal?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a tiger an animal?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a horse an animal?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is an elephant an animal?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a lion an animal?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a bear an animal?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a book an animal?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a phone an animal?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a cup an animal?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a shoe an animal?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a bus an animal?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a chair an animal?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a plum an animal?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a cherry an animal?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a pear an animal?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a lemon an animal?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is an orange a fruit?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is an apple a fruit?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a lemon a fruit?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a plum a fruit?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a cherry a fruit?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a strawberry a fruit?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a banana a fruit?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a carrot a fruit?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a lettuce a fruit?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a cabbage a fruit?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a goat a fruit?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a pig a fruit?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a cow a fruit?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is an onion a vegetable?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a potato a vegetable?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a pea a vegetable?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a carrot a vegetable?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a cabbage a vegetable?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a parrot fly?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can an eagle fly?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a pigeon fly?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a swan fly?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a sparrow fly?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a crow fly?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a cow fly?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can an elephant fly?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a penguin fly?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a fish fly?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a snake fly?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a rabbit fly?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a shark swim?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a salmon swim?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a goldfish swim?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a trout swim?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a cod swim?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a shark a fish?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a salmon a fish?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a goldfish a fish?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a dolphin a fish?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a cat a fish?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a frog a fish?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a duck a fish?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is an eagle a bird?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is an owl a bird?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a parrot a bird?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a penguin a bird?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a chicken a bird?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a bat a bird?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a bee a bird?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a dog a bird?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a butterfly a bird?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is the sea salty?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do fish live in water?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do birds have feathers?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do bees make honey?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is the grass green?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a lemon sour?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is sugar sweet?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do plants need water?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Does the sun rise in the morning?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do cows eat grass?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a mountain big?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is fire dangerous?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do people need to sleep?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Does a week have seven days?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is the moon in the sky at night?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do spiders have eight legs?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a giraffe tall?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do dogs have four legs?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a mouse small?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do trees have leaves?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a snail slow?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is winter cold?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a feather light?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can people walk?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is chocolate sweet?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do dogs have wings?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is the grass blue?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is ice hot?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do cats lay eggs?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a mouse bigger than a horse?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do fish have legs?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a stone soft?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a lemon sweet?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is the sea green and full of sugar?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a car swim?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a week ten days long?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is fire cold?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do trees walk?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is an elephant small?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is snow black?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a fish climb a tree?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a year one day long?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do cows say woof?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a banana blue?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do people have three eyes?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is the night bright and sunny?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a feather heavy?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is summer the coldest season?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Does a spider have two legs?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Birds can fly. True or false?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Fish can swim. True or false?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Snow is white. True or false?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "The sun is hot. True or false?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Cows give milk. True or false?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "A cat has four legs. True or false?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Dogs can talk. True or false?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Ice is hot. True or false?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "A horse is smaller than an ant. True or false?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Grass is purple. True or false?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "A week has seven days. True or false?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "The moon is a star. True or false?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a tiger a big cat?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do frogs live near water?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is the sky blue on a sunny day?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do apples grow on trees?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a whale bigger than a fish?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do bees fly?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is ice frozen water?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do babies grow up?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a kangaroo jump?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do owls fly at night?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a carrot orange?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do horses eat grass?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is the ocean deep?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a monkey climb trees?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is bread made from flour?",
+"ok": "^(yes|true)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Is a carrot blue?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Can a rock swim?",
+"ok": "^(no|false)"
+},
+{
+"part": "yes/no",
+"kind": "chat",
+"q": "Do cows fly?",
+"ok": "^(no|false)"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of rich?",
+"ok": "poor"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of strong?",
+"ok": "weak"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of high?",
+"ok": "low"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of small?",
+"ok": "big|large"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of win?",
+"ok": "los"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of before?",
+"ok": "after"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of on?",
+"ok": "off"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of down?",
+"ok": "\\bup\\b"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of night?",
+"ok": "day"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of cold?",
+"ok": "hot|warm"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of good?",
+"ok": "bad|evil"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of early?",
+"ok": "late"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of first?",
+"ok": "last"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of left?",
+"ok": "right"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of king?",
+"ok": "queen"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of yes?",
+"ok": "\\bno\\b"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of tall?",
+"ok": "short"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of long?",
+"ok": "short"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of dark?",
+"ok": "light|bright"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of above?",
+"ok": "below|under|beneath"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of heavy?",
+"ok": "light"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of laugh?",
+"ok": "cry"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of front?",
+"ok": "back|behind|rear"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of buy?",
+"ok": "sell"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of inside?",
+"ok": "outside"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of man?",
+"ok": "woman|lady"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of hard?",
+"ok": "soft|easy"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of sad?",
+"ok": "happy|glad"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of love?",
+"ok": "hate"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of boy?",
+"ok": "girl"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of thick?",
+"ok": "thin"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of come?",
+"ok": "\\bgo"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of dry?",
+"ok": "wet"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of start?",
+"ok": "end|finish|stop"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of loud?",
+"ok": "quiet|soft|silent"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of true?",
+"ok": "false|untrue"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of push?",
+"ok": "pull"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is salt?",
+"ok": "white"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is an apple?",
+"ok": "red|green|yellow"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a leaf?",
+"ok": "green"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a pig?",
+"ok": "pink"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is gold?",
+"ok": "gold|yellow"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is chocolate?",
+"ok": "brown"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is sugar?",
+"ok": "white|brown"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a crow?",
+"ok": "black"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a cucumber?",
+"ok": "green"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a strawberry?",
+"ok": "red"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is broccoli?",
+"ok": "green"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a polar bear?",
+"ok": "white"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a cherry?",
+"ok": "red"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a flamingo?",
+"ok": "pink"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is the night sky?",
+"ok": "black|dark|blue"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a frog?",
+"ok": "green"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is blood?",
+"ok": "red"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a plum?",
+"ok": "purple|red|violet"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is an orange?",
+"ok": "orange"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a pumpkin?",
+"ok": "orange"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a cloud?",
+"ok": "white|gr[ae]y"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is an elephant?",
+"ok": "gr[ae]y"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a pig say?",
+"ok": "oink|grunt"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a horse say?",
+"ok": "neigh|whinn"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a lion say?",
+"ok": "roar"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a hen say?",
+"ok": "cluck|bok"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a rooster say?",
+"ok": "cock-?a-?doodle|crow"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does an owl say?",
+"ok": "hoo|twit"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a frog say?",
+"ok": "ribbit|croak"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a mouse say?",
+"ok": "squeak"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a bee say?",
+"ok": "buzz"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a snake say?",
+"ok": "hiss"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a goat say?",
+"ok": "baa|bleat|maa|meh"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a donkey say?",
+"ok": "hee|bray"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a wolf say?",
+"ok": "howl|awoo"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a bird say?",
+"ok": "tweet|chirp|sing"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a turkey say?",
+"ok": "gobble"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does an elephant say?",
+"ok": "trumpet|toot"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a bear say?",
+"ok": "growl|roar"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a crow say?",
+"ok": "caw"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What does a monkey say?",
+"ok": "ooh|eek|chatter|screech"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, a whale or an ant?",
+"ok": "whale",
+"not": "ant"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is smaller, a horse or an ant?",
+"ok": "ant",
+"not": "horse"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, an ant or a sheep?",
+"ok": "sheep",
+"not": "ant"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is smaller, an ant or a dog?",
+"ok": "ant",
+"not": "dog"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, a whale or a sheep?",
+"ok": "whale",
+"not": "sheep"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is smaller, a whale or a mouse?",
+"ok": "mouse",
+"not": "whale"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, a bee or a dog?",
+"ok": "dog",
+"not": "bee"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is smaller, a horse or a whale?",
+"ok": "horse",
+"not": "whale"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, a horse or a dog?",
+"ok": "horse",
+"not": "dog"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is smaller, a horse or a bee?",
+"ok": "bee",
+"not": "horse"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, a sheep or an elephant?",
+"ok": "elephant",
+"not": "sheep"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is smaller, an elephant or a cat?",
+"ok": "cat",
+"not": "elephant"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, an ant or a cat?",
+"ok": "cat",
+"not": "ant"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is smaller, a whale or a dog?",
+"ok": "dog",
+"not": "whale"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, a mouse or a sheep?",
+"ok": "sheep",
+"not": "mouse"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is smaller, a whale or a bee?",
+"ok": "bee",
+"not": "whale"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, an elephant or a bee?",
+"ok": "elephant",
+"not": "bee"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is smaller, an elephant or an ant?",
+"ok": "ant",
+"not": "elephant"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, a sheep or a bee?",
+"ok": "sheep",
+"not": "bee"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is smaller, a dog or a mouse?",
+"ok": "mouse",
+"not": "dog"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, a mouse or a horse?",
+"ok": "horse",
+"not": "mouse"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is smaller, a horse or a cat?",
+"ok": "cat",
+"not": "horse"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, a whale or a cat?",
+"ok": "whale",
+"not": "cat"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is smaller, a cat or a bee?",
+"ok": "bee",
+"not": "cat"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, a dog or an elephant?",
+"ok": "elephant",
+"not": "dog"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is smaller, a mouse or an elephant?",
+"ok": "mouse",
+"not": "elephant"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is hotter, the moon or the sun?",
+"ok": "sun",
+"not": "moon"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is colder, fire or ice?",
+"ok": "ice",
+"not": "fire"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is heavier, a rock or a feather?",
+"ok": "rock",
+"not": "feather"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is lighter, a brick or a feather?",
+"ok": "feather",
+"not": "brick"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is faster, a car or a bike?",
+"ok": "car",
+"not": "bike"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is slower, a snail or a horse?",
+"ok": "snail",
+"not": "horse"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is taller, a dog or a giraffe?",
+"ok": "giraffe",
+"not": "dog"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is shorter, a tree or a mouse?",
+"ok": "mouse",
+"not": "tree"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is faster, a turtle or a cheetah?",
+"ok": "cheetah",
+"not": "turtle"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is heavier, an elephant or a cat?",
+"ok": "elephant",
+"not": "cat"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is sweeter, a lemon or honey?",
+"ok": "honey",
+"not": "lemon"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is longer, a snake or a worm?",
+"ok": "snake",
+"not": "worm"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is higher, a hill or a mountain?",
+"ok": "mountain",
+"not": "hill"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is older, a baby or a grandfather?",
+"ok": "grandfather",
+"not": "baby"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is bigger, the earth or the sun?",
+"ok": "sun",
+"not": "earth"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is deeper, a pond or the ocean?",
+"ok": "ocean",
+"not": "pond"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "Which is wetter, the desert or the sea?",
+"ok": "sea",
+"not": "desert"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of quiet?",
+"ok": "loud|noisy"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of easy?",
+"ok": "hard|difficult"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of young?",
+"ok": "old"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of asleep?",
+"ok": "awake"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of question?",
+"ok": "answer"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of friend?",
+"ok": "enemy|foe"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of sweet?",
+"ok": "sour|bitter|salty"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of wide?",
+"ok": "narrow"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of fat?",
+"ok": "thin|skinny|slim"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of summer?",
+"ok": "winter"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What is the opposite of east?",
+"ok": "west"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a raspberry?",
+"ok": "red|pink"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a swan?",
+"ok": "white|black"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a penguin?",
+"ok": "black|white"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a lobster?",
+"ok": "red|blue|orange"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is an egg yolk?",
+"ok": "yellow|orange"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a mouse?",
+"ok": "gr[ae]y|brown|white"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a tiger?",
+"ok": "orange|black|stripe"
+},
+{
+"part": "preschool",
+"kind": "chat",
+"q": "What color is a sunflower?",
+"ok": "yellow"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Germany?",
+"ok": "berlin"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Spain?",
+"ok": "madrid"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Russia?",
+"ok": "moscow"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of China?",
+"ok": "beijing|peking"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of the United States?",
+"ok": "washington"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Egypt?",
+"ok": "cairo"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Greece?",
+"ok": "athens"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Poland?",
+"ok": "warsaw"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Ireland?",
+"ok": "dublin"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Scotland?",
+"ok": "edinburgh"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Portugal?",
+"ok": "lisbon"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Austria?",
+"ok": "vienna"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Norway?",
+"ok": "oslo"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Sweden?",
+"ok": "stockholm"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Denmark?",
+"ok": "copenhagen"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Finland?",
+"ok": "helsinki"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of the Netherlands?",
+"ok": "amsterdam"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Belgium?",
+"ok": "brussels"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Hungary?",
+"ok": "budapest"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of the Czech Republic?",
+"ok": "prague"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Mexico?",
+"ok": "mexico city"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Argentina?",
+"ok": "buenos aires"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Kenya?",
+"ok": "nairobi"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Thailand?",
+"ok": "bangkok"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of South Korea?",
+"ok": "seoul"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Cuba?",
+"ok": "havana"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Peru?",
+"ok": "lima"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Australia?",
+"ok": "canberra"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Turkey?",
+"ok": "ankara"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many legs does a cow have?",
+"ok": "four|\\b4\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many legs does an insect have?",
+"ok": "six|\\b6\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many legs does an ant have?",
+"ok": "six|\\b6\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many legs does a bee have?",
+"ok": "six|\\b6\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many legs does a duck have?",
+"ok": "two|\\b2\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many legs does a person have?",
+"ok": "two|\\b2\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many legs does a beetle have?",
+"ok": "six|\\b6\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many arms does an octopus have?",
+"ok": "eight|\\b8\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many arms does a starfish usually have?",
+"ok": "five|\\b5\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby sheep called?",
+"ok": "lamb"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby horse called?",
+"ok": "foal|colt|filly"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby pig called?",
+"ok": "piglet"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby duck called?",
+"ok": "duckling"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby goat called?",
+"ok": "\\bkid"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby frog called?",
+"ok": "tadpole|froglet"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby lion called?",
+"ok": "cub"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby chicken called?",
+"ok": "chick"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby kangaroo called?",
+"ok": "joey"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby deer called?",
+"ok": "fawn"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby swan called?",
+"ok": "cygnet"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby goose called?",
+"ok": "gosling"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby owl called?",
+"ok": "owlet"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a baby butterfly called?",
+"ok": "caterpillar|larva"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where does a bird live?",
+"ok": "nest|tree"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where does a bee live?",
+"ok": "hive|nest"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where does a spider live?",
+"ok": "web"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where does a rabbit live?",
+"ok": "burrow|hole|warren|hutch"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where does a horse live?",
+"ok": "stable|barn|field|farm"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where does a lion live?",
+"ok": "den|savann|jungle|africa|grass|pride"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where does a bear live?",
+"ok": "cave|den|forest|woods"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where does an ant live?",
+"ok": "anthill|ant hill|nest|colony|ground"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where does a dog live?",
+"ok": "kennel|house|home"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do cows eat?",
+"ok": "grass|hay"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do rabbits eat?",
+"ok": "carrot|grass|vegetable|lettuce|hay|plant"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do monkeys eat?",
+"ok": "banana|fruit"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do pandas eat?",
+"ok": "bamboo"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do cats eat?",
+"ok": "mice|mouse|fish|meat|cat food"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do bees eat?",
+"ok": "nectar|pollen|flower|honey"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do koalas eat?",
+"ok": "eucalyptus|leaves"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do sheep eat?",
+"ok": "grass|hay"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do horses eat?",
+"ok": "grass|hay|oat|carrot|apple"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do chickens give us?",
+"ok": "egg"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do sheep give us?",
+"ok": "wool|milk|meat"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do bees give us?",
+"ok": "honey|wax"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we use to smell?",
+"ok": "nose"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we use to taste?",
+"ok": "tongue|mouth"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we use to think?",
+"ok": "brain|head|mind"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we breathe with?",
+"ok": "lung|nose|mouth"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many fingers are on one hand?",
+"ok": "five|\\b5\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many toes are on one foot?",
+"ok": "five|\\b5\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many eyes do people have?",
+"ok": "two|\\b2\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we use our teeth for?",
+"ok": "chew|bit|eat"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What does the stomach do?",
+"ok": "digest|food"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we use to walk?",
+"ok": "leg|feet|foot"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What covers our body?",
+"ok": "skin|cloth"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do bones make?",
+"ok": "skeleton|body|blood|frame"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many seconds are in a minute?",
+"ok": "sixty|\\b60\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many days are in a year?",
+"ok": "\\b365\\b|three hundred"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What season comes after spring?",
+"ok": "summer"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What season comes after summer?",
+"ok": "autumn|fall"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What day comes after Monday?",
+"ok": "tuesday"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What day comes before Friday?",
+"ok": "thursday"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What day comes after Saturday?",
+"ok": "sunday"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What month comes after March?",
+"ok": "april"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What month comes before June?",
+"ok": "may"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many days are in a weekend?",
+"ok": "two|\\b2\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "In which season do leaves fall from the trees?",
+"ok": "autumn|fall"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "In which season does it snow?",
+"ok": "winter"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the hottest season?",
+"ok": "summer"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we call the time when the sun goes down?",
+"ok": "evening|sunset|dusk|night"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which planet is called the red planet?",
+"ok": "mars"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which planet has big rings?",
+"ok": "saturn"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we call frozen water?",
+"ok": "\\bice"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is steam made of?",
+"ok": "water"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "At what temperature does water freeze in Celsius?",
+"ok": "zero|\\b0\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "At what temperature does water boil in Celsius?",
+"ok": "hundred|\\b100\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What falls from the clouds?",
+"ok": "rain|snow|water|hail"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What color are most leaves?",
+"ok": "green"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What force pulls things down to the ground?",
+"ok": "gravity"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do magnets pull?",
+"ok": "iron|metal|steel"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is H2O?",
+"ok": "water"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do plants make their food from?",
+"ok": "sun|light|water|air|carbon"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we call the gas that plants take in?",
+"ok": "carbon"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we call a scientist who studies stars?",
+"ok": "astronom"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do bees carry from flower to flower?",
+"ok": "pollen|nectar"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the hardest natural thing?",
+"ok": "diamond"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we call animals that eat only plants?",
+"ok": "herbivore|vegetarian"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we call animals that eat meat?",
+"ok": "carnivore|predator"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the opposite of north?",
+"ok": "south"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where does the sun rise?",
+"ok": "east"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where does the sun set?",
+"ok": "west"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we call a very big wave?",
+"ok": "tsunami|tidal"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which animal has a trunk?",
+"ok": "elephant"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which animal has black and white stripes?",
+"ok": "zebra|skunk|tiger|badger"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which bird cannot fly and lives where it is cold?",
+"ok": "penguin"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the fastest land animal?",
+"ok": "cheetah"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the largest land animal?",
+"ok": "elephant"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the tallest animal?",
+"ok": "giraffe"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which animal carries its baby in a pouch?",
+"ok": "kangaroo|koala|opossum|wallaby"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which insect makes honey?",
+"ok": "\\bbee"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which animal has a shell and moves very slowly?",
+"ok": "tortoise|turtle|snail"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which animal can change its color?",
+"ok": "chameleon|octopus|squid|cuttle"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which animal hops and has long ears?",
+"ok": "rabbit|bunny|hare|kangaroo"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which animal has a mane?",
+"ok": "lion|horse"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which animal is known for being very slow?",
+"ok": "sloth|snail|tortoise|turtle"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which bird can say words?",
+"ok": "parrot|mynah|myna"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What animal is a puppy?",
+"ok": "dog"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which animal has eight legs?",
+"ok": "spider|octopus|scorpion|tick"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which sea animal has eight arms?",
+"ok": "octopus"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the largest ocean?",
+"ok": "pacific"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "On which continent is Egypt?",
+"ok": "africa"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "In which city is the Eiffel Tower?",
+"ok": "paris"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the tallest mountain in the world?",
+"ok": "everest"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the coldest continent?",
+"ok": "antarctic"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which country is famous for kangaroos?",
+"ok": "australia"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "In which country are the pyramids of Giza?",
+"ok": "egypt"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which country is shaped like a boot?",
+"ok": "italy"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "In which city is Big Ben?",
+"ok": "london"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "In which city is the Statue of Liberty?",
+"ok": "new york"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the longest river in the world?",
+"ok": "nile|amazon"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a large area of sand with very little rain?",
+"ok": "desert"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we call a piece of land with water all around it?",
+"ok": "island"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the biggest desert in the world?",
+"ok": "sahara|antarctic"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "On which continent is Brazil?",
+"ok": "south america|america"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "On which continent is China?",
+"ok": "asia"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "On which continent is France?",
+"ok": "europe"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What ocean is between Europe and America?",
+"ok": "atlantic"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What language do people speak in Spain?",
+"ok": "spanish"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What language do people speak in France?",
+"ok": "french"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What language do people speak in Germany?",
+"ok": "german"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the biggest country in the world?",
+"ok": "russia"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Who painted the Mona Lisa?",
+"ok": "leonardo|da vinci|vinci"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Who was the first person to walk on the Moon?",
+"ok": "armstrong"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Who discovered gravity?",
+"ok": "newton"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Who invented the light bulb?",
+"ok": "edison"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Who was the first president of the United States?",
+"ok": "washington"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Who wrote the Harry Potter books?",
+"ok": "rowling"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Who came up with the theory of relativity?",
+"ok": "einstein"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Who sailed to America in 1492?",
+"ok": "columbus"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Who discovered penicillin?",
+"ok": "fleming"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Who wrote Hamlet?",
+"ok": "shakespeare"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we write with?",
+"ok": "pen|pencil|crayon|chalk"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we sleep in?",
+"ok": "\\bbed"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we use to tell the time?",
+"ok": "clock|watch"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we use an umbrella for?",
+"ok": "rain|wet|sun"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we use to brush our teeth?",
+"ok": "brush"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we eat soup with?",
+"ok": "spoon"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where do we keep food cold?",
+"ok": "fridge|refrigerator|freezer"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What does a doctor do?",
+"ok": "help|sick|heal|treat|care|ill|medicine|patient"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What does a teacher do?",
+"ok": "teach|school|learn|help"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What does a farmer do?",
+"ok": "grow|farm|crop|animal|food|plant"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What does a firefighter do?",
+"ok": "fire"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What does a pilot fly?",
+"ok": "plane|airplane|aeroplane|jet|aircraft|helicopter"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What does a baker make?",
+"ok": "bread|cake|bun|pastr|cookie|pie"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What does a dentist look after?",
+"ok": "teeth|tooth"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we use to open a locked door?",
+"ok": "key"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we use to dry ourselves after a bath?",
+"ok": "towel"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we put on our head when it is cold?",
+"ok": "hat|cap|hood|beanie"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we use to see in the dark?",
+"ok": "torch|flashlight|light|lamp|candle"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a rose?",
+"ok": "flower|plant"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What kind of animal is a frog?",
+"ok": "amphibian"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a robin?",
+"ok": "bird"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Is an apple a fruit or a vegetable?",
+"ok": "fruit",
+"not": "vegetable"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Is a potato a fruit or a vegetable?",
+"ok": "vegetable",
+"not": "fruit"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Is a shark a fish or a mammal?",
+"ok": "fish",
+"not": "mammal"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Is a dolphin a fish or a mammal?",
+"ok": "mammal",
+"not": "fish"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Is a bat a bird or a mammal?",
+"ok": "mammal",
+"not": "bird"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Is a spider an insect or an arachnid?",
+"ok": "arachnid",
+"not": "insect"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Is the Sun a star or a planet?",
+"ok": "star",
+"not": "planet"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Is the Earth a star or a planet?",
+"ok": "planet",
+"not": "star"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many sides does a pentagon have?",
+"ok": "five|\\b5\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many sides does an octagon have?",
+"ok": "eight|\\b8\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many corners does a triangle have?",
+"ok": "three|\\b3\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What shape is a ball?",
+"ok": "round|sphere|circle"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What shape is a wheel?",
+"ok": "round|circle"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many wheels does a tricycle have?",
+"ok": "three|\\b3\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many players are in a football team?",
+"ok": "eleven|\\b11\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Switzerland?",
+"ok": "bern"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Ukraine?",
+"ok": "kyiv|kiev"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Romania?",
+"ok": "bucharest"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Croatia?",
+"ok": "zagreb"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Iceland?",
+"ok": "reykjav"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of New Zealand?",
+"ok": "wellington"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Nigeria?",
+"ok": "abuja"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Colombia?",
+"ok": "bogot"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Vietnam?",
+"ok": "hanoi"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Indonesia?",
+"ok": "jakarta"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of the Philippines?",
+"ok": "manila"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Wales?",
+"ok": "cardiff"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Bulgaria?",
+"ok": "sofia"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the capital of Serbia?",
+"ok": "belgrade"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we call a group of wolves?",
+"ok": "pack"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we call a group of fish?",
+"ok": "school|shoal"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we call a group of cows?",
+"ok": "herd"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we call a group of birds?",
+"ok": "flock"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the largest bird?",
+"ok": "ostrich"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the smallest bird?",
+"ok": "hummingbird|bee hummingbird"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which animal is the biggest cat?",
+"ok": "tiger|lion"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do frogs eat?",
+"ok": "insect|fl(y|ies)|bug|worm"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do spiders catch in their webs?",
+"ok": "insect|fl(y|ies)|bug"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which animal is a symbol of China?",
+"ok": "panda|dragon"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the main gas in the air?",
+"ok": "nitrogen"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do plants give off that we breathe?",
+"ok": "oxygen"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is the boiling point of water in Fahrenheit?",
+"ok": "\\b212\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many bones are in the human body?",
+"ok": "\\b206\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What organ pumps blood?",
+"ok": "heart"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What organ do we think with?",
+"ok": "brain"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we call baby teeth falling out?",
+"ok": "tooth|teeth|loose|lose|fall"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we need to see?",
+"ok": "eye|light"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which month has the fewest days?",
+"ok": "february"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many days are in February in a normal year?",
+"ok": "twenty-eight|twenty eight|\\b28\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many days are in a leap year?",
+"ok": "\\b366\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "How many weeks are in a year?",
+"ok": "fifty-two|fifty two|\\b52\\b"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Which animal is called man's best friend?",
+"ok": "dog"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do caterpillars eat?",
+"ok": "leaves|leaf|plant"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where do polar bears live?",
+"ok": "arctic|north|ice|snow|cold"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "Where do camels live?",
+"ok": "desert"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What does a camel have on its back?",
+"ok": "hump"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What do we call the home of a beaver?",
+"ok": "lodge|dam"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a female sheep called?",
+"ok": "\\bewe"
+},
+{
+"part": "knowledge",
+"kind": "chat",
+"q": "What is a male chicken called?",
+"ok": "rooster|cock"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is ten plus ten?",
+"ok": "twenty|\\b20\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is twelve minus eight?",
+"ok": "four|\\b4\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is 15 minus 5?",
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is fourteen minus 3?",
+"ok": "eleven|\\b11\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is 19 minus 3?",
+"ok": "sixteen|\\b16\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Three plus three is what?",
+"ok": "six|\\b6\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "5 times two is what?",
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is 7 plus 7?",
+"ok": "fourteen|\\b14\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "2 plus seven is what?",
+"ok": "nine|\\b9\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Thirteen minus seven is what?",
+"ok": "six|\\b6\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is eight plus five?",
+"ok": "thirteen|\\b13\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is 10 plus 1?",
+"ok": "eleven|\\b11\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Eight plus five is what?",
+"ok": "thirteen|\\b13\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is fifteen minus eleven?",
+"ok": "four|\\b4\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is four plus 4?",
+"ok": "eight|\\b8\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is ten minus four?",
+"ok": "six|\\b6\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is 18 minus one?",
+"ok": "seventeen|\\b17\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is five minus four?",
+"ok": "one|\\b1\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is four minus 1?",
+"ok": "three|\\b3\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is seventeen minus two?",
+"ok": "fifteen|\\b15\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "9 plus 9 is what?",
+"ok": "eighteen|\\b18\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "6 plus six is what?",
+"ok": "twelve|\\b12\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is 12 minus 4?",
+"ok": "eight|\\b8\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is 19 minus 15?",
+"ok": "four|\\b4\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is twenty minus two?",
+"ok": "eighteen|\\b18\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is 6 plus nine?",
+"ok": "fifteen|\\b15\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "13 minus four is what?",
+"ok": "nine|\\b9\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Seven minus four is what?",
+"ok": "three|\\b3\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is 5 plus 3?",
+"ok": "eight|\\b8\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Seven plus four is what?",
+"ok": "eleven|\\b11\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is ten minus 10?",
+"ok": "zero|\\b0\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "13 minus three is what?",
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Five times 2 is what?",
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "20 minus 6 is what?",
+"ok": "fourteen|\\b14\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is 11 minus 9?",
+"ok": "two|\\b2\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Six plus four is what?",
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is nineteen minus 17?",
+"ok": "two|\\b2\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is eight minus 2?",
+"ok": "six|\\b6\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is three plus nine?",
+"ok": "twelve|\\b12\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is one plus seven?",
+"ok": "eight|\\b8\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is one plus 7?",
+"ok": "eight|\\b8\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is 8 plus four?",
+"ok": "twelve|\\b12\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Six plus nine is what?",
+"ok": "fifteen|\\b15\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is one times four?",
+"ok": "four|\\b4\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Eight plus four is what?",
+"ok": "twelve|\\b12\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is two plus 8?",
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Eight minus 7 is what?",
+"ok": "one|\\b1\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Ten plus four is what?",
+"ok": "fourteen|\\b14\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "18 minus ten is what?",
+"ok": "eight|\\b8\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Three times one is what?",
+"ok": "three|\\b3\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Sixteen minus six is what?",
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is 3 minus 1?",
+"ok": "two|\\b2\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is one times one?",
+"ok": "one|\\b1\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Five minus one is what?",
+"ok": "four|\\b4\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is fifteen minus 15?",
+"ok": "zero|\\b0\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is five plus 1?",
+"ok": "six|\\b6\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is sixteen minus twelve?",
+"ok": "four|\\b4\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is seven plus three?",
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is six minus 5?",
+"ok": "one|\\b1\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is eleven minus one?",
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is 3 times 1?",
+"ok": "three|\\b3\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Four times 3 is what?",
+"ok": "twelve|\\b12\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "One plus four is what?",
+"ok": "five|\\b5\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is five times four?",
+"ok": "twenty|\\b20\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "10 plus nine is what?",
+"ok": "nineteen|\\b19\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is three minus two?",
+"ok": "one|\\b1\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is four plus six?",
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is twelve minus ten?",
+"ok": "two|\\b2\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Four minus 1 is what?",
+"ok": "three|\\b3\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Three times three is what?",
+"ok": "nine|\\b9\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is seventeen minus two?",
+"ok": "fifteen|\\b15\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is three plus one?",
+"ok": "four|\\b4\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Five plus five is what?",
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is eight minus three?",
+"ok": "five|\\b5\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "3 times 2 is what?",
+"ok": "six|\\b6\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Fifteen minus seven is what?",
+"ok": "eight|\\b8\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is ten minus six?",
+"ok": "four|\\b4\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is 2 times four?",
+"ok": "eight|\\b8\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is 17 minus six?",
+"ok": "eleven|\\b11\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "19 minus six is what?",
+"ok": "thirteen|\\b13\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is four plus five?",
+"ok": "nine|\\b9\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Seventeen minus 17 is what?",
+"ok": "zero|\\b0\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Four times one is what?",
+"ok": "four|\\b4\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "1 plus nine is what?",
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "Four times four is what?",
+"ok": "sixteen|\\b16\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is 1 times three?",
+"ok": "three|\\b3\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is 4 plus eight?",
+"ok": "twelve|\\b12\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "What is one plus eight?",
+"ok": "nine|\\b9\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "4 minus 1 is what?",
+"ok": "three|\\b3\\b"
+},
+{
+"part": "arithmetic",
+"kind": "chat",
+"q": "How much is five plus ten?",
+"ok": "fifteen|\\b15\\b"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A group of wolves is called a",
+"ok": "pack"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A group of cows is called a",
+"ok": "herd"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The closest planet to the Sun is",
+"ok": "mercury"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A camel lives in the",
+"ok": "desert"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Paper is made from",
+"ok": "wood|tree|pulp"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Glass is made from",
+"ok": "sand"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Bread is made from",
+"ok": "flour|wheat|grain|dough"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Cheese is made from",
+"ok": "milk"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The sun rises in the",
+"ok": "east"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The sun sets in the",
+"ok": "west"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A week has seven",
+"ok": "day"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A year has twelve",
+"ok": "month"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Two plus two is",
+"ok": "four|\\b4\\b"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The opposite of up is",
+"ok": "down"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A spider has eight",
+"ok": "leg"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Fish live in",
+"ok": "water|sea|river|ocean|lake|pond|tank"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Birds build",
+"ok": "nest"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The moon shines at",
+"ok": "night"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "We sleep in a",
+"ok": "bed"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "We eat soup with a",
+"ok": "spoon"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "We cut paper with",
+"ok": "scissor"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Apples grow on",
+"ok": "tree"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A baby dog is called a",
+"ok": "pup"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A baby sheep is called a",
+"ok": "lamb"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Grass is",
+"ok": "green"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Bananas are",
+"ok": "yellow"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "In winter it is",
+"ok": "cold|snow"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "In summer it is",
+"ok": "hot|warm|sun"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "After Monday comes",
+"ok": "tuesday"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "After March comes",
+"ok": "april"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Seven, eight, nine,",
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A, B, C,",
+"ok": "\\bd\\b"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Red, orange, yellow, green,",
+"ok": "blue"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Spring, summer, autumn,",
+"ok": "winter"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Ten, twenty, thirty,",
+"ok": "forty|\\b40\\b"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Twinkle, twinkle, little",
+"ok": "star"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Humpty Dumpty sat on a",
+"ok": "wall"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Jack and Jill went up the",
+"ok": "hill"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Mary had a little",
+"ok": "lamb"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Once upon a",
+"ok": "time"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Happy birthday to",
+"ok": "you"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Thank you very",
+"ok": "much"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Ladies and",
+"ok": "gentlem"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Salt and",
+"ok": "pepper"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Bread and",
+"ok": "butter"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Fish and",
+"ok": "chip"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Day and",
+"ok": "night"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Black and",
+"ok": "white"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Knife and",
+"ok": "fork"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Cats and",
+"ok": "dog"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Ready, steady,",
+"ok": "\\bgo"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The early bird catches the",
+"ok": "worm"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "An apple a day keeps the",
+"ok": "doctor"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The Eiffel Tower is in",
+"ok": "paris|france"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The pyramids are in",
+"ok": "egypt"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Kangaroos live in",
+"ok": "australia"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Polar bears live in the",
+"ok": "arctic|north|cold|ice|snow"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The tallest animal is the",
+"ok": "giraffe"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The fastest land animal is the",
+"ok": "cheetah"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The king of the jungle is the",
+"ok": "lion"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Honey is made by",
+"ok": "\\bbee"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Milk comes from",
+"ok": "cow|goat"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Eggs come from",
+"ok": "hen|chicken|bird"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Wool comes from",
+"ok": "sheep"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The largest ocean is the",
+"ok": "pacific"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "We breathe with our",
+"ok": "lung|nose|mouth"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "We see with our",
+"ok": "eye"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "We hear with our",
+"ok": "\\bear"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "We smell with our",
+"ok": "nose"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "We walk with our",
+"ok": "leg|feet|foot"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A car has four",
+"ok": "wheel|door|tyre|tire"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A bicycle has two",
+"ok": "wheel|tyre|tire|pedal"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A square has four",
+"ok": "side|corner|angle|edge"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "There are seven days in a",
+"ok": "week"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "There are sixty minutes in an",
+"ok": "hour"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The first month of the year is",
+"ok": "january"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The last month of the year is",
+"ok": "december"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Ice melts when it gets",
+"ok": "warm|hot"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Plants grow from",
+"ok": "seed|soil|ground"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Caterpillars turn into",
+"ok": "butterfl|moth"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Tadpoles turn into",
+"ok": "frog|toad"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "At night we can see the",
+"ok": "moon|star"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The opposite of big is",
+"ok": "small|little"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The opposite of happy is",
+"ok": "sad"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The opposite of day is",
+"ok": "night"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The opposite of wet is",
+"ok": "dry"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The opposite of fast is",
+"ok": "slow"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A doctor helps people who are",
+"ok": "sick|ill|hurt|injur"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A teacher works in a",
+"ok": "school|class"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A farmer works on a",
+"ok": "farm|field"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A pilot flies a",
+"ok": "plane|jet|aircraft|helicopter"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A baker makes",
+"ok": "bread|cake|bun|pastr"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Firefighters put out",
+"ok": "fire|flame"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Gravity was discovered by",
+"ok": "newton"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The Mona Lisa was painted by",
+"ok": "leonardo|vinci"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The first man on the Moon was",
+"ok": "armstrong|neil"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Water is made of hydrogen and",
+"ok": "oxygen"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Most of the Earth is covered by",
+"ok": "water|ocean|sea"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The Sun is a",
+"ok": "star"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The Moon goes around the Earth, and the Earth goes around the",
+"ok": "\\bsun\\b"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The capital of England is",
+"ok": "london"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The capital of Italy is",
+"ok": "rome"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The capital of Germany is",
+"ok": "berlin"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The capital of Spain is",
+"ok": "madrid"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The capital of Japan is",
+"ok": "tokyo"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The capital of Russia is",
+"ok": "moscow"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The red planet is",
+"ok": "mars"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The planet with big rings is",
+"ok": "saturn"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "We live on the planet",
+"ok": "earth"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Cows say",
+"ok": "moo"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Dogs say",
+"ok": "woof|bark|ruff"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Ducks say",
+"ok": "quack"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Cats say",
+"ok": "meow|miaow"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Sheep say",
+"ok": "baa"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A baby cow is called a",
+"ok": "calf"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A baby horse is called a",
+"ok": "foal"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A baby frog is called a",
+"ok": "tadpole"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Bees live in a",
+"ok": "hive|nest"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Spiders make",
+"ok": "web|silk"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Five plus five is",
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Ten minus one is",
+"ok": "nine|\\b9\\b"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Three plus three is",
+"ok": "six|\\b6\\b"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "One, two, three,",
+"ok": "four|\\b4\\b"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Monday, Tuesday, Wednesday,",
+"ok": "thursday"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "April, May,",
+"ok": "june"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Winter, spring,",
+"ok": "summer"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Snow is cold and",
+"ok": "white|wet|soft"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Lemons taste",
+"ok": "sour"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Sugar tastes",
+"ok": "sweet"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Fire is",
+"ok": "hot|red|danger|burn|bright|orange"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Ice is",
+"ok": "cold|frozen|water|slippery|hard"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A giraffe has a long",
+"ok": "neck"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "An elephant has a long",
+"ok": "trunk|nose"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A rabbit has long",
+"ok": "ear"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "A zebra has black and white",
+"ok": "stripe"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Penguins cannot",
+"ok": "fly"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Fish breathe with",
+"ok": "gill"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Birds have two",
+"ok": "wing|leg|feet|eye"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "The heart is a",
+"ok": "muscle|organ|pump"
+},
+{
+"part": "complete",
+"kind": "complete",
+"q": "Shakespeare wrote",
+"ok": "romeo|hamlet|play|macbeth|sonnet|poem"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Liam.",
+"I like swimming.",
+"My favourite color is yellow.",
+"What is my name?"
+],
+"ok": "liam"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is David.",
+"My favourite food is cheese.",
+"I like to play tennis.",
+"What is my favourite food?"
+],
+"ok": "cheese"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Clara.",
+"My favourite color is pink.",
+"My sister is called Zara.",
+"What is my name?"
+],
+"ok": "clara"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ben.",
+"My favourite food is bananas.",
+"What is my favourite food?"
+],
+"ok": "banana"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ben.",
+"My sister is called Anna.",
+"My favourite food is cheese.",
+"What is my name?"
+],
+"ok": "ben"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Felix.",
+"My favourite color is yellow.",
+"What is my name?"
+],
+"ok": "felix"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ben.",
+"I live in Paris.",
+"Where do I live?"
+],
+"ok": "paris"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Clara.",
+"My favourite color is purple.",
+"What is my favourite color?"
+],
+"ok": "purple"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Sam.",
+"I am six years old.",
+"How old am I?"
+],
+"ok": "six|\\b6\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Jonas.",
+"I live in Madrid.",
+"I have a dog called Bubbles.",
+"Where do I live?"
+],
+"ok": "madrid"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Felix.",
+"My sister is called Ivy.",
+"I am ten years old.",
+"What is my sister's name?"
+],
+"ok": "ivy"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Harry.",
+"My sister is called Liam.",
+"What is my sister's name?"
+],
+"ok": "liam"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Liam.",
+"I am seven years old.",
+"How old am I?"
+],
+"ok": "seven|\\b7\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Zara.",
+"I like swimming.",
+"I live in Berlin.",
+"What sport do I like?"
+],
+"ok": "swim"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Sam.",
+"My favourite food is rice.",
+"I am five years old.",
+"How old am I?"
+],
+"ok": "five|\\b5\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Grace.",
+"I live in Vienna.",
+"I like running.",
+"What sport do I like?"
+],
+"ok": "run"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Nina.",
+"I am twelve years old.",
+"What is my name?"
+],
+"ok": "nina"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Anna.",
+"I am nine years old.",
+"I have a cat called Ginger.",
+"What is my cat called?"
+],
+"ok": "ginger"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is David.",
+"My favourite color is purple.",
+"What is my name?"
+],
+"ok": "david"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Felix.",
+"I like to play basketball.",
+"I have a rabbit called Ginger.",
+"What sport do I like?"
+],
+"ok": "basketball"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ben.",
+"I am seven years old.",
+"My favourite food is rice.",
+"What is my favourite food?"
+],
+"ok": "rice"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Jonas.",
+"I live in Vienna.",
+"Where do I live?"
+],
+"ok": "vienna"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Harry.",
+"I like to play football.",
+"What sport do I like?"
+],
+"ok": "football"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Tina.",
+"My favourite food is pizza.",
+"What is my favourite food?"
+],
+"ok": "pizza"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Victor.",
+"My sister is called Harry.",
+"What is my sister's name?"
+],
+"ok": "harry"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Max.",
+"My favourite food is rice.",
+"I live in Oslo.",
+"What is my favourite food?"
+],
+"ok": "rice"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Grace.",
+"My sister is called Sam.",
+"I like running.",
+"What sport do I like?"
+],
+"ok": "run"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Lucy.",
+"My sister is called Ben.",
+"What is my sister's name?"
+],
+"ok": "ben"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Nina.",
+"My favourite color is blue.",
+"I am eleven years old.",
+"What is my favourite color?"
+],
+"ok": "blue"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Felix.",
+"My favourite food is bananas.",
+"What is my favourite food?"
+],
+"ok": "banana"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is David.",
+"My sister is called Ivy.",
+"I like to play football.",
+"What is my sister's name?"
+],
+"ok": "ivy"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Tina.",
+"My sister is called Lucy.",
+"My favourite color is orange.",
+"What is my sister's name?"
+],
+"ok": "lucy"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Anna.",
+"I am eleven years old.",
+"How old am I?"
+],
+"ok": "eleven|\\b11\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ivy.",
+"I have a fish called Shadow.",
+"I like skiing.",
+"What sport do I like?"
+],
+"ok": "ski"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Harry.",
+"My sister is called Grace.",
+"What is my sister's name?"
+],
+"ok": "grace"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Yusuf.",
+"I am nine years old.",
+"How old am I?"
+],
+"ok": "nine|\\b9\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Clara.",
+"I have a horse called Milo.",
+"I live in Paris.",
+"What is my horse called?"
+],
+"ok": "milo"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Max.",
+"My favourite food is rice.",
+"I like skiing.",
+"What is my favourite food?"
+],
+"ok": "rice"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Oscar.",
+"I am nine years old.",
+"I have a fish called Toby.",
+"What is my name?"
+],
+"ok": "oscar"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Anna.",
+"I like to play basketball.",
+"I have a turtle called Pepper.",
+"What sport do I like?"
+],
+"ok": "basketball"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Felix.",
+"I live in Oslo.",
+"Where do I live?"
+],
+"ok": "oslo"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Clara.",
+"I live in Rome.",
+"I am ten years old.",
+"Where do I live?"
+],
+"ok": "rome"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Zara.",
+"I am eight years old.",
+"I live in London.",
+"How old am I?"
+],
+"ok": "eight|\\b8\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Kate.",
+"My sister is called Paul.",
+"What is my name?"
+],
+"ok": "kate"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Paul.",
+"My sister is called Ella.",
+"I am eight years old.",
+"What is my sister's name?"
+],
+"ok": "ella"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Grace.",
+"I have a fish called Oliver.",
+"My favourite food is pancakes.",
+"What is my name?"
+],
+"ok": "grace"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Nina.",
+"I live in Berlin.",
+"Where do I live?"
+],
+"ok": "berlin"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ella.",
+"I like to play basketball.",
+"My sister is called Rosa.",
+"What is my name?"
+],
+"ok": "ella"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Harry.",
+"I live in Madrid.",
+"Where do I live?"
+],
+"ok": "madrid"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Clara.",
+"I like running.",
+"What sport do I like?"
+],
+"ok": "run"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ben.",
+"I live in Dublin.",
+"What is my name?"
+],
+"ok": "ben"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Nina.",
+"I like skiing.",
+"What sport do I like?"
+],
+"ok": "ski"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Harry.",
+"I live in London.",
+"My favourite food is soup.",
+"What is my favourite food?"
+],
+"ok": "soup"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Tina.",
+"I have a cat called Shadow.",
+"What is my name?"
+],
+"ok": "tina"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Nina.",
+"My sister is called Ella.",
+"My favourite color is orange.",
+"What is my favourite color?"
+],
+"ok": "orange"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Max.",
+"I have a cat called Shadow.",
+"I live in Paris.",
+"Where do I live?"
+],
+"ok": "paris"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ella.",
+"I have a fish called Coco.",
+"What is my fish called?"
+],
+"ok": "coco"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Lucy.",
+"My favourite color is pink.",
+"My sister is called Wendy.",
+"What is my sister's name?"
+],
+"ok": "wendy"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ben.",
+"I am twelve years old.",
+"My favourite food is pancakes.",
+"How old am I?"
+],
+"ok": "twelve|\\b12\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Lucy.",
+"I live in Paris.",
+"My sister is called Victor.",
+"What is my sister's name?"
+],
+"ok": "victor"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Clara.",
+"I like to play tennis.",
+"What sport do I like?"
+],
+"ok": "tennis"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Harry.",
+"I am nine years old.",
+"My favourite color is green.",
+"What is my favourite color?"
+],
+"ok": "green"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Zara.",
+"I have a dog called Bella.",
+"What is my dog called?"
+],
+"ok": "bella"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is David.",
+"I live in Vienna.",
+"I am twelve years old.",
+"How old am I?"
+],
+"ok": "twelve|\\b12\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ivy.",
+"My favourite food is pasta.",
+"What is my favourite food?"
+],
+"ok": "pasta"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Harry.",
+"My sister is called Oscar.",
+"What is my sister's name?"
+],
+"ok": "oscar"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Max.",
+"I am eight years old.",
+"How old am I?"
+],
+"ok": "eight|\\b8\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Sam.",
+"My sister is called David.",
+"My favourite color is green.",
+"What is my sister's name?"
+],
+"ok": "david"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Grace.",
+"My favourite food is bananas.",
+"My sister is called Grace.",
+"What is my favourite food?"
+],
+"ok": "banana"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Oscar.",
+"My favourite food is pizza.",
+"What is my name?"
+],
+"ok": "oscar"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Jonas.",
+"I like running.",
+"My sister is called Jonas.",
+"What is my sister's name?"
+],
+"ok": "jonas"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Nina.",
+"My favourite color is black.",
+"What is my favourite color?"
+],
+"ok": "black"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Yusuf.",
+"I am twelve years old.",
+"How old am I?"
+],
+"ok": "twelve|\\b12\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Paul.",
+"I live in Madrid.",
+"Where do I live?"
+],
+"ok": "madrid"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Felix.",
+"I like running.",
+"What sport do I like?"
+],
+"ok": "run"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Oscar.",
+"My sister is called Clara.",
+"What is my sister's name?"
+],
+"ok": "clara"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ben.",
+"My favourite food is rice.",
+"I like running.",
+"What is my favourite food?"
+],
+"ok": "rice"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Anna.",
+"I have a cat called Shadow.",
+"I live in Madrid.",
+"What is my cat called?"
+],
+"ok": "shadow"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is David.",
+"I am six years old.",
+"I live in Dublin.",
+"Where do I live?"
+],
+"ok": "dublin"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Zara.",
+"My favourite food is soup.",
+"My favourite color is purple.",
+"What is my favourite color?"
+],
+"ok": "purple"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Max.",
+"I live in Oslo.",
+"I have a cat called Charlie.",
+"What is my cat called?"
+],
+"ok": "charlie"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Oscar.",
+"My favourite color is green.",
+"I like running.",
+"What is my favourite color?"
+],
+"ok": "green"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Wendy.",
+"I like to play tennis.",
+"What sport do I like?"
+],
+"ok": "tennis"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Paul.",
+"My favourite color is green.",
+"I am nine years old.",
+"How old am I?"
+],
+"ok": "nine|\\b9\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Rosa.",
+"I have a fish called Pepper.",
+"My favourite color is blue.",
+"What is my fish called?"
+],
+"ok": "pepper"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Paul.",
+"I am twelve years old.",
+"I have a dog called Luna.",
+"How old am I?"
+],
+"ok": "twelve|\\b12\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ivy.",
+"My favourite food is pancakes.",
+"What is my favourite food?"
+],
+"ok": "pancake"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Lucy.",
+"I live in Madrid.",
+"I like running.",
+"Where do I live?"
+],
+"ok": "madrid"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Zara.",
+"I like to play tennis.",
+"What sport do I like?"
+],
+"ok": "tennis"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ben.",
+"My favourite food is pasta.",
+"What is my name?"
+],
+"ok": "ben"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ella.",
+"My favourite color is black.",
+"I am six years old.",
+"What is my favourite color?"
+],
+"ok": "black"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Victor.",
+"My sister is called Ella.",
+"What is my sister's name?"
+],
+"ok": "ella"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Wendy.",
+"I have a horse called Toby.",
+"I am ten years old.",
+"How old am I?"
+],
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Sam.",
+"My sister is called Ella.",
+"What is my sister's name?"
+],
+"ok": "ella"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ivy.",
+"My favourite color is yellow.",
+"I live in Berlin.",
+"What is my favourite color?"
+],
+"ok": "yellow"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Anna.",
+"I like to play tennis.",
+"What sport do I like?"
+],
+"ok": "tennis"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Max.",
+"I have a rabbit called Toby.",
+"My favourite color is yellow.",
+"What is my rabbit called?"
+],
+"ok": "toby"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Jonas.",
+"I am seven years old.",
+"What is my name?"
+],
+"ok": "jonas"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Rosa.",
+"I am nine years old.",
+"I live in Vienna.",
+"What is my name?"
+],
+"ok": "rosa"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Lucy.",
+"I live in Berlin.",
+"My sister is called Ella.",
+"What is my sister's name?"
+],
+"ok": "ella"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Grace.",
+"I live in Dublin.",
+"Where do I live?"
+],
+"ok": "dublin"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Lucy.",
+"I am nine years old.",
+"My sister is called Lucy.",
+"What is my name?"
+],
+"ok": "lucy"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ben.",
+"My favourite food is soup.",
+"What is my name?"
+],
+"ok": "ben"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Zara.",
+"I am five years old.",
+"I like running.",
+"What sport do I like?"
+],
+"ok": "run"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ella.",
+"My favourite color is pink.",
+"What is my favourite color?"
+],
+"ok": "pink"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ben.",
+"My favourite color is purple.",
+"What is my favourite color?"
+],
+"ok": "purple"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Lucy.",
+"My favourite color is black.",
+"My sister is called Victor.",
+"What is my name?"
+],
+"ok": "lucy"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Paul.",
+"My favourite color is blue.",
+"I live in Paris.",
+"What is my name?"
+],
+"ok": "paul"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is David.",
+"My sister is called Kate.",
+"My favourite food is pizza.",
+"What is my favourite food?"
+],
+"ok": "pizza"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Sam.",
+"My favourite color is orange.",
+"I live in London.",
+"What is my favourite color?"
+],
+"ok": "orange"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ben.",
+"My sister is called Zara.",
+"What is my sister's name?"
+],
+"ok": "zara"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Felix.",
+"I live in Rome.",
+"What is my name?"
+],
+"ok": "felix"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Wendy.",
+"I live in Oslo.",
+"My favourite food is pancakes.",
+"Where do I live?"
+],
+"ok": "oslo"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Yusuf.",
+"I have a rabbit called Rocky.",
+"I have a rabbit called Milo.",
+"What is my rabbit called?"
+],
+"ok": "milo"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ivy.",
+"I like running.",
+"What sport do I like?"
+],
+"ok": "run"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Grace.",
+"I have a hamster called Bubbles.",
+"My favourite color is red.",
+"What is my favourite color?"
+],
+"ok": "red"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Lucy.",
+"I live in Rome.",
+"I am five years old.",
+"Where do I live?"
+],
+"ok": "rome"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Sam.",
+"I have a fish called Coco.",
+"My sister is called Clara.",
+"What is my fish called?"
+],
+"ok": "coco"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ben.",
+"I live in Paris.",
+"My favourite color is orange.",
+"What is my favourite color?"
+],
+"ok": "orange"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Sam.",
+"My favourite color is black.",
+"My sister is called Liam.",
+"What is my sister's name?"
+],
+"ok": "liam"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Anna.",
+"I like swimming.",
+"What is my name?"
+],
+"ok": "anna"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Anna.",
+"My favourite food is pasta.",
+"I like swimming.",
+"What is my favourite food?"
+],
+"ok": "pasta"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Victor.",
+"I am ten years old.",
+"How old am I?"
+],
+"ok": "ten|\\b10\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ivy.",
+"I live in Rome.",
+"My favourite food is rice.",
+"What is my favourite food?"
+],
+"ok": "rice"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Grace.",
+"I like to play basketball.",
+"I have a horse called Charlie.",
+"What is my horse called?"
+],
+"ok": "charlie"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Ivy.",
+"My favourite color is purple.",
+"My sister is called Oscar.",
+"What is my favourite color?"
+],
+"ok": "purple"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Jonas.",
+"My sister is called Liam.",
+"I like to play tennis.",
+"What sport do I like?"
+],
+"ok": "tennis"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Yusuf.",
+"My sister is called Ella.",
+"What is my sister's name?"
+],
+"ok": "ella"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Sam.",
+"I am nine years old.",
+"How old am I?"
+],
+"ok": "nine|\\b9\\b"
+},
+{
+"part": "memory",
+"kind": "memory",
+"q": [
+"Hi! My name is Grace.",
+"My favourite color is orange.",
+"What is my favourite color?"
+],
+"ok": "orange"
+}
+]
