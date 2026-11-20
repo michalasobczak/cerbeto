@@ -153,6 +153,12 @@ ARM_PAIR_MIX["talk10"] = ARM_PAIR_MIX["talk2"]
 ARM_PAIR_STEPS["talk10"] = ARM_PAIR_STEPS["talk2"]
 ARM_LR["talk10"] = ARM_LR["talk2"]
 BY_TOKENS.add("talk10")
+# `talk10b` (2026-11-20): talk10 at 3e-5 lifted validation on every shelf by 0.07-0.15 (+0.2 within 3M tokens; bil10
+# ended at 1e-5 and the optimizer starts fresh). Same stream, at the learning rate bil10 ended with.
+for _d in (ARM_START, ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_PAIR_STEPS):
+    _d["talk10b"] = _d["talk10"]
+ARM_LR["talk10b"] = (1e-5, 100)
+BY_TOKENS.add("talk10b")
 MAX_PASSES = 4
 
 
@@ -748,7 +754,7 @@ def add_probes(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval", "probes"])
-    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest | bil10 | talk10 (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest | bil10 | talk10 | talk10b (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     p.add_argument("--name", help="train: run folder (default the arm), e.g. a baseline beside a DiLoCo run")
