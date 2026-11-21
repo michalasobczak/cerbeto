@@ -1,4 +1,4 @@
-"""Spec 0019, step 1: passages for the fact questions, taken from the shelves the student read (train split only, so the
+"""Spec 0020, step 1: passages for the fact questions, taken from the shelves the student read (train split only, so the
 validation stays unseen). Text shelves (train.jsonl) are read directly; the older shelves keep only their token streams,
 which are decoded document by document (every document ends with <|eos|>). A passage is a run of whole paragraphs,
 120-350 words, mostly letters (no tables, code or long formulas). 2% of passages, chosen by hash, are held out.

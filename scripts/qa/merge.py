@@ -1,4 +1,4 @@
-"""Spec 0019, step 3: the shards of generate.py into the tuning files. Duplicate questions go (the first one stays), and so do
+"""Spec 0020, step 3: the shards of generate.py into the tuning files. Duplicate questions go (the first one stays), and so do
 questions too close to any of bench1000's (same question, or most of the same content words), so the benchmark stays a
 test. Passages held out by qa_passages.py give the validation pairs.
 

@@ -1,4 +1,4 @@
-# 0019 — Fact questions from the shelves, then tuning
+# 0020 — Fact questions from the shelves, then tuning
 
 Status: generating (2026-11-21) · Depends on: 0016, 0017, 0018 · Unblocks: v7, 0013
 

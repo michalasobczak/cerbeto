@@ -68,7 +68,7 @@ from fact tables, none of them in the tuning data; between two models a differen
 **Next:**
 1. ~~`talk10b` → v7~~: failed [0017](specs/0017-talk10.md) G1 (shelves +0.03–0.06); `bil10` stays the chat's default.
 2. ~~More data at the same size~~: `bil20` ([0018](specs/0018-twenty-billion.md)) cancelled at 2.16B of 20B (2026-11-21).
-   **Instead, fact questions** ([0019](specs/0019-fact-questions.md)): a teacher writes hundreds of thousands of question
+   **Instead, fact questions** ([0020](specs/0020-fact-questions.md)): a teacher writes hundreds of thousands of question
    → answer pairs from the shelf passages the student has read, each checked twice; then tuning of `bil10/final` on them,
    measured on the 1000-question benchmark.
 3. **More parameters only if knowledge stays flat:** a ~300M student *grown* from this one (not from scratch), the most

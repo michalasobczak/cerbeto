@@ -1,4 +1,4 @@
-"""Spec 0019: the closed-book checks of question-answer pairs by the teacher (Qwen3-8B-AWQ; with --think it reasons before
+"""Spec 0020: the closed-book checks of question-answer pairs by the teacher (Qwen3-8B-AWQ; with --think it reasons before
 it scores; the 14B does not fit a 12 GB card with room for a batch), on one GPU. It sees only the pairs, ten per prompt, never the passage, and scores each 0-5 (see CHECK in generate.py); the
 score is added to every pair as "judge". --mode known (default): the teacher answers each question alone, with no passage,
 and the pair is marked "known" when that answer agrees with the pair's answer (most of its own words come back): a fact a

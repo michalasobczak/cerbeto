@@ -1,4 +1,4 @@
-"""Spec 0019, step 2: fact questions from shelf passages, on one GPU, with a local teacher (vLLM, Qwen3-8B-AWQ, no thinking).
+"""Spec 0020, step 2: fact questions from shelf passages, on one GPU, with a local teacher (vLLM, Qwen3-8B-AWQ, no thinking).
 Four passes per chunk of passages (--stage all): the teacher rates each passage for textbook knowledge (0-5; below
 --min-rate no questions), writes question-answer pairs grounded in the rated passages, scores each pair without the
 passage (0 unclear or false ... 5 a basic fact; below --min-score dropped), and finally answers each question alone,
