@@ -25,8 +25,8 @@ model above the chat) · weights: **[michalasobczak/cerbeto](https://huggingface
 | 13 | [0016](specs/0016-ten-billion.md) | `bil10-8326M` | 11-18 | 5.8B / 8.3B | preview of `bil10` at 5.8B | – | bench 66/100 |
 | 14 | [0016](specs/0016-ten-billion.md) | `bil10-8507M`, `bil10-10494M` | 11-18 → 11-19 | 6.0B, 8.0B / 8.5B, 10.5B | previews of `bil10` at 6B and 8B | – | – |
 | 15 | [0016](specs/0016-ten-billion.md) | **`v15-12488M`** (`final/bil10`) | 11-19 | 10.0B / 12.5B | ten billion tokens of a new data set, from `bil2-avg` | ✅ default | bench **64**/100: validation down on every new shelf (edu 3.64 → 3.35, textbooks 3.24 → 2.40), dialogue up (1.41 → 1.51) |
-| 16 | [0017](specs/0017-talk10.md) | `final/talk10` | 11-20 | 50M / 12.5B | conversation tuning of `bil10` at v6's learning rate (3e-5) | – | bench **68**/100, but shelf validation +0.07–0.15: forgot, not v7 |
-| 17 | [0017](specs/0017-talk10.md) | `final/talk10b` | 11-20 | 50M / 12.6B | the same at 1e-5, the rate `bil10` ended with | – | bench **66**/100, shelf validation +0.03–0.06: less forgetting, still not v7 |
+| 16 | [0017](specs/0017-talk10.md) | `final/talk10` | 11-20 | 50M / 12.5B | conversation tuning of `bil10` at v6's learning rate (3e-5) | – | bench **68**/100, but shelf validation +0.07–0.15: forgot, not released |
+| 17 | [0017](specs/0017-talk10.md) | `final/talk10b` | 11-20 | 50M / 12.6B | the same at 1e-5, the rate `bil10` ended with | – | bench **66**/100, shelf validation +0.03–0.06: less forgetting, still not released |
 | 18 | [0018](specs/0018-twenty-billion.md) | `final/bil20` | 11-20 → 11-21 | 2.16B / 14.6B | twenty billion more on `bil10`'s shelves ([0018](specs/0018-twenty-billion.md)) | – | **cancelled** at 2.16B: more text did not move the answers |
 
 **Tokens: run / in all** — tokens read in that run / in the model's whole life. **Chat** — 160 sampled questions, counted right by a
@@ -48,17 +48,17 @@ per byte, which does not depend on the vocabulary.
 from fact tables, none of them in the tuning data; between two models a difference of ~25 of 1000 is beyond chance
 (with 100 questions it was ~10 of 100).
 
-| Model | Tokens in all | **Bench1000** |
-|---|---|---|
-| v1 (439M) | 0.83B | **312** |
-| v3 (523M) | 0.91B | **274** |
-| v5 (704M) | 1.10B | **316** |
-| v6-1032M | 1.42B | **488** |
-| `bil2-avg` | 2.49B | **498** |
-| `bil10` at 10.5B | 10.5B | **509** |
-| `bil10/final` | 12.5B | **503** |
-| `talk10` | 12.5B | **500** |
-| `talk10b` | 12.6B | **494** |
+| # | Model | Tokens in all | **Bench1000** |
+|---|---|---|---|
+| 4 | v1 (439M) | 0.83B | **312** |
+| 4 | v3 (523M) | 0.91B | **274** |
+| 4 | v5 (704M) | 1.10B | **316** |
+| 6 | `v6-1032M` | 1.42B | **488** |
+| 8 | `bil2-avg` | 2.49B | **498** |
+| 14 | `bil10` at 10.5B | 10.5B | **509** |
+| 15 | `v15-12488M` (`bil10/final`) | 12.5B | **503** |
+| 16 | `talk10` | 12.5B | **500** |
+| 17 | `talk10b` | 12.6B | **494** |
 
 - The one big step is conversation tuning (v5 → v6, +172); everything after it is within ~20 points, about the size of chance.
 - Ten billion tokens of school text raised completing (71 → 79–83) and yes/no (118 → 124), but not knowledge asked as a
@@ -66,7 +66,7 @@ from fact tables, none of them in the tuning data; between two models a differen
 - Arithmetic stays at 3–9 of 100 in every model.
 
 **Next:**
-1. ~~`talk10b` → v7~~: failed [0017](specs/0017-talk10.md) G1 (shelves +0.03–0.06); `bil10` stays the chat's default and is `v15-12488M` in the model repo.
+1. ~~`talk10b` as a release~~: failed [0017](specs/0017-talk10.md) G1 (shelves +0.03–0.06); `bil10` stays the chat's default and is `v15-12488M` in the model repo.
 2. ~~More data at the same size~~: `bil20` ([0018](specs/0018-twenty-billion.md)) cancelled at 2.16B of 20B (2026-11-21).
    **Instead, fact questions** ([0020](specs/0020-fact-questions.md)): a teacher writes hundreds of thousands of question
    → answer pairs from the shelf passages the student has read, each checked twice; then tuning of `bil10/final` on them,
