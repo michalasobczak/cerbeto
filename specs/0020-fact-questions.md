@@ -1,6 +1,6 @@
 # 0020 — Fact questions from the shelves, then tuning
 
-Status: generating (2026-11-21) · Depends on: 0016, 0017, 0018 · Unblocks: a release, 0013
+Status: tuning, arm `facts` (2026-11-21) · Depends on: 0016, 0017, 0018 · Unblocks: a release, 0013
 
 ## 1. TL;DR
 The 1000-question benchmark (2026-11-21) showed that ten billion tokens of school text barely moved the answers (v6 488 →
@@ -51,4 +51,11 @@ Mac mini.
   out of bench1000 when it was built.
 
 ## 6. Results
-- (generating)
+- **Data (2026-11-21, G1 partly):** generation stopped early on the user's call (three cards; the fourth's fan failed after
+  1,024 passages), 157,461 pairs from ~132k of 220,721 passages; the merge dropped 8,952 duplicates and 338 close to
+  bench1000: **145,234 train, 2,937 valid** (`what` 80k, `why` 20k, `where` 10k, …; textbooks 45k, edu 12 44k, wiki 35k).
+  Below the 300k of G1, accepted to test the idea sooner (the rest of the passages can be generated later, resumable).
+  Hand check of 100 random pairs: ~90 good; bad ones are non-answers ("Communicating with a partner is so important."),
+  questions that lean on their passage (Miss Alice, the lemonade stand), tautologies and a few wrong facts (the penalty
+  spot "within the six-yard box").
+- **Tuning:** arm `facts`, 50M tokens from `bil10/final` on one card (not DiLoCo: a few hours).
