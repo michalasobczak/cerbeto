@@ -44,6 +44,27 @@ per byte, which does not depend on the vocabulary.
 - Facts are still missing (the capital of France, the largest planet; "Which is smaller, an ant or a horse?" → "A horse"):
   partly the answering form, partly perhaps capacity.
 
+**The 1000-question benchmark (2026-11-21):** `scripts/hf/bench1000.py`, `bench.py`'s 100 questions (core) and 900 more
+from fact tables, none of them in the tuning data; between two models a difference of ~25 of 1000 is beyond chance
+(with 100 questions it was ~10 of 100).
+
+| Model | Tokens in all | **Bench1000** |
+|---|---|---|
+| v1-439M | 0.83B | **312** |
+| v3-523M | 0.91B | **274** |
+| v5-704M | 1.10B | **316** |
+| v6-1032M | 1.42B | **488** |
+| `bil2-avg` | 2.49B | **498** |
+| `bil10` at 10.5B | 10.5B | **509** |
+| `bil10/final` | 12.5B | **503** |
+| `talk10` | 12.5B | **500** |
+| `talk10b` | 12.6B | **494** |
+
+- The one big step is conversation tuning (v5 → v6, +172); everything after it is within ~20 points, about the size of chance.
+- Ten billion tokens of school text raised completing (71 → 79–83) and yes/no (118 → 124), but not knowledge asked as a
+  question (70 → 69–81, best at `bil2-avg`): the facts read as text are not reached by the answering form.
+- Arithmetic stays at 3–9 of 100 in every model.
+
 **Next:**
 1. ~~`talk10b` → v7~~: failed [0017](specs/0017-talk10.md) G1 (shelves +0.03–0.06); `bil10` stays the chat's default.
 2. **More data at the same size:** `bil20` (running since 2026-11-20, [0018](specs/0018-twenty-billion.md)): 20B more
