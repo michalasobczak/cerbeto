@@ -24,7 +24,7 @@ model above the chat) · weights: **[michalasobczak/cerbeto](https://huggingface
 | 12 | [0016](specs/0016-ten-billion.md) | `bil10-6520M` | 11-17 | 4.0B / 6.5B | preview of `bil10` at 4B | – | bench 61/100 |
 | 13 | [0016](specs/0016-ten-billion.md) | `bil10-8326M` | 11-18 | 5.8B / 8.3B | preview of `bil10` at 5.8B | – | bench 66/100 |
 | 14 | [0016](specs/0016-ten-billion.md) | `bil10-8507M`, `bil10-10494M` | 11-18 → 11-19 | 6.0B, 8.0B / 8.5B, 10.5B | previews of `bil10` at 6B and 8B | – | – |
-| 15 | [0016](specs/0016-ten-billion.md) | **`final/bil10`** (`bil10-12488M`) | 11-19 | 10.0B / 12.5B | ten billion tokens of a new data set, from `bil2-avg` | ✅ default | bench **64**/100: validation down on every new shelf (edu 3.64 → 3.35, textbooks 3.24 → 2.40), dialogue up (1.41 → 1.51) |
+| 15 | [0016](specs/0016-ten-billion.md) | **`v7-12488M`** (`final/bil10`) | 11-19 | 10.0B / 12.5B | ten billion tokens of a new data set, from `bil2-avg` | ✅ default | bench **64**/100: validation down on every new shelf (edu 3.64 → 3.35, textbooks 3.24 → 2.40), dialogue up (1.41 → 1.51) |
 | 16 | [0017](specs/0017-talk10.md) | `final/talk10` | 11-20 | 50M / 12.5B | conversation tuning of `bil10` at v6's learning rate (3e-5) | – | bench **68**/100, but shelf validation +0.07–0.15: forgot, not v7 |
 | 17 | [0017](specs/0017-talk10.md) | `final/talk10b` | 11-20 | 50M / 12.6B | the same at 1e-5, the rate `bil10` ended with | – | bench **66**/100, shelf validation +0.03–0.06: less forgetting, still not v7 |
 | 18 | [0018](specs/0018-twenty-billion.md) | `final/bil20` | 11-20 → 11-21 | 2.16B / 14.6B | twenty billion more on `bil10`'s shelves ([0018](specs/0018-twenty-billion.md)) | – | **cancelled** at 2.16B: more text did not move the answers |
@@ -40,7 +40,7 @@ per byte, which does not depend on the vocabulary.
   10B. The jumps come from conversation tuning (v5 → v6: chat 55 → 117 of 160 at the same size).
 - Conversation tuning must start at the learning rate the run ended with: `talk10` at 3e-5 with a fresh optimizer lifted
   validation by +0.2 within 3M tokens and only partly came back ([0017](specs/0017-talk10.md)); `talk10b` at 1e-5 was
-  +0.04 at the same point and ended at +0.03–0.06 with benchmark 66; neither passed, so there is no v7 yet.
+  +0.04 at the same point and ended at +0.03–0.06 with benchmark 66; neither passed, so `bil10` itself was published as v7 (2026-11-21).
 - Facts are still missing (the capital of France, the largest planet; "Which is smaller, an ant or a horse?" → "A horse"):
   partly the answering form, partly perhaps capacity.
 
@@ -66,7 +66,7 @@ from fact tables, none of them in the tuning data; between two models a differen
 - Arithmetic stays at 3–9 of 100 in every model.
 
 **Next:**
-1. ~~`talk10b` → v7~~: failed [0017](specs/0017-talk10.md) G1 (shelves +0.03–0.06); `bil10` stays the chat's default.
+1. ~~`talk10b` → v7~~: failed [0017](specs/0017-talk10.md) G1 (shelves +0.03–0.06); `bil10` stays the chat's default and is v7 in the model repo.
 2. ~~More data at the same size~~: `bil20` ([0018](specs/0018-twenty-billion.md)) cancelled at 2.16B of 20B (2026-11-21).
    **Instead, fact questions** ([0020](specs/0020-fact-questions.md)): a teacher writes hundreds of thousands of question
    → answer pairs from the shelf passages the student has read, each checked twice; then tuning of `bil10/final` on them,

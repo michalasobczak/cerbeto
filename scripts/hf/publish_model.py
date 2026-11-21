@@ -20,7 +20,9 @@ else:
     sys.exit("the checkpoint kept changing")
 (stage / "architecture.json").write_text(a2)
 shutil.copy(REPO / "brain/cerbeto/model/student.py", stage)
-shutil.copy(REPO / "brain/cerbeto/tokenizer/artifacts/tokenizer.json", stage)
+vocab = json.loads(a2)["config"]["vocab_size"]          # the tokenizer of the checkpoint's vocabulary (8k up to v6, 16k after)
+shutil.copy(REPO / "brain/cerbeto/tokenizer/artifacts" / ("tokenizer.json" if vocab == 8192 else f"tokenizer_{vocab}.json"),
+            stage / "tokenizer.json")
 shutil.copy(REPO / "LICENSE.md", stage)
 ft = json.loads(a2)["final_test"]
 mtok = sys.argv[2] if len(sys.argv) > 2 else f"{ft['tokens'] / 1e6:.0f}M"   # argv[2]: label, e.g. 1032M for 982M + 50M tuning

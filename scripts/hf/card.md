@@ -20,15 +20,15 @@ datasets:
 
 # Cerbeto — a small language model raised like a child
 
-Cerbeto is a 106.8M-parameter language model trained from scratch on a single Mac mini, grown step by step like a child:
-nursery → preschool → school. Code, specs and the whole story: **[github.com/michalasobczak/cerbeto](https://github.com/michalasobczak/cerbeto)**.
+Cerbeto is a 106.8M-parameter language model trained from scratch, first on a single Mac mini and later on other commodity hardware, grown step by step like a
+child: nursery → preschool → school. Code, specs and the whole story: **[github.com/michalasobczak/cerbeto](https://github.com/michalasobczak/cerbeto)**.
 
 **Try it: [Cerbeto chat Space](https://huggingface.co/spaces/michalasobczak/cerbeto-chat)** (runs in your browser, ~110 MB downloaded once).
 
-This checkpoint is **version {TAG}**: **student D after the one-billion-token run (spec 0010, stopped at 982M tokens) and
-50M tokens of conversation tuning (spec 0011)**, which taught it to answer a question with its answer.
-Versions are tagged `v<N>-<tokens>M` (v1, v2, … then the tokens of the run), the newest is on `main`; v1–v5 are snapshots
-from the middle of the 1B run.
+This checkpoint is **version {TAG}**: **v6 moved to a 16,384-word vocabulary, a second billion tokens (spec 0014/0015) and
+ten billion tokens of a new school-level data set (spec 0016)**, 12.5B tokens read in all, trained by DiLoCo on several GPUs.
+Versions are tagged `v<N>-<tokens>M` (v1, v2, … then the tokens read in all), the newest is on `main`; v1–v5 are snapshots
+from the middle of the 1B run, v6 is the conversation-tuned 1B model.
 
 ## Architecture
 
@@ -40,7 +40,7 @@ from the middle of the 1B run.
 | MLP | SwiGLU, 1792 |
 | positions | RoPE (θ = 10,000) |
 | norm | RMSNorm |
-| vocabulary | 8,192 BPE, tied embedding |
+| vocabulary | 16,384 BPE, tied embedding (8,192 up to v6) |
 | context | 512 tokens |
 
 Grown function-preservingly from a 34.6M recurrent-depth student (Huginn-style prelude / core × K / coda): wider, the core unrolled into 16 blocks.
@@ -48,35 +48,35 @@ Close in shape to SmolLM-135M and MobileLLM-125M.
 
 ## Training data
 
-Two of three steps are windows of text shelves: educational text (FineWeb-Edu, up to grade 7) 32%, Cosmopedia stories for young children 22%,
-SODA conversations 15%, TinyStories 15%, spoken English (BabyLM: CHILDES, Switchboard, BNC spoken, OpenSubtitles) 8%, children's books (Project Gutenberg via BabyLM) 5%, Simple English Wikipedia 3%.
-Every third step: request → reply pairs generated and checked by code — conversations of 2–8 turns (facts the human tells and asks back later),
-preschool lessons, stories on request, who the student is, two-step relations. Exam prompts never appear in training.
+The ten-billion-token run (three of four steps): FineWeb-Edu paragraphs of grade 8–12 40%, Cosmopedia stories for older
+readers 19%, Cosmopedia textbooks and lessons 15%, and 26% the earlier shelves (FineWeb-Edu up to grade 8, textbooks,
+SODA conversations, TinyStories, spoken English from BabyLM, children's books, Simple English Wikipedia).
+Every fourth step: request → reply pairs — conversations of 2–8 turns (facts the human tells and asks back later), questions
+about the world with short answers written by a teacher model, preschool lessons, stories on request, "I don't know" about
+made-up words. Exam prompts never appear in training.
 
 Corpora keep their own licences: TinyStories CDLA-Sharing-1.0, FineWeb-Edu ODC-By 1.0, Cosmopedia Apache-2.0, SODA CC BY 4.0,
 Wikipedia CC BY-SA 4.0, BabyLM MIT, Gutenberg public domain.
 
-## What it can and cannot do (spot check of v4, v5 and v6)
+## What it can and cannot do (bench1000)
 
-Each question asked 10 times at temperature 0.7, answers checked by a pattern. None of these questions was in the tuning data
-(questions sharing all their content words with a spot-check question were dropped).
+1,000 questions asked once, greedy, an answer right when it matches a pattern; none of them in the tuning data.
+A difference of ~25 points is beyond chance.
 
-| Part | v4 (555M) | v5 (704M) | v6 (982M + 50M tuning) |
-|---|---|---|---|
-| chat: 16 questions (true/false, facts, opposites) | 69 / 160 | 55 / 160 | **117 / 160** |
-| completing a sentence: 8 facts | 26 / 80 | 35 / 80 | **38 / 80** |
-| memory: 4 short conversations | 23 / 40 | 19 / 40 | **40 / 40** |
+| Version | Tokens read | bench1000 |
+|---|---|---|
+| v1 | 0.44B | 312 |
+| v5 | 0.70B | 316 |
+| v6 | 1.03B | 488 |
+| **{TAG}** | 12.5B | **503** |
 
-v6 answers with the answer first ("Where do fish live?" 0 → 10 of 10, "Is a carrot a fruit or a vegetable?" 0 → 10) and remembers
-every pet told earlier in the talk (10 of 10 each). Conversation tuning: questions about the world with short answers written by a
-teacher model (gemma4, 17,400), conversations that tell facts and ask them back, "I don't know" about made-up words and replies to
-feelings, every other step the 1B shelves so nothing was forgotten (shelf validation ended at or below the 1B checkpoint).
+Ten times more text lowered validation on every new shelf (school text, textbooks) but moved the answers little: knowledge
+asked as a question stayed at ~69 of 280 (capitals, animals, nature). Arithmetic is near zero.
 
-- **Can:** short polite conversation, remember a name or a pet told earlier in the talk, preschool skills (opposites, sizes, categories,
-  "who is the youngest"), simple stories; it **thinks out loud** before true/false answers ("A cat can fly. True or false?" →
-  *"A cat cannot fly. So that is wrong, and the answer is no."* → "No. A cat cannot fly.").
-- **Cannot yet:** facts it never read often (the capital of France, "A baby cat is called a" *kitten*, the largest planet — 0 of 10),
-  "Is the sun hot?" (0 of 10); it is a 107M model with an 8,192-word vocabulary and a 512-token context, so it is easily confused
+- **Can:** short polite conversation, remember a name or a pet told earlier in the talk, preschool skills (opposites, sizes,
+  categories, "who is the youngest"), simple stories, sentences about school topics; it can **think out loud** before a
+  true/false answer.
+- **Cannot yet:** most facts asked directly, arithmetic; it is a 107M model with a 512-token context, so it is easily confused
   and makes things up.
 
 The 80M-token predecessor passed the preschool exam (code-graded: id 89.7–100% per skill, mean ood_hard 78.5%).
