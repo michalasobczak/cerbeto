@@ -166,6 +166,18 @@ for _d in (ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_PAIR_ST
     _d["bil20"] = _d["bil10"]
 ARM_START["bil20"] = CKPT / "bil10" / "final"
 BY_TOKENS.add("bil20")
+# spec 0020 (`facts`, 2026-11-21): fact questions written from the shelf passages by a local teacher and checked closed
+# book (data/talk/qa_facts.jsonl, `scripts/qa/merge.py`). From bil10/final at the rate it ended with (1e-5): three of
+# four steps conversations, two thirds of them the fact questions (1-4 in a row, answer the last), one third talk2's mix;
+# the fourth step bil10's shelves so nothing is forgotten. About half fact questions, a quarter talk2, a quarter shelves.
+ARM_FACTS = {"facts": paths.DATA / "talk" / "qa_facts.jsonl"}
+for _d in (ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS):
+    _d["facts"] = _d["bil10"]
+ARM_START["facts"] = CKPT / "bil10" / "final"
+ARM_PAIR_MIX["facts"] = {"facts": 2 / 3, **{k: v / 3 for k, v in ARM_PAIR_MIX["talk2"].items()}}
+ARM_PAIR_STEPS["facts"] = (3, 4)
+ARM_LR["facts"] = (1e-5, 100)
+BY_TOKENS.add("facts")
 MAX_PASSES = 4
 
 
@@ -303,7 +315,7 @@ class Pairs:
     share has 2–5 turns that change the subject — a story, then a question about it, about the student or a lesson —
     so the student learns to answer the last turn, using the earlier ones only when it is asked about them."""
     def __init__(self, seed: int = 0, mix: dict | None = None, turns: tuple[int, int] = (2, 5), vocab: int = 8192,
-                 qa_file=None):
+                 qa_file=None, facts_file=None):
         self.rng = random.Random(seed)
         self.mix = mix or PAIR_MIX
         self.turns = turns
@@ -314,6 +326,9 @@ class Pairs:
         self.qa = talk_data.load_qa(qa_file) if {"qa", "memory"} & set(self.mix) else []
         if {"qa", "memory"} & set(self.mix) and len(self.qa) < 1000:
             raise RuntimeError(f"only {len(self.qa)} teacher questions in {talk_data.QA_FILE}")
+        self.facts = talk_data.load_qa(facts_file) if "facts" in self.mix else []
+        if "facts" in self.mix and len(self.facts) < 10_000:
+            raise RuntimeError(f"only {len(self.facts)} fact questions in {facts_file}")
 
     def one(self, kind: str) -> tuple[str, str]:
         if kind == "story":
@@ -390,6 +405,8 @@ class Pairs:
                 out.append(self.dialogue(budget))
             elif kind == "qa":                       # several unrelated questions: answer the last one
                 out.append(self.chain(self.rng.sample(self.qa, self.rng.randint(*self.turns)), budget))
+            elif kind == "facts":                    # 1-4 fact questions in a row: answer the last one
+                out.append(self.chain(self.rng.sample(self.facts, self.rng.randint(1, 4)), budget))
             elif kind == "memory":                   # facts, other questions, then the facts asked back
                 out.append(self.chain(talk_data.memory_dialogue(self.rng, self.rng.sample(self.qa, 3)), budget))
             else:
@@ -529,7 +546,8 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True, *, name: st
     valid = {s: ShelfStream(s, "valid", CFG["seq_len"], vocab=vocab).fixed_batches(8, 8, device, seed=1)
              for s in ARM_VALID.get(arm, ("s0_speech", "s0_stories"))}
     rng = np.random.default_rng(seed + state["step"])
-    pairs = Pairs(seed + state["step"], ARM_PAIR_MIX.get(arm), ARM_TURNS.get(arm, (2, 5)), vocab=vocab, qa_file=ARM_QA.get(arm))
+    pairs = Pairs(seed + state["step"], ARM_PAIR_MIX.get(arm), ARM_TURNS.get(arm, (2, 5)), vocab=vocab, qa_file=ARM_QA.get(arm),
+                  facts_file=ARM_FACTS.get(arm))
     stop = {"now": False}
     signal.signal(signal.SIGINT, lambda *_: stop.update(now=True))
     log = (run / "log.jsonl").open("a")
@@ -761,7 +779,7 @@ def add_probes(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval", "probes"])
-    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest | bil10 | talk10 | talk10b | bil20 (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest | bil10 | talk10 | talk10b | bil20 | facts (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     p.add_argument("--name", help="train: run folder (default the arm), e.g. a baseline beside a DiLoCo run")
