@@ -100,6 +100,15 @@ def main() -> None:
     pn.add_argument("--port", type=int, default=8765)
     pn.add_argument("--host", default="127.0.0.1", help="0.0.0.0 to reach the panel from the local network")
 
+    sv = sub.add_parser("serve", help="the student over local HTTP + the voice panel (spec 0019; 127.0.0.1 only)")
+    sv.add_argument("--student", default="final")
+    sv.add_argument("--version", default="v6-1032M", help="checkpoint version under checkpoints/<student>/")
+    sv.add_argument("--checkpoint", help="a checkpoint folder anywhere instead of --student/--version")
+    sv.add_argument("--k", type=int, default=4, help="passes of the recurrent core")
+    sv.add_argument("--temperature", type=float, default=0.0)
+    sv.add_argument("--device", help="cpu / mps / cuda (default: best available)")
+    sv.add_argument("--port", type=int, default=8766)
+
     args = parser.parse_args()
     if args.group == "library" and args.cmd == "build":
         from cerbeto.library.shelves import build_all
@@ -176,6 +185,9 @@ def main() -> None:
     elif args.group == "panel":
         from cerbeto.panel import run as run_panel
         run_panel(host=args.host, port=args.port)
+    elif args.group == "serve":
+        from cerbeto.serve import run as run_serve
+        run_serve(args.student, args.version, args.checkpoint, args.device, args.k, args.temperature, args.port)
     elif args.group == "top":
         from cerbeto.top import run as run_top
         run_top(args.student, args.interval, args.once)

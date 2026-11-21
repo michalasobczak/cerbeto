@@ -48,7 +48,7 @@ class Talker:
     @torch.no_grad()
     def _stream(self, idx: torch.Tensor, k: int, temperature: float, max_new_tokens: int, stops: set[int], on_raw) -> list[int]:
         """Student.generate one token at a time (same sampling: greedy at 0, else top-40), stopping at a stop token;
-        `on_raw` gets the text so far after every token."""
+        `on_raw` gets the text so far after every token; a true return value stops generating there."""
         out = []
         for _ in range(max_new_tokens):
             logits = self.model(idx[:, -self.model.cfg.max_seq_len:], k)[:, -1, :].float()
@@ -62,7 +62,8 @@ class Talker:
             if out[-1] in stops:
                 break
             idx = torch.cat((idx, nxt), dim=1)
-            on_raw(self.tok.decode(out, skip_special_tokens=False))
+            if on_raw(self.tok.decode(out, skip_special_tokens=False)):
+                break
         return out
 
     @torch.no_grad()
@@ -125,6 +126,12 @@ def load_student(student: str, version: str | None, device: str | None):
     version = version or (ckpt_dir / "LATEST").read_text().strip()
     dev = torch.device(device) if device else pick_device()
     return checkpoint.load(Path(ckpt_dir / version), dev), version, dev
+
+
+def load_checkpoint(path: str, device: str | None):
+    """A checkpoint folder anywhere (architecture.json + model.safetensors), e.g. a Hugging Face download."""
+    dev = torch.device(device) if device else pick_device()
+    return checkpoint.load(Path(path).expanduser(), dev), Path(path).name, dev
 
 
 HISTORY_FILE = paths.REPO / "runs" / "chat_history"

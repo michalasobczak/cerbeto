@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cerbeto · voice</title>
+<!-- Spec 0019: the admin talks to Cerbeto. Speech → local Whisper → the student → the answer as text → local Piper.
+     Microphone, end-of-speech detection, WAV and sentence-by-sentence playback are ported from Agentaro's voice mode
+     (chat.js, voice()). Everything is served by `cerbeto serve` on 127.0.0.1; no request leaves this computer. -->
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--fg:#1d2330;--mut:#6b7385;--line:#e3e6ec;--acc:#3b6fd8;--ok:#1f9d55;--bad:#d64545;--warn:#b7800f;--bar:#e9edf3;--me:#3b6fd8;--meFg:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#111419;--card:#1a1e26;--fg:#e6e9ef;--mut:#8f98aa;--line:#2a303b;--acc:#6f9cff;--ok:#3ccf7f;--bad:#ff6b6b;--warn:#f0b43c;--bar:#252b36;--me:#3b5fae;--meFg:#fff}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;justify-content:center}
+.chat-app{display:flex;flex-direction:column;width:100%;max-width:760px;height:100%;background:var(--card);border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.chat-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-weight:700;position:relative;flex:none}
+.avatar i{position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;border:2px solid var(--card);background:var(--mut)}
+[data-state=ready] .avatar i,[data-state=listening] .avatar i,[data-state=processing] .avatar i,[data-state=speaking] .avatar i{background:var(--ok)}
+[data-state=offline] .avatar i{background:var(--bad)}[data-state=error] .avatar i{background:var(--warn)}
+.who{flex:1;min-width:0}.who strong{display:block}.mut{color:var(--mut)}.small{font-size:12px}
+.tools{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--mut)}.tools label{display:flex;gap:4px;align-items:center;cursor:pointer}
+button{font:inherit;color:inherit;cursor:pointer}button:disabled{cursor:not-allowed;opacity:.45}
+.tool{background:none;border:1px solid var(--line);border-radius:7px;padding:3px 9px}
+.offline{background:color-mix(in srgb,var(--bad) 12%,var(--card));border-bottom:1px solid var(--line);padding:10px 14px}
+.offline code{display:block;margin-top:4px;font:12px/1.4 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-all}
+.chat-scroll{flex:1;overflow-y:auto;padding:14px}
+.empty{text-align:center;margin-top:18vh}
+.row{display:flex;margin:8px 0}.row.me{justify-content:flex-end}
+.bubble{max-width:78%;padding:8px 12px;border-radius:14px;background:var(--bar);white-space:pre-wrap;word-break:break-word}
+.me .bubble{background:var(--me);color:var(--meFg);border-bottom-right-radius:4px}.them .bubble{border-bottom-left-radius:4px}
+.name{font-size:11.5px;font-weight:600;color:var(--acc);margin-bottom:2px}
+.thought{font-size:12px;color:var(--mut);font-style:italic;margin-bottom:3px}
+.meta{font-size:11px;color:var(--mut);margin-top:4px}.me .meta{color:color-mix(in srgb,var(--meFg) 75%,transparent)}
+.warnnote{font-size:11.5px;color:var(--warn);margin-top:3px}
+.answer span.reading{background:color-mix(in srgb,var(--acc) 22%,transparent);border-radius:4px}
+.typing span{display:inline-block;width:6px;height:6px;margin:0 2px;border-radius:50%;background:var(--mut);animation:b 1s infinite}
+.typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,80%,100%{opacity:.3}40%{opacity:1}}
+.voice-panel{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line)}
+.dots{display:flex;gap:4px;align-items:center;height:2.3rem;width:40px;flex:none}
+.dots i{display:block;width:6px;height:.55rem;border-radius:3px;background:var(--mut);transition:height .08s}
+[data-state=listening] .dots i{background:var(--bad)}[data-state=speaking] .dots i{background:var(--acc);animation:b 1s infinite}
+[data-state=processing] .dots i{background:var(--warn);animation:b 1.2s infinite}
+.info{flex:1;min-width:0}.info strong{display:block}
+.mic{width:48px;height:48px;border-radius:50%;border:0;background:var(--acc);color:#fff;font-size:20px;flex:none}
+[data-state=listening] .mic{background:var(--bad)}
+.act{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px}
+.composer{display:flex;gap:8px;padding:0 14px 12px}
+.composer input{flex:1;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg)}
+.send{border:0;background:var(--acc);color:#fff;border-radius:10px;padding:0 14px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="chat-app" id="app" data-state="offline">
+  <header class="chat-head">
+    <span class="avatar" aria-hidden="true">C<i></i></span>
+    <div class="who">
+      <strong>Cerbeto</strong>
+      <span class="mut small" id="info">connecting…</span>
+    </div>
+    <div class="tools">
+      <label title="After Cerbeto speaks, listen again without a click"><input type="checkbox" id="handsfree"> hands-free</label>
+      <label title="Keep this conversation as context (the student does not yet tell turns apart well)"><input type="checkbox" id="memory"> memory</label>
+      <button type="button" class="tool" id="new" title="Forget this conversation and start a new one">New</button>
+    </div>
+  </header>
+  <div class="offline" id="offline" role="alert">
+    <strong>Cerbeto is not running.</strong> Start it from <code>brain/</code> and this panel comes back by itself:
+    <code>uv run cerbeto serve --student final --version v6-1032M --device cpu</code>
+  </div>
+  <div class="chat-scroll" id="scroll">
+    <div id="stream" aria-live="polite">
+      <p class="empty mut" id="empty">Press the microphone and ask in English, e.g. “What is the opposite of hot?”</p>
+    </div>
+  </div>
+  <div class="voice-panel">
+    <span class="dots" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <div class="info">
+      <strong id="state">Offline</strong>
+      <span class="mut small" id="note"></span>
+    </div>
+    <button type="button" class="act" id="retry" hidden>Try again</button>
+    <button type="button" class="act" id="done" hidden title="I am done speaking — send now">Done</button>
+    <button type="button" class="act" id="stop" hidden title="Stop reading the answer">■ Stop</button>
+    <button type="button" class="mic" id="mic" title="Speak (Space)" aria-label="Speak" disabled>🎤</button>
+  </div>
+  <form class="composer" id="form" autocomplete="off">
+    <input id="input" maxlength="500" placeholder="…or type a message to Cerbeto" aria-label="Message">
+    <button type="submit" class="send" id="send" disabled>Send</button>
+  </form>
+</div>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const app = $("app"), stream = $("stream"), scroll = $("scroll"), micButton = $("mic"), input = $("input");
+  const dots = [...document.querySelectorAll(".dots i")];
+  const LABELS = { offline: "Offline", ready: "Ready", listening: "Listening…", processing: "Thinking…", speaking: "Speaking…", error: "Problem" };
+  const SILENCE_MS = 1000, MIN_SPEECH_MS = 600, MAX_SPEECH_MS = 30000, TARGET_RATE = 16000, REPLY_TIMEOUT_MS = 30000;
+  const newId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+
+  let state = "offline", health = null, conversation = newId();
+  let current = null;           // utterance_id of the turn in progress; a late answer for another one is dropped
+  let generation = 0;           // bumped by stop / reset: queued speech of an older turn is not played
+  let lastText = null;          // what "Try again" re-sends
+  let ctx = null, mic = null, processor = null;
+  let floor = 0.01, loudMs = 0, quietMs = 0, speechMs = 0, chunks = [], preroll = [], peak = 0, hearing = false, heard = [], heardMs = 0;
+  let playing = null, speechEnded = 0;
+
+  function setState(next, note) {
+    state = next;
+    app.dataset.state = next;
+    $("state").textContent = LABELS[next];
+    if (note != null) $("note").textContent = note;
+    $("offline").hidden = next !== "offline";
+    const free = next === "ready" || next === "error";
+    micButton.disabled = !(free || next === "listening") || !(health && health.voice && health.voice.listening);
+    micButton.title = health && health.voice && !health.voice.listening ? "Speech recognition is not installed (see docs/voice-panel.md)"
+      : next === "listening" ? "Cancel listening" : "Speak (Space)";
+    $("send").disabled = !free;
+    $("done").hidden = next !== "listening";
+    $("stop").hidden = next !== "speaking";
+    $("retry").hidden = !(next === "error" && lastText);
+    if (next !== "listening") dots.forEach((d) => { d.style.height = ""; });
+  }
+
+  // ---------- health: every 5 s; offline ↔ ready without a reload ----------
+  async function checkHealth() {
+    try {
+      const r = await fetch("/v1/health", { cache: "no-store", signal: AbortSignal.timeout(3000) });
+      if (!r.ok) throw new Error();
+      health = await r.json();
+      $("info").textContent = `${health.student}/${health.version} · ${(health.params / 1e6).toFixed(0)}M parameters · ${health.device} · K=${health.k}` +
+        (health.voice.speaking ? "" : " · voice not installed: answers are shown, not read");
+      if (state === "offline") setState("ready", "Press the microphone and speak, or type.");
+      else setState(state);
+    } catch (e) {
+      if (state !== "offline") { stopSpeaking(); current = null; hearing = false; setState("offline", ""); }
+      $("info").textContent = "not running";
+    }
+  }
+
+  // ---------- the conversation as text ----------
+  function bubble(who, text) {
+    $("empty")?.remove();
+    const row = document.createElement("div");
+    row.className = `row ${who}`;
+    const b = document.createElement("div");
+    b.className = "bubble";
+    if (who === "them") { const n = document.createElement("div"); n.className = "name"; n.textContent = "Cerbeto"; b.append(n); }
+    const body = document.createElement("div");
+    body.className = "answer";
+    if (text == null) body.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
+    else body.textContent = text;
+    b.append(body);
+    row.append(b);
+    stream.append(row);
+    scroll.scrollTop = scroll.scrollHeight;
+    return b;
+  }
+  function addLine(b, cls, text) {
+    const el = document.createElement("div");
+    el.className = cls; el.textContent = text; b.append(el);
+    scroll.scrollTop = scroll.scrollHeight;
+    return el;
+  }
+  const secs = (ms) => `${(ms / 1000).toFixed(1)} s`;
+
+  // ---------- one turn: text → the student → the answer shown → read aloud ----------
+  async function ask(text, timing = {}) {
+    text = text.trim().slice(0, 500);
+    if (!text || !(state === "ready" || state === "error")) return;
+    const uid = newId();
+    current = uid; lastText = text;
+    const mine = bubble("me", text);
+    if (timing.stt != null) addLine(mine, "meta", `heard in ${secs(timing.stt)}`);
+    const answerBubble = bubble("them", null);
+    setState("processing", "Cerbeto is thinking…");
+    const t0 = performance.now();
+    let data;
+    try {
+      const r = await fetch("/v1/reply", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversation_id: conversation, utterance_id: uid, text, memory: $("memory").checked }),
+        signal: AbortSignal.timeout(REPLY_TIMEOUT_MS) });
+      data = await r.json().catch(() => ({ error: `HTTP ${r.status}` }));
+      if (uid !== current) return answerBubble.closest(".row").remove();
+      if (r.status === 409) throw new Error("Cerbeto is still answering — try again in a moment.");
+      if (!r.ok) throw new Error(`The model failed: ${data.error || r.status}`);
+    } catch (e) {
+      answerBubble.closest(".row")?.remove();     // also when the health check went offline first: no endless "typing"
+      if (uid !== current) return;
+      const reason = e.name === "TimeoutError" ? "No answer within 30 s." : e instanceof TypeError ? "Cerbeto stopped answering." : e.message;
+      setState("error", reason);
+      checkHealth();
+      return;
+    }
+    const body = answerBubble.querySelector(".answer");
+    body.textContent = "";
+    if (data.thought) answerBubble.insertBefore(Object.assign(document.createElement("div"), { className: "thought", textContent: `thinks: ${data.thought}` }), body);
+    const answer = data.answer || "";
+    const parts = sentences(answer);
+    const spans = parts.map((s, i) => { const sp = document.createElement("span"); sp.textContent = (i ? " " : "") + s; body.append(sp); return sp; });
+    if (!answer) body.textContent = "(no answer)";
+    const meta = addLine(answerBubble, "meta", `model ${data.seconds.toFixed(2)} s · ${data.tokens} tokens · round trip ${secs(performance.now() - t0)}`);
+    console.info("cerbeto turn", { stt_s: timing.stt / 1000, model_s: data.seconds, tokens: data.tokens });
+    await speak(uid, parts, spans, answerBubble, meta, timing);   // only the answer is spoken, never the thought
+  }
+
+  // Piper takes at most 600 characters; long sentences are split at commas or spaces (as in Agentaro).
+  function sentences(text) {
+    const out = [];
+    text.split(/(?<=[.!?…:;])\s+|\n+/).map((t) => t.trim()).filter(Boolean).forEach((t) => {
+      while (t.length > 500) {
+        const at = Math.max(t.lastIndexOf(", ", 500), t.lastIndexOf(" ", 500), 300);
+        out.push(t.slice(0, at)); t = t.slice(at).trim();
+      }
+      out.push(t);
+    });
+    return out;
+  }
+
+  async function speak(uid, parts, spans, b, meta, timing) {
+    if (!parts.length || !health?.voice?.speaking || !ensureContext()) {
+      if (parts.length) addLine(b, "warnnote", "voice unavailable — shown as text only");
+      return endTurn(uid);
+    }
+    const mine = generation;
+    setState("speaking", "Reading the answer — Stop to interrupt.");
+    // All sentences are synthesized at once and played in order, so the next one is ready when the previous ends.
+    const audios = parts.map((text) => fetch("/voice/speak", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) })
+      .then((r) => (r.ok ? r.arrayBuffer() : null)).then((buf) => (buf ? ctx.decodeAudioData(buf) : null)).catch(() => null));
+    let failed = false, first = true;
+    for (let i = 0; i < parts.length; i++) {
+      const buffer = await audios[i];
+      if (mine !== generation || uid !== current) return;
+      if (!buffer) { failed = true; continue; }
+      if (first && timing.end) { meta.textContent += ` · first sound ${secs(performance.now() - timing.end)} after you stopped`; first = false; }
+      spans[i].classList.add("reading");
+      await new Promise((resolve) => {
+        const node = ctx.createBufferSource();
+        node.buffer = buffer; node.connect(ctx.destination);
+        node.onended = resolve; playing = { node, resolve };
+        node.start();
+      });
+      spans[i].classList.remove("reading");
+      playing = null;
+      if (mine !== generation || uid !== current) return;
+    }
+    if (failed) addLine(b, "warnnote", "voice unavailable for part of the answer");
+    endTurn(uid);
+  }
+
+  function stopSpeaking() {
+    generation++;
+    if (playing) { try { playing.node.stop(); } catch (e) {} playing.resolve(); playing = null; }
+    document.querySelectorAll(".reading").forEach((s) => s.classList.remove("reading"));
+  }
+
+  function endTurn(uid) {
+    if (uid !== current || state === "offline") return;
+    current = null;
+    if ($("handsfree").checked && health?.voice?.listening) listen();
+    else setState("ready", "Press the microphone and speak, or type.");
+  }
+
+  // ---------- the microphone (ported from Agentaro's voice mode) ----------
+  function ensureContext() {
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      ctx.resume();
+      return ctx;
+    } catch (e) { return null; }
+  }
+
+  async function listen() {
+    if (!(state === "ready" || state === "error" || state === "speaking")) return;   // speaking: hands-free after the answer
+    try {
+      if (!ensureContext()) throw new Error();
+      if (!mic) {
+        mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+        const source = ctx.createMediaStreamSource(mic);
+        processor = ctx.createScriptProcessor(4096, 1, 1);
+        processor.onaudioprocess = (event) => onAudio(event.inputBuffer.getChannelData(0));
+        source.connect(processor);
+        processor.connect(ctx.destination);      // needed for the processor to run; it writes silence
+      }
+    } catch (e) {
+      mic = null;
+      return setState("error", "No microphone: allow it for this page (the lock icon in the address bar). Typing still works.");
+    }
+    chunks = []; preroll = []; heard = []; loudMs = quietMs = speechMs = heardMs = peak = 0; hearing = false;
+    setState("listening", "Speak; I send when you pause, or press Done.");
+  }
+
+  function onAudio(samples) {
+    if (state !== "listening") return;          // the microphone is off while thinking and speaking (no echo into STT)
+    let sum = 0;
+    for (let i = 0; i < samples.length; i++) sum += samples[i] * samples[i];
+    const level = Math.sqrt(sum / samples.length);
+    const ms = (samples.length / ctx.sampleRate) * 1000;
+    const threshold = Math.max(0.015, floor * 4);
+    const copy = new Float32Array(samples);
+    heard.push(copy); heardMs += ms;
+    while (heardMs > MAX_SPEECH_MS && heard.length > 1) heardMs -= (heard.shift().length / ctx.sampleRate) * 1000;
+    dots.forEach((d, i) => { d.style.height = `${Math.min(2.2, 0.55 + level * (30 + i * 6))}rem`; });
+    if (!hearing) {
+      if (level < threshold) floor = floor * 0.95 + level * 0.05;
+      preroll.push(copy); if (preroll.length > 3) preroll.shift();
+      loudMs = level > threshold ? loudMs + ms : 0;
+      if (loudMs >= 150) { hearing = true; chunks = preroll.slice(); speechMs = loudMs; quietMs = 0; peak = level; $("note").textContent = "Hearing you…"; }
+      return;
+    }
+    chunks.push(copy);
+    speechMs += ms;
+    peak = Math.max(peak * 0.995, level);
+    quietMs = level > Math.max(threshold, peak * 0.22) ? 0 : quietMs + ms;
+    if (quietMs >= SILENCE_MS || speechMs >= MAX_SPEECH_MS) {
+      if (speechMs - quietMs < MIN_SPEECH_MS) return listen();
+      transcribe(chunks.slice());
+    }
+  }
+
+  function done() {
+    if (state !== "listening") return;
+    if (hearing && speechMs >= MIN_SPEECH_MS) return transcribe(chunks.slice());
+    if (heardMs >= MIN_SPEECH_MS) return transcribe(heard.slice());
+  }
+
+  // 16 kHz mono 16-bit WAV from the recorded samples.
+  function wav(parts, rate) {
+    const total = parts.reduce((n, p) => n + p.length, 0);
+    const ratio = rate / TARGET_RATE;
+    const length = Math.floor(total / ratio);
+    const data = new DataView(new ArrayBuffer(44 + length * 2));
+    const text = (offset, value) => [...value].forEach((c, i) => data.setUint8(offset + i, c.charCodeAt(0)));
+    text(0, "RIFF"); data.setUint32(4, 36 + length * 2, true); text(8, "WAVE"); text(12, "fmt ");
+    data.setUint32(16, 16, true); data.setUint16(20, 1, true); data.setUint16(22, 1, true);
+    data.setUint32(24, TARGET_RATE, true); data.setUint32(28, TARGET_RATE * 2, true); data.setUint16(32, 2, true); data.setUint16(34, 16, true);
+    text(36, "data"); data.setUint32(40, length * 2, true);
+    const all = new Float32Array(total);
+    let offset = 0;
+    parts.forEach((p) => { all.set(p, offset); offset += p.length; });
+    for (let i = 0; i < length; i++) {
+      const from = Math.floor(i * ratio), to = Math.min(total, Math.floor((i + 1) * ratio));
+      let acc = 0;
+      for (let j = from; j < to; j++) acc += all[j];
+      const v = Math.max(-1, Math.min(1, acc / Math.max(1, to - from)));
+      data.setInt16(44 + i * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true);
+    }
+    return new Blob([data.buffer], { type: "audio/wav" });
+  }
+
+  async function transcribe(parts) {
+    const end = performance.now();
+    hearing = false;
+    setState("processing", "Writing down what you said…");
+    const mine = generation;
+    try {
+      const r = await fetch("/voice/transcribe", { method: "POST", headers: { "Content-Type": "audio/wav" }, body: wav(parts, ctx.sampleRate) });
+      const data = await r.json().catch(() => ({ error: `HTTP ${r.status}` }));
+      if (mine !== generation || state !== "processing") return;
+      if (!r.ok) throw new Error(`Speech recognition: ${data.error || r.status}`);
+      if (!data.text) return setState("ready", "Didn't catch that — press the microphone and speak again.");
+      setState("ready");
+      ask(data.text, { stt: performance.now() - end, end });
+    } catch (e) {
+      if (mine !== generation || state !== "processing") return;
+      setState("error", e instanceof TypeError ? "Cerbeto stopped answering." : e.message);
+      checkHealth();
+    }
+  }
+
+  // ---------- controls ----------
+  micButton.addEventListener("click", () => {
+    if (state === "listening") { hearing = false; return setState("ready", "Listening cancelled."); }
+    listen();
+  });
+  $("done").addEventListener("click", done);
+  $("stop").addEventListener("click", () => {
+    if (state !== "speaking") return;
+    stopSpeaking(); current = null;
+    setState("ready", "Stopped. Press the microphone to speak again.");
+  });
+  $("retry").addEventListener("click", () => { if (lastText) { const t = lastText; stream.lastElementChild?.classList.contains("me") && stream.lastElementChild.remove(); ask(t); } });
+  $("form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!input.value.trim()) return;
+    ensureContext();                              // inside the click: audio may start later
+    ask(input.value);
+    input.value = "";
+  });
+  $("new").addEventListener("click", async () => {
+    stopSpeaking(); current = null;
+    const old = conversation;
+    conversation = newId();
+    stream.innerHTML = '<p class="empty mut" id="empty">New conversation. Press the microphone and ask in English.</p>';
+    fetch("/v1/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversation_id: old }) }).catch(() => {});
+    if (state !== "offline") setState("ready", "");
+  });
+  document.addEventListener("keydown", (event) => {
+    // Escape first: after a click the microphone button keeps the focus, and Escape must still stop the reading.
+    if (event.key === "Escape" && state === "speaking") { event.preventDefault(); return $("stop").click(); }
+    if (event.target === input || event.target.tagName === "BUTTON") return;   // Space on a button clicks it itself
+    if (event.code === "Space") { event.preventDefault(); micButton.click(); }
+  });
+
+  setState("offline", "");
+  checkHealth();
+  setInterval(checkHealth, 5000);
+})();
+</script>
+</body>
+</html>
