@@ -22,6 +22,7 @@ One file per change, in Rondo's sections (TL;DR, Abstract, Objective, … Contro
 | [0016](0016-ten-billion.md) ten billion tokens: a new data set on other commodity hardware | done (2026-11-19 22:33): 10.0B tokens, `bil10/final` = `bil10-12488M`, benchmark 64 |
 | [0017](0017-talk10.md) conversation tuning of the ten-billion student → v7 | both arms failed G1: `talk10` (3e-5) benchmark 68, shelves +0.07–0.15; `talk10b` (1e-5) 66, +0.03–0.06; no v7 |
 | [0018](0018-twenty-billion.md) twenty billion more tokens on the same shelves | cancelled (2026-11-21) at 2.16B of 20B: more text did not move the answers; the cards go to 0020 |
+| [0019](0019-voice-chat-panel.md) voice chat panel: the admin talks to Cerbeto (Agentaro voice mode + `cerbeto serve`) | implemented (2026-11-21): `cerbeto serve` + the panel at 127.0.0.1:8766; E2E with voice pending |
 | [0020](0020-fact-questions.md) fact questions from the shelves, then tuning | generating (2026-11-21) |
 
 Source document of the MVP: [source-mvp-specification.md](source-mvp-specification.md).

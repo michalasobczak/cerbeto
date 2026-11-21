@@ -76,6 +76,8 @@ from fact tables, none of them in the tuning data; between two models a differen
 4. Honest answers ([0013](specs/0013-honest-answers.md)).
 
 ## More
+- [Cerbeto model analysis and MVP plan (Polish)](docs/analiza-modelu-cerbeto.md) — architecture options, training estimates, and evaluation criteria.
+- [docs/voice-panel.md](docs/voice-panel.md) — the voice panel: talk to the student (local Whisper and Piper, as in Agentaro).
 - [CHANGELOG.md](CHANGELOG.md) — what was done and measured, by date (every phase in detail).
 - [specs/](specs/README.md) — one specification per change, with status.
 - [docs/background.md](docs/background.md) — the school path (teacher, day → sleep → exam), hypotheses, datasets, commands, related work.
@@ -97,6 +99,9 @@ uv run python -m cerbeto.train.final_test train bil2
 ```
 ```bash
 uv run cerbeto panel
+```
+```bash
+uv run cerbeto serve --student final --version v6-1032M --device cpu   # talk to it by voice: http://127.0.0.1:8766
 ```
 Library download and shelves: `scripts/download_library.sh`, `uv run cerbeto library build`; training on several GPUs: `scripts/gpu/diloco.sh`;
 the quick benchmark: `uv run --with huggingface_hub python ../scripts/hf/bench.py v6-1032M checkpoints/final/bil2-avg/final`.

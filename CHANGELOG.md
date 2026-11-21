@@ -2,6 +2,36 @@
 
 What has actually been delivered, by date (newest first). Intent of changes: `specs/`. Proof: tests.
 
+## 2026-11-21 — a voice panel: the admin talks to Cerbeto
+
+[0019](specs/0019-voice-chat-panel.md): **`uv run cerbeto serve`** loads a student once and serves, on `127.0.0.1:8766`
+only, a small API (`/v1/health`, `/v1/reply`, `/v1/reset`) and a voice panel. The admin speaks, local Whisper writes it
+down, the student answers, the answer appears as text and local Piper reads it aloud at once. How to start it and what
+to install: [docs/voice-panel.md](docs/voice-panel.md).
+
+- **Reused from Agentaro's voice mode:** the same `whisper-cli`, Whisper weights, Piper and voices (found in
+  `../agentaro/storage/voice`, or set by Agentaro's own environment variables), the same Whisper arguments and the
+  clean-up of invented subtitle sentences; in the browser its microphone handling, silence detection, WAV encoding and
+  sentence-ordered playback. The spec placed the panel in Agentaro; that repository was not reachable from here, so the
+  panel lives in Cerbeto and `/v1/*` stays the contract for an Agentaro view later.
+- **Panel:** the conversation as text, a mic button (Space) with *Done*, states *Offline* (with the start command;
+  comes back by itself) · *Ready* · *Listening* · *Thinking* · *Speaking* (the sentence read is marked; *Stop* / Esc) ·
+  *Problem* (*Try again*), typing always works, hands-free and memory switches. The student's thought is shown dimmed,
+  never spoken. Per turn: STT time, model time, time to the first sound.
+- **Server:** one lock (a second question while answering → 409, no queue), history per conversation in memory,
+  `--checkpoint` for a folder anywhere (e.g. the Hugging Face download), Host / Origin checked so no other web page can
+  use it, only counts and timings in its log.
+- **Faster replies:** the server uses `Talker`'s token-by-token path, which stops at `<|eos|>`; `model.generate` always
+  ran 60 tokens. v6 on CPU: **0.26–0.67 s** per short answer (median 0.46 s over 10 questions) instead of ~3.4 s.
+- Tests: `test_serve.py` (contract, 400 / 409 / 500, histories apart, loopback only), `test_voice.py` (Whisper and
+  Piper replaced by scripts).
+- **End-to-end check (step 4, [report](docs/voice-panel-e2e-report.md)):** `scripts/voice_e2e.py` runs recorded
+  questions through local Whisper → v6 → local Piper via the real handler: 9/10 transcripts exact, end of speech →
+  first sound median **2.38 s** (max 2.59 s) on CPU, nothing leaves the machine. Fixed on the way: Whisper falls back
+  to the CPU (`-ng`) when Metal aborts it, Whisper's own speed (audio window sized to the clip, ~7 s → ~1.6 s), ONNX
+  Runtime telemetry under Piper off, a sentence Whisper wrote twice is dropped, Esc stops the reading even after a
+  click on the mic, no endless "typing" bubble when the server goes away mid-answer.
+
 ## 2026-11-16 — ten billion tokens running; a model picker in the chat; a quick benchmark
 
 [0016](specs/0016-ten-billion.md): a new training on other commodity hardware, non-stop for ~3.5 days, **10B tokens** from `bil2-avg` — four times everything the student has read so far. The data set is new and is built on the training machine itself:
