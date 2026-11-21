@@ -1,7 +1,7 @@
 """The 1000-question benchmark: bench.py's 100 questions (core) and 900 more from bench1000_questions.py, asked the same way
 (once, greedy, CPU; an answer counts when it matches a pattern; a question with two options counts when the right one comes
 first). With 1000 questions a difference of ~3-4 points between two models is beyond chance; with 100 it was ~10.
-A model is a hub tag of michalasobczak/cerbeto (v6-1032M, v4-439M) or a checkpoint folder relative to the repo.
+A model is a hub tag of michalasobczak/cerbeto (v6-1032M, v15-12488M) or a checkpoint folder relative to the repo.
 Answers go to /tmp/bench1000/<model>.json; the table at the end has the parts, the core 100 and all 1000.
 
     uv run --with huggingface_hub python ../scripts/hf/bench1000.py v6-1032M checkpoints/final/bil10/final

@@ -13,7 +13,7 @@ model above the chat) · weights: **[michalasobczak/cerbeto](https://huggingface
 | 1 | [0002](specs/0002-student-architecture-and-growth.md)–[0003](specs/0003-nursery-stage-0-pretraining.md) | `growing/v0032` | 11-01 | 300M / 300M | nursery, 6.9M → 29.9M parameters | – | BLiMP 65.9% |
 | 2 | [0005](specs/0005-school-day-sleep-exam.md) | `school/v0017` | 11-06 | 11M / 311M | preschool at school with an LLM teacher, 34.6M | – | preschool exam 68.5%, not passed |
 | 3 | [0009](specs/0009-deep-100m-conversations.md) | `final/mid` (D) | 11-07 | 69M / 391M | deep, thin 106.8M student, conversations of several turns | – | preschool exam 76.3%, passed |
-| 4 | [0010](specs/0010-one-billion-tokens.md) | `v4-439M` … `v4-704M` (five tags) | 11-09 → 11-10 | 439–704M / 0.83–1.10B | first billion, checkpoints on the way (HF tags) | – | chat 69 (v4), 55 (v5) of 160 |
+| 4 | [0010](specs/0010-one-billion-tokens.md) | v1–v5 (snapshots 439M … 704M) | 11-09 → 11-10 | 439–704M / 0.83–1.10B | first billion, checkpoints on the way (were HF tags, removed 11-21) | – | chat 69 (v4), 55 (v5) of 160 |
 | 5 | [0010](specs/0010-one-billion-tokens.md) | `final/bil` | 11-11 | 982M / 1.37B | end of the first billion | – | knows facts as sentences, not as answers |
 | 6 | [0011](specs/0011-conversation-tuning.md) | **`v6-1032M`** (`final/talk2`) | 11-12 | 50M / 1.42B | conversation tuning of `bil` — **the published version** | ✅ | chat 117 of 160 · bench **62**/100 |
 | 7 | [0012](specs/0012-larger-vocabulary.md) | `final/v16k`, `final/vext` | 11-12 | 60M / 1.48B | v6 on a 16k / 12k vocabulary | – | behind v6, dropped |
@@ -50,9 +50,9 @@ from fact tables, none of them in the tuning data; between two models a differen
 
 | Model | Tokens in all | **Bench1000** |
 |---|---|---|
-| v4-439M | 0.83B | **312** |
-| v4-523M | 0.91B | **274** |
-| v4-704M | 1.10B | **316** |
+| v1 (439M) | 0.83B | **312** |
+| v3 (523M) | 0.91B | **274** |
+| v5 (704M) | 1.10B | **316** |
 | v6-1032M | 1.42B | **488** |
 | `bil2-avg` | 2.49B | **498** |
 | `bil10` at 10.5B | 10.5B | **509** |

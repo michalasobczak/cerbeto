@@ -120,7 +120,7 @@ Edu fell clearly; the other shelves had not recovered the warm-restart bump by 4
 
 Every shelf fell to the end; textbooks and dialogue gained most (−0.89 and −0.96 from the start). Stories and speech first rose (new shelves pushed them aside), then fell below the start after ~370–400M. Wikipedia was read once by ~555M; from there it repeats.
 
-**Published versions** on Hugging Face — model <https://huggingface.co/michalasobczak/cerbeto> (tag per version), chat in the browser <https://huggingface.co/spaces/michalasobczak/cerbeto-chat> (ONNX int8, ~110 MB, transformers.js); publishing: [scripts/hf/README.md](scripts/hf/README.md). On 2026-11-21 the tags were renamed after the row of the README's checkpoint table: v1–v5 → `v4-439M` … `v4-704M`, v6 stays `v6-1032M`, `bil10` was published as `v15-12488M`; the old `bil-*` tags were removed:
+**Published versions** on Hugging Face — model <https://huggingface.co/michalasobczak/cerbeto> (tag per version), chat in the browser <https://huggingface.co/spaces/michalasobczak/cerbeto-chat> (ONNX int8, ~110 MB, transformers.js); publishing: [scripts/hf/README.md](scripts/hf/README.md). On 2026-11-21 the tags were renamed after the row of the README's checkpoint table: v6 stays `v6-1032M`, `bil10` was published as `v15-12488M`; only these two are on the hub, v1–v5 and the old `bil-*` tags were removed:
 
 | Version | Tokens of the run | Tokens in all | Published | Note |
 |---|---|---|---|---|

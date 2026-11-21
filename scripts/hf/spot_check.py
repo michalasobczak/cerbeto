@@ -1,8 +1,8 @@
 """Chat spot check of two versions: each question asked N times at temperature 0.7 (K = 1, CPU, so training is not
-disturbed), an answer counts when it matches a pattern. A version is a hub tag (v4-523M) or a checkpoint folder;
+disturbed), an answer counts when it matches a pattern. A version is a hub tag (v6-1032M) or a checkpoint folder;
 `latest` is copied first, as it is replaced every 30 minutes. Before publishing a new version, compare it with the last one:
 
-    uv run --with huggingface_hub python ../scripts/hf/spot_check.py v4-555M checkpoints/final/bil/latest
+    uv run --with huggingface_hub python ../scripts/hf/spot_check.py v15-12488M checkpoints/final/bil/latest
 """
 import re, shutil, sys
 from pathlib import Path
