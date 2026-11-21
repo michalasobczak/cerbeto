@@ -1,6 +1,6 @@
 # 0018 — Twenty billion more tokens on the same shelves
 
-Status: running (2026-11-20) · Depends on: 0016, 0017 · Unblocks: v7, 0013
+Status: **cancelled** (2026-11-21, at 2.16B of 20B) for 0019 · was running from 2026-11-20 · Depends on: 0016, 0017 · Unblocks: v7, 0013
 
 ## 1. TL;DR
 After ten billion tokens (0016) the student was still not saturated: validation fell on every new shelf to the end, at
@@ -42,3 +42,7 @@ start now. At the end the student will have read ~32.5B tokens, ~300 per paramet
 ## 6. Results
 - **0.86B** (2026-11-20 22:04 UTC, ~33k tokens/s): validation +0.13–0.18 above `bil10/final` and falling slowly (edu 12
   3.577 at 49M → 3.502 at 553M → 3.493; textbooks 2.691 → 2.608 → 2.586).
+- **Cancelled at 2.16B** (2026-11-21 08:57 UTC; `bil20/latest` kept on the coordinator): validation still +0.12–0.15
+  above `bil10/final` (edu 12 3.477, textbooks 2.559). The 1000-question benchmark (2026-11-21) showed ten billion tokens
+  of school text moved the answers by ~15 of 1000 (v6 488 → `bil10` 503, within chance) and knowledge asked as a question
+  not at all, while conversation tuning moved them by 172. The cards go to 0019: fact questions from the shelves.

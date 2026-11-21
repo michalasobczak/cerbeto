@@ -27,7 +27,7 @@ model above the chat) · weights: **[michalasobczak/cerbeto](https://huggingface
 | 15 | [0016](specs/0016-ten-billion.md) | **`final/bil10`** (`bil10-12488M`) | 11-19 | 10.0B / 12.5B | ten billion tokens of a new data set, from `bil2-avg` | ✅ default | bench **64**/100: validation down on every new shelf (edu 3.64 → 3.35, textbooks 3.24 → 2.40), dialogue up (1.41 → 1.51) |
 | 16 | [0017](specs/0017-talk10.md) | `final/talk10` | 11-20 | 50M / 12.5B | conversation tuning of `bil10` at v6's learning rate (3e-5) | – | bench **68**/100, but shelf validation +0.07–0.15: forgot, not v7 |
 | 17 | [0017](specs/0017-talk10.md) | `final/talk10b` | 11-20 | 50M / 12.6B | the same at 1e-5, the rate `bil10` ended with | – | bench **66**/100, shelf validation +0.03–0.06: less forgetting, still not v7 |
-| 18 | [0018](specs/0018-twenty-billion.md) | `final/bil20` | running 11-20 | → 20B / → 32.5B | twenty billion more on `bil10`'s shelves, ~3.75 passes in all ([0018](specs/0018-twenty-billion.md)) | – | – |
+| 18 | [0018](specs/0018-twenty-billion.md) | `final/bil20` | 11-20 → 11-21 | 2.16B / 14.6B | twenty billion more on `bil10`'s shelves ([0018](specs/0018-twenty-billion.md)) | – | **cancelled** at 2.16B: more text did not move the answers |
 
 **Tokens: run / in all** — tokens read in that run / in the model's whole life. **Chat** — 160 sampled questions, counted right by a
 pattern (`scripts/hf/spot_check.py`). **Bench** — 100 questions asked once, greedy (`scripts/hf/bench.py`). Validation is compared in bits
@@ -67,9 +67,10 @@ from fact tables, none of them in the tuning data; between two models a differen
 
 **Next:**
 1. ~~`talk10b` → v7~~: failed [0017](specs/0017-talk10.md) G1 (shelves +0.03–0.06); `bil10` stays the chat's default.
-2. **More data at the same size:** `bil20` (running since 2026-11-20, [0018](specs/0018-twenty-billion.md)): 20B more
-   tokens from `bil10/final` on the same shelves (~3.75 passes in all, ~32.5B read in all, ~7 days); then conversation
-   tuning at the run's last learning rate. New FineWeb-Edu and Cosmopedia shelves come after it.
+2. ~~More data at the same size~~: `bil20` ([0018](specs/0018-twenty-billion.md)) cancelled at 2.16B of 20B (2026-11-21).
+   **Instead, fact questions** ([0019](specs/0019-fact-questions.md)): a teacher writes hundreds of thousands of question
+   → answer pairs from the shelf passages the student has read, each checked twice; then tuning of `bil10/final` on them,
+   measured on the 1000-question benchmark.
 3. **More parameters only if knowledge stays flat:** a ~300M student *grown* from this one (not from scratch), the most
    that fits our training cards; the browser chat still fits (~350 MB in int8).
 4. Honest answers ([0013](specs/0013-honest-answers.md)).
