@@ -13,7 +13,7 @@ model above the chat) · weights: **[michalasobczak/cerbeto](https://huggingface
 | 1 | [0002](specs/0002-student-architecture-and-growth.md)–[0003](specs/0003-nursery-stage-0-pretraining.md) | `growing/v0032` | 11-01 | 300M / 300M | nursery, 6.9M → 29.9M parameters | – | BLiMP 65.9% |
 | 2 | [0005](specs/0005-school-day-sleep-exam.md) | `school/v0017` | 11-06 | 11M / 311M | preschool at school with an LLM teacher, 34.6M | – | preschool exam 68.5%, not passed |
 | 3 | [0009](specs/0009-deep-100m-conversations.md) | `final/mid` (D) | 11-07 | 69M / 391M | deep, thin 106.8M student, conversations of several turns | – | preschool exam 76.3%, passed |
-| 4 | [0010](specs/0010-one-billion-tokens.md) | `v1-439M` … `v5-704M` | 11-09 → 11-10 | 439–704M / 0.83–1.10B | first billion, checkpoints on the way (HF tags) | – | chat 69 (v4), 55 (v5) of 160 |
+| 4 | [0010](specs/0010-one-billion-tokens.md) | `v4-439M` … `v4-704M` (five tags) | 11-09 → 11-10 | 439–704M / 0.83–1.10B | first billion, checkpoints on the way (HF tags) | – | chat 69 (v4), 55 (v5) of 160 |
 | 5 | [0010](specs/0010-one-billion-tokens.md) | `final/bil` | 11-11 | 982M / 1.37B | end of the first billion | – | knows facts as sentences, not as answers |
 | 6 | [0011](specs/0011-conversation-tuning.md) | **`v6-1032M`** (`final/talk2`) | 11-12 | 50M / 1.42B | conversation tuning of `bil` — **the published version** | ✅ | chat 117 of 160 · bench **62**/100 |
 | 7 | [0012](specs/0012-larger-vocabulary.md) | `final/v16k`, `final/vext` | 11-12 | 60M / 1.48B | v6 on a 16k / 12k vocabulary | – | behind v6, dropped |
@@ -24,7 +24,7 @@ model above the chat) · weights: **[michalasobczak/cerbeto](https://huggingface
 | 12 | [0016](specs/0016-ten-billion.md) | `bil10-6520M` | 11-17 | 4.0B / 6.5B | preview of `bil10` at 4B | – | bench 61/100 |
 | 13 | [0016](specs/0016-ten-billion.md) | `bil10-8326M` | 11-18 | 5.8B / 8.3B | preview of `bil10` at 5.8B | – | bench 66/100 |
 | 14 | [0016](specs/0016-ten-billion.md) | `bil10-8507M`, `bil10-10494M` | 11-18 → 11-19 | 6.0B, 8.0B / 8.5B, 10.5B | previews of `bil10` at 6B and 8B | – | – |
-| 15 | [0016](specs/0016-ten-billion.md) | **`v7-12488M`** (`final/bil10`) | 11-19 | 10.0B / 12.5B | ten billion tokens of a new data set, from `bil2-avg` | ✅ default | bench **64**/100: validation down on every new shelf (edu 3.64 → 3.35, textbooks 3.24 → 2.40), dialogue up (1.41 → 1.51) |
+| 15 | [0016](specs/0016-ten-billion.md) | **`v15-12488M`** (`final/bil10`) | 11-19 | 10.0B / 12.5B | ten billion tokens of a new data set, from `bil2-avg` | ✅ default | bench **64**/100: validation down on every new shelf (edu 3.64 → 3.35, textbooks 3.24 → 2.40), dialogue up (1.41 → 1.51) |
 | 16 | [0017](specs/0017-talk10.md) | `final/talk10` | 11-20 | 50M / 12.5B | conversation tuning of `bil10` at v6's learning rate (3e-5) | – | bench **68**/100, but shelf validation +0.07–0.15: forgot, not v7 |
 | 17 | [0017](specs/0017-talk10.md) | `final/talk10b` | 11-20 | 50M / 12.6B | the same at 1e-5, the rate `bil10` ended with | – | bench **66**/100, shelf validation +0.03–0.06: less forgetting, still not v7 |
 | 18 | [0018](specs/0018-twenty-billion.md) | `final/bil20` | 11-20 → 11-21 | 2.16B / 14.6B | twenty billion more on `bil10`'s shelves ([0018](specs/0018-twenty-billion.md)) | – | **cancelled** at 2.16B: more text did not move the answers |
@@ -40,7 +40,7 @@ per byte, which does not depend on the vocabulary.
   10B. The jumps come from conversation tuning (v5 → v6: chat 55 → 117 of 160 at the same size).
 - Conversation tuning must start at the learning rate the run ended with: `talk10` at 3e-5 with a fresh optimizer lifted
   validation by +0.2 within 3M tokens and only partly came back ([0017](specs/0017-talk10.md)); `talk10b` at 1e-5 was
-  +0.04 at the same point and ended at +0.03–0.06 with benchmark 66; neither passed, so `bil10` itself was published as v7 (2026-11-21).
+  +0.04 at the same point and ended at +0.03–0.06 with benchmark 66; neither passed, so `bil10` itself was published as `v15-12488M` (2026-11-21).
 - Facts are still missing (the capital of France, the largest planet; "Which is smaller, an ant or a horse?" → "A horse"):
   partly the answering form, partly perhaps capacity.
 
@@ -50,9 +50,9 @@ from fact tables, none of them in the tuning data; between two models a differen
 
 | Model | Tokens in all | **Bench1000** |
 |---|---|---|
-| v1-439M | 0.83B | **312** |
-| v3-523M | 0.91B | **274** |
-| v5-704M | 1.10B | **316** |
+| v4-439M | 0.83B | **312** |
+| v4-523M | 0.91B | **274** |
+| v4-704M | 1.10B | **316** |
 | v6-1032M | 1.42B | **488** |
 | `bil2-avg` | 2.49B | **498** |
 | `bil10` at 10.5B | 10.5B | **509** |
@@ -66,7 +66,7 @@ from fact tables, none of them in the tuning data; between two models a differen
 - Arithmetic stays at 3–9 of 100 in every model.
 
 **Next:**
-1. ~~`talk10b` → v7~~: failed [0017](specs/0017-talk10.md) G1 (shelves +0.03–0.06); `bil10` stays the chat's default and is v7 in the model repo.
+1. ~~`talk10b` → v7~~: failed [0017](specs/0017-talk10.md) G1 (shelves +0.03–0.06); `bil10` stays the chat's default and is `v15-12488M` in the model repo.
 2. ~~More data at the same size~~: `bil20` ([0018](specs/0018-twenty-billion.md)) cancelled at 2.16B of 20B (2026-11-21).
    **Instead, fact questions** ([0020](specs/0020-fact-questions.md)): a teacher writes hundreds of thousands of question
    → answer pairs from the shelf passages the student has read, each checked twice; then tuning of `bil10/final` on them,

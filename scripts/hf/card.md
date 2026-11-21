@@ -27,8 +27,8 @@ child: nursery → preschool → school. Code, specs and the whole story: **[git
 
 This checkpoint is **version {TAG}**: **v6 moved to a 16,384-word vocabulary, a second billion tokens (spec 0014/0015) and
 ten billion tokens of a new school-level data set (spec 0016)**, 12.5B tokens read in all, trained by DiLoCo on several GPUs.
-Versions are tagged `v<N>-<tokens>M` (v1, v2, … then the tokens read in all), the newest is on `main`; v1–v5 are snapshots
-from the middle of the 1B run, v6 is the conversation-tuned 1B model.
+Versions are tagged `v<N>-<tokens>M`: N is the row of the checkpoint table on GitHub, then the tokens read in all; the newest
+is on `main`. `v4-439M` … `v4-704M` are snapshots from the middle of the 1B run, `v6-1032M` the conversation-tuned 1B model.
 
 ## Architecture
 
@@ -65,9 +65,9 @@ A difference of ~25 points is beyond chance.
 
 | Version | Tokens read | bench1000 |
 |---|---|---|
-| v1 | 0.44B | 312 |
-| v5 | 0.70B | 316 |
-| v6 | 1.03B | 488 |
+| v4-439M | 0.83B | 312 |
+| v4-704M | 1.10B | 316 |
+| v6-1032M | 1.42B | 488 |
 | **{TAG}** | 12.5B | **503** |
 
 Ten times more text lowered validation on every new shelf (school text, textbooks) but moved the answers little: knowledge

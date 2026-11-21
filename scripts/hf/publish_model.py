@@ -1,7 +1,7 @@
-"""Step 1: publish a Cerbeto checkpoint (native format) to the model repo, tagged v<N>-<tokens>M (N counts the
-published versions: v1, v2, ...), with the model card. Prints the tag for step 4.
+"""Step 1: publish a Cerbeto checkpoint (native format) to the model repo, tagged v<N>-<tokens>M (N is the
+row of the checkpoint table in the README), with the model card. Prints the tag for step 4.
 
-    uv run --with huggingface_hub python ../scripts/hf/publish_model.py checkpoints/final/bil/latest [tokens label]
+    uv run --with huggingface_hub python ../scripts/hf/publish_model.py checkpoints/final/bil10/final 12488M 15   # [tokens label] [row]
 """
 import json, re, shutil, sys
 from pathlib import Path
@@ -35,7 +35,7 @@ if not any(re.fullmatch(r"v\d+-\d+M", t) for t in tags):   # the first versions 
     for i, t in enumerate(old, 1):
         hub.create_tag(MODEL_REPO, tag=f"v{i}-{t[4:]}", revision=tags[t])
         tags[f"v{i}-{t[4:]}"] = tags[t]
-version = 1 + max((int(m[1]) for t in tags if (m := re.fullmatch(r"v(\d+)-\d+M", t))), default=0)
+version = int(sys.argv[3]) if len(sys.argv) > 3 else 1 + max((int(m[1]) for t in tags if (m := re.fullmatch(r"v(\d+)-\d+M", t))), default=0)
 tag = f"v{version}-{mtok}"
 card = (Path(__file__).parent / "card.md").read_text()
 (stage / "README.md").write_text(card.replace("{STEP}", f"{ft['step']:,}").replace("{TOKENS}", mtok).replace("{TAG}", tag))

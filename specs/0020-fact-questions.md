@@ -1,6 +1,6 @@
 # 0020 — Fact questions from the shelves, then tuning
 
-Status: generating (2026-11-21) · Depends on: 0016, 0017, 0018 · Unblocks: v8, 0013
+Status: generating (2026-11-21) · Depends on: 0016, 0017, 0018 · Unblocks: a release, 0013
 
 ## 1. TL;DR
 The 1000-question benchmark (2026-11-21) showed that ten billion tokens of school text barely moved the answers (v6 488 →
@@ -41,7 +41,7 @@ Mac mini.
 | G1 | Data | ≥ 300k kept pairs; a hand check of 100 random pairs finds ≥ 90 good (standalone, correct, general) |
 | G2 | Answers | bench1000 above `bil10/final` (503) by ≥ 25, knowledge above 69 of 280 by ≥ 15 |
 | G3 | Shelves | validation on every `bil10` shelf at most 0.05 above `bil10/final` |
-| G4 | Release | G2 and G3 → v8 on the Space (default) and in the model repo |
+| G4 | Release | G2 and G3 → a release (tag v<row>-<tokens>M) on the Space (default) and in the model repo |
 
 ## 5. Additional Information
 - **Why a local teacher:** no costs, no limits, and no shelf text leaves our machines.

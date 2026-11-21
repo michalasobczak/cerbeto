@@ -9,7 +9,7 @@ Gradio Spaces need HF PRO on the free CPU, so the chat is a static page: the mod
 
 | step | script | what it does |
 |---|---|---|
-| 1 | `publish_model.py <checkpoint>` | uploads weights, `architecture.json`, `student.py`, tokenizer, licence and the card (`card.md`), tags the next version `v<N>-<tokens>M` (v1, v2, … then the tokens trained) and prints it |
+| 1 | `publish_model.py <checkpoint> [tokens] [row]` | uploads weights, `architecture.json`, `student.py`, tokenizer, licence and the card (`card.md`), tags it `v<N>-<tokens>M` (N: the row of the checkpoint table in the README, then the tokens read in all) and prints it |
 | 2 | `to_llama.py /tmp/web/cerbeto_hf [checkpoint]` | Cerbeto at K = 1 is a Llama: same blocks, only RoPE pairs differ (ours `(2i, 2i+1)`, Llama `(i, i + d/2)`), so q and k rows are permuted per head; checks logits (≤ 1e-3) and 40 greedy tokens against the original; the newest version on the hub, or a local checkpoint (a preview) |
 | 3 | `export_web.py` | ONNX export with a KV cache (`optimum-cli`), int8 dynamic quantization (ONNX Runtime, `QUInt8`), greedy output of fp32 / int8 compared with PyTorch |
 | 4 | `publish_space.py <tag> --short --label --tokens --note [--default]` | adds the int8 model to the Space and to its `models.json`, the list in the page's model picker: published versions and previews of the run in progress (`scripts/final/bil10_previews.sh`, every 2B tokens) |
