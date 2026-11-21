@@ -17,7 +17,7 @@ Gradio Spaces need HF PRO on the free CPU, so the chat is a static page: the mod
 | any time | `update_card.py` | uploads `card.md` again, filled for the newest tag, without new weights |
 
 ```bash
-cd ~/Work/indatify/platformy/model/brain
+cd ~/Work/indatify/platformy/cerbeto/brain
 uv run --with huggingface_hub python ../scripts/hf/publish_model.py checkpoints/final/bil/final
 cd ..
 uv run --no-project --python 3.12 --with torch --with transformers --with safetensors --with tokenizers --with huggingface_hub python scripts/hf/to_llama.py /tmp/web/cerbeto_hf

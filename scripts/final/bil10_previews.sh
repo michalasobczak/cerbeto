@@ -7,7 +7,7 @@ set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 source "$here/../gpu/hosts.env"
 c="$GPU_USER@$COORD"; m=${MINI:?MINI=user@host of the Mac mini}
-run=cerbeto/model/checkpoints/final/bil10 repo=Work/indatify/platformy/model
+run=cerbeto/model/checkpoints/final/bil10 repo=${MINI_REPO:-Work/indatify/platformy/cerbeto}
 START=2485                                          # million tokens read before bil10 (v6 1423 + v16k 60 + bil2-avg 1002)
 for n in ${@:-2000 4000 6000 8000 10000}; do
   name=$([ $((n % 1000)) = 0 ] && echo "$((n / 1000))B" || echo "${n}M")

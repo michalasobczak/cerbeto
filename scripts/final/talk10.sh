@@ -8,7 +8,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 source "$here/../gpu/hosts.env"
 c="$GPU_USER@$COORD" d="$GPU_USER@$DATA_HOST" m=${MINI:?MINI=user@host of the Mac mini}
 tokens=${1:-50e6} arm=${2:-talk10} gpu=${GPU:-0}
-ck=cerbeto/model/checkpoints/final repo=Work/indatify/platformy/model
+ck=cerbeto/model/checkpoints/final repo=${MINI_REPO:-Work/indatify/platformy/cerbeto}
 s(){ for try in 1 2 3 4 5; do ssh -o ConnectTimeout=15 "$1" "$2" && return 0; sleep 30; done; return 1; }
 
 # 1. bil10 has ended: its final checkpoint is saved and no DiLoCo process is left on the data host
