@@ -29,6 +29,7 @@ model above the chat) · weights: **[michalasobczak/cerbeto](https://huggingface
 | 17 | [0017](specs/0017-talk10.md) | `final/talk10b` | 11-20 | 50M / 12.6B | the same at 1e-5, the rate `bil10` ended with | – | bench **66**/100, shelf validation +0.03–0.06: less forgetting, still not released |
 | 18 | [0018](specs/0018-twenty-billion.md) | `final/bil20` | 11-20 → 11-21 | 2.16B / 14.6B | twenty billion more on `bil10`'s shelves ([0018](specs/0018-twenty-billion.md)) | – | **cancelled** at 2.16B: more text did not move the answers |
 | 19 | [0020](specs/0020-fact-questions.md) | `final/facts` | 11-21 | 50M / 12.5B | tuning of `bil10` on 145k fact questions from the shelves | – | running |
+| 20 | [0020](specs/0020-fact-questions.md) | `final/facts2` | 11-22 | 50M / 12.5B | the same with every other step on the shelves (less forgetting) | – | running |
 
 **Tokens: run / in all** — tokens read in that run / in the model's whole life. **Chat** — 160 sampled questions, counted right by a
 pattern (`scripts/hf/spot_check.py`). **Bench** — 100 questions asked once, greedy (`scripts/hf/bench.py`). Validation is compared in bits

@@ -178,6 +178,13 @@ ARM_PAIR_MIX["facts"] = {"facts": 2 / 3, **{k: v / 3 for k, v in ARM_PAIR_MIX["t
 ARM_PAIR_STEPS["facts"] = (3, 4)
 ARM_LR["facts"] = (1e-5, 100)
 BY_TOKENS.add("facts")
+# `facts2` (2026-11-22): facts with a quarter of steps on the shelves lifted their validation by ~0.2 by 19M tokens; the
+# same pairs with every other step on the shelves (talk10b's split): about a third fact questions, half shelves.
+for _d in (ARM_START, ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_LR):
+    _d["facts2"] = _d["facts"]
+ARM_FACTS["facts2"] = ARM_FACTS["facts"]
+ARM_PAIR_STEPS["facts2"] = (1, 2)
+BY_TOKENS.add("facts2")
 MAX_PASSES = 4
 
 
@@ -779,7 +786,7 @@ def add_probes(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval", "probes"])
-    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest | bil10 | talk10 | talk10b | bil20 | facts (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest | bil10 | talk10 | talk10b | bil20 | facts | facts2 (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     p.add_argument("--name", help="train: run folder (default the arm), e.g. a baseline beside a DiLoCo run")
