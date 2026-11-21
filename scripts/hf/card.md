@@ -20,67 +20,14 @@ datasets:
 
 # Cerbeto — a small language model raised like a child
 
-Cerbeto is a 106.8M-parameter language model trained from scratch, first on a single Mac mini and later on other commodity hardware, grown step by step like a
-child: nursery → preschool → school. Code, specs and the whole story: **[github.com/michalasobczak/cerbeto](https://github.com/michalasobczak/cerbeto)**.
+Cerbeto is a 106.8M-parameter language model trained from scratch, grown step by step like a child:
+nursery → preschool → school. This checkpoint is **{TAG}**.
 
-**Try it: [Cerbeto chat Space](https://huggingface.co/spaces/michalasobczak/cerbeto-chat)** (runs in your browser, ~110 MB downloaded once).
+- **Try it:** [Cerbeto chat Space](https://huggingface.co/spaces/michalasobczak/cerbeto-chat) (runs in your browser, ~110 MB downloaded once).
+- **Everything else is on GitHub: [github.com/michalasobczak/cerbeto](https://github.com/michalasobczak/cerbeto)** — the checkpoint table (tags here are `v<row>-<tokens>M`,
+  the row of that table and the tokens read in all), architecture, training data and their licences, benchmark results and specs.
 
-This checkpoint is **version {TAG}**: **v6 moved to a 16,384-word vocabulary, a second billion tokens (spec 0014/0015) and
-ten billion tokens of a new school-level data set (spec 0016)**, 12.5B tokens read in all, trained by DiLoCo on several GPUs.
-Versions are tagged `v<N>-<tokens>M`: N is the row of the checkpoint table on GitHub, then the tokens read in all; the newest
-is on `main`. `v4-439M` … `v4-704M` are snapshots from the middle of the 1B run, `v6-1032M` the conversation-tuned 1B model.
-
-## Architecture
-
-| | |
-|---|---|
-| parameters | 106,849,920 |
-| blocks | 20 (2 prelude + 16 core + 2 coda), K = 1 |
-| width | d = 640, 20 heads × 32 |
-| MLP | SwiGLU, 1792 |
-| positions | RoPE (θ = 10,000) |
-| norm | RMSNorm |
-| vocabulary | 16,384 BPE, tied embedding (8,192 up to v6) |
-| context | 512 tokens |
-
-Grown function-preservingly from a 34.6M recurrent-depth student (Huginn-style prelude / core × K / coda): wider, the core unrolled into 16 blocks.
-Close in shape to SmolLM-135M and MobileLLM-125M.
-
-## Training data
-
-The ten-billion-token run (three of four steps): FineWeb-Edu paragraphs of grade 8–12 40%, Cosmopedia stories for older
-readers 19%, Cosmopedia textbooks and lessons 15%, and 26% the earlier shelves (FineWeb-Edu up to grade 8, textbooks,
-SODA conversations, TinyStories, spoken English from BabyLM, children's books, Simple English Wikipedia).
-Every fourth step: request → reply pairs — conversations of 2–8 turns (facts the human tells and asks back later), questions
-about the world with short answers written by a teacher model, preschool lessons, stories on request, "I don't know" about
-made-up words. Exam prompts never appear in training.
-
-Corpora keep their own licences: TinyStories CDLA-Sharing-1.0, FineWeb-Edu ODC-By 1.0, Cosmopedia Apache-2.0, SODA CC BY 4.0,
-Wikipedia CC BY-SA 4.0, BabyLM MIT, Gutenberg public domain.
-
-## What it can and cannot do (bench1000)
-
-1,000 questions asked once, greedy, an answer right when it matches a pattern; none of them in the tuning data.
-A difference of ~25 points is beyond chance.
-
-| Version | Tokens read | bench1000 |
-|---|---|---|
-| v4-439M | 0.83B | 312 |
-| v4-704M | 1.10B | 316 |
-| v6-1032M | 1.42B | 488 |
-| **{TAG}** | 12.5B | **503** |
-
-Ten times more text lowered validation on every new shelf (school text, textbooks) but moved the answers little: knowledge
-asked as a question stayed at ~69 of 280 (capitals, animals, nature). Arithmetic is near zero.
-
-- **Can:** short polite conversation, remember a name or a pet told earlier in the talk, preschool skills (opposites, sizes,
-  categories, "who is the youngest"), simple stories, sentences about school topics; it can **think out loud** before a
-  true/false answer.
-- **Cannot yet:** most facts asked directly, arithmetic; it is a 107M model with a 512-token context, so it is easily confused
-  and makes things up.
-
-The 80M-token predecessor passed the preschool exam (code-graded: id 89.7–100% per skill, mean ood_hard 78.5%).
-Do not use it for anything that matters: it is a research toy.
+It is a research toy: easily confused, it makes things up. Do not use it for anything that matters.
 
 ## Use
 
