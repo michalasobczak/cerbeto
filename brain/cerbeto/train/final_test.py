@@ -185,6 +185,11 @@ for _d in (ARM_START, ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, 
 ARM_FACTS["facts2"] = ARM_FACTS["facts"]
 ARM_PAIR_STEPS["facts2"] = (1, 2)
 BY_TOKENS.add("facts2")
+# `facts3` (2026-11-22): facts2 (v20) again, in rounds while more pairs are generated (runs/facts_cycle.sh): every round
+# from bil10/final on all pairs so far, so the rounds show what more different facts give.
+for _d in (ARM_START, ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_LR, ARM_FACTS, ARM_PAIR_STEPS):
+    _d["facts3"] = _d["facts2"]
+BY_TOKENS.add("facts3")
 MAX_PASSES = 4
 
 
