@@ -6,7 +6,7 @@ Answers go to /tmp/bench1000/<model>.json; the table at the end has the parts, t
 
     uv run --with huggingface_hub python ../scripts/hf/bench1000.py v6-1032M checkpoints/final/bil10/final
 """
-import json, re, shutil, sys, time
+import json, os, re, shutil, sys, time
 from pathlib import Path
 
 import torch
@@ -55,11 +55,12 @@ def ask(t: Talker, item: dict) -> str:
 
 
 torch.set_num_threads(4)
+DEV = os.environ.get("BENCH_DEVICE", "cpu")    # cuda: a training card between rounds (minutes, not an hour of a busy CPU)
 OUT.mkdir(exist_ok=True)
 names, res = sys.argv[1:], {}
 for name in names:
     t0 = time.time()
-    t = Talker(checkpoint.load(fetch(name), "cpu"), torch.device("cpu"), k=1, temperature=0, max_new_tokens=40)
+    t = Talker(checkpoint.load(fetch(name), DEV), torch.device(DEV), k=1, temperature=0, max_new_tokens=40)
     rows = []
     for item in QS:
         a = ask(t, item)
