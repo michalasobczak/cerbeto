@@ -1,6 +1,6 @@
 # 0020 — Fact questions from the shelves, then tuning
 
-Status: tuned (2026-11-22): `facts2` passes G2, misses G3 by 0.02; more pairs generating · Depends on: 0016, 0017, 0018 · Unblocks: a release, 0013
+Status: released (2026-11-22): `facts2` as `v20-12538M` (passes G2, misses G3 by 0.02, released on the user's call); more pairs generating · Depends on: 0016, 0017, 0018 · Unblocks: a release, 0013
 
 ## 1. TL;DR
 The 1000-question benchmark (2026-11-21) showed that ten billion tokens of school text barely moved the answers (v6 488 →
@@ -73,3 +73,5 @@ Mac mini.
   (`facts2`); another pass over the same pairs would teach the answers, not more facts.
 - **More pairs (2026-11-22):** generation resumed on three cards (two non-stop; the dead-fan card in 128-passage chunks
   with 5 min rest and a wait below 60 °C, `--pause`/`--cool`); the fourth card is free for tuning.
+- **Release (2026-11-22):** `facts2` published as `v20-12538M` (12,488M + 50M tokens) in the model repo and as the Space's
+  default, on the user's call despite G3 (+0.06–0.07 on three shelves against 0.05): +44 on bench1000 outweighs it.

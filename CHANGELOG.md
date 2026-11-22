@@ -2,6 +2,15 @@
 
 What has actually been delivered, by date (newest first). Intent of changes: `specs/`. Proof: tests.
 
+## 2026-11-22 — v20: tuned on fact questions
+
+[0020](specs/0020-fact-questions.md): `bil10/final` tuned on 145k teacher-written fact questions from its own shelves.
+`facts2` (every other step on the shelves) scores **547** of 1000 on bench1000 (`v15-12488M` 503) and **120** of 280 on
+knowledge (69); shelf validation +0.04–0.07. Published as **`v20-12538M`** in the model repo and as the chat Space's
+default (v20, v15, v6). `facts` (3 of 4 steps on questions) reached 525 / 117 but forgot +0.11–0.22 of the shelves.
+
+- `scripts/qa/generate.py`: `--pause` and `--cool` rest a hot card after each chunk; generation of more pairs resumed.
+
 ## 2026-11-21 — a voice panel: the admin talks to Cerbeto
 
 [0019](specs/0019-voice-chat-panel.md): **`uv run cerbeto serve`** loads a student once and serves, on `127.0.0.1:8766`
