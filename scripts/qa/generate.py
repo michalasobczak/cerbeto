@@ -166,6 +166,8 @@ def main() -> None:
     ap.add_argument("--util", type=float, default=0.93)
     ap.add_argument("--max-seqs", type=int, default=256)
     ap.add_argument("--eager", action="store_true", help="no CUDA graphs (frees ~0.6 GB)")
+    ap.add_argument("--pause", type=int, default=0, help="seconds of rest after each chunk (a card that overheats)")
+    ap.add_argument("--cool", type=int, default=0, help="after each chunk also wait until the card is below this many °C")
     a = ap.parse_args()
     i, n = map(int, a.shard.split("/"))
     rows = [json.loads(x) for k, x in enumerate(a.passages.open()) if k % n == i]
@@ -254,7 +256,29 @@ def main() -> None:
         stats["passages"] += len(part)
         dt = time.time() - t0
         print(f"{time.strftime('%H:%M:%S')} {dict(stats)} · {len(part) / dt:.1f} passages/s · rates {dict(sorted(hist.items()))} · scores {dict(sorted(scores.items()))}", flush=True)
+        cool_down(a.pause, a.cool)
     print("finished", dict(stats), flush=True)
+
+
+def gpu_temp() -> int:
+    """Temperature of the card this process sees (first CUDA_VISIBLE_DEVICES entry), 0 when nvidia-smi fails."""
+    import os, subprocess
+    dev = os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")[0]
+    try:
+        return int(subprocess.run(["nvidia-smi", "-i", dev, "--query-gpu=temperature.gpu", "--format=csv,noheader"],
+                                  capture_output=True, text=True, timeout=30).stdout.strip())
+    except (ValueError, subprocess.SubprocessError, OSError):
+        return 0
+
+
+def cool_down(pause: int, cool: int) -> None:
+    """For a card that overheats: rest --pause seconds after each chunk, then until it is below --cool degrees."""
+    if pause:
+        time.sleep(pause)
+    while cool and gpu_temp() > cool:
+        time.sleep(30)
+    if pause or cool:
+        print(f"{time.strftime('%H:%M:%S')} rested, {gpu_temp()}°C", flush=True)
 
 
 if __name__ == "__main__":

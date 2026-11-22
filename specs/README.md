@@ -23,6 +23,6 @@ One file per change, in Rondo's sections (TL;DR, Abstract, Objective, … Contro
 | [0017](0017-talk10.md) conversation tuning of the ten-billion student → v7 | both arms failed G1: `talk10` (3e-5) benchmark 68, shelves +0.07–0.15; `talk10b` (1e-5) 66, +0.03–0.06; no v7 |
 | [0018](0018-twenty-billion.md) twenty billion more tokens on the same shelves | cancelled (2026-11-21) at 2.16B of 20B: more text did not move the answers; the cards go to 0020 |
 | [0019](0019-voice-chat-panel.md) voice chat panel: the admin talks to Cerbeto (Agentaro voice mode + `cerbeto serve`) | implemented (2026-11-21): `cerbeto serve` + the panel at 127.0.0.1:8766; E2E with voice pending |
-| [0020](0020-fact-questions.md) fact questions from the shelves, then tuning | tuning (2026-11-21): 145k pairs, arm `facts` |
+| [0020](0020-fact-questions.md) fact questions from the shelves, then tuning | tuned (2026-11-22): `facts2` bench1000 547, knowledge 120/280; G3 missed by 0.02 |
 
 Source document of the MVP: [source-mvp-specification.md](source-mvp-specification.md).

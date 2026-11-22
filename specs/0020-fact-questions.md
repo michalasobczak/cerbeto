@@ -1,6 +1,6 @@
 # 0020 — Fact questions from the shelves, then tuning
 
-Status: tuning, arm `facts` (2026-11-21) · Depends on: 0016, 0017, 0018 · Unblocks: a release, 0013
+Status: tuned (2026-11-22): `facts2` passes G2, misses G3 by 0.02; more pairs generating · Depends on: 0016, 0017, 0018 · Unblocks: a release, 0013
 
 ## 1. TL;DR
 The 1000-question benchmark (2026-11-21) showed that ten billion tokens of school text barely moved the answers (v6 488 →
@@ -58,4 +58,18 @@ Mac mini.
   Hand check of 100 random pairs: ~90 good; bad ones are non-answers ("Communicating with a partner is so important."),
   questions that lean on their passage (Miss Alice, the lemonade stand), tautologies and a few wrong facts (the penalty
   spot "within the six-yard box").
-- **Tuning:** arm `facts`, 50M tokens from `bil10/final` on one card (not DiLoCo: a few hours).
+- **Tuning:** 50M tokens from `bil10/final`, each arm on one card (not DiLoCo: a few hours); fact pairs are 2/3 of
+  the pair steps (1–4 pairs chained per sequence), the rest `talk2`'s mix.
+
+  | # | Arm | Pair steps | bench1000 | knowledge /280 | completing /160 | edu 12 | textbooks | s4 stories | dialogue | speech |
+  |---|---|---|---|---|---|---|---|---|---|---|
+  | 15 | `bil10/final` | – | 503 | 69 | – | 3.353 | 2.403 | 2.404 | 1.509 | 3.173 |
+  | 19 | `facts` | 3 of 4 | 525 | 117 | 63 | 3.549 (+0.20) | 2.618 (+0.22) | 2.615 (+0.21) | 1.618 (+0.11) | 3.307 (+0.13) |
+  | 20 | `facts2` | 1 of 2 | **547** | **120** | 80 | 3.417 (+0.06) | 2.471 (+0.07) | 2.470 (+0.07) | 1.544 (+0.04) | 3.215 (+0.04) |
+
+  (validation at the arm's last check: `facts` 49.8M tokens, `facts2` 47.2M.) G2 passes for both on knowledge
+  (+48, +51); overall `facts` is +22 (below 25), `facts2` +44. G3 fails: `facts` forgets about as much as `talk10`,
+  `facts2` is 0.01–0.02 over the limit on three shelves. The pairs had been seen about 2–3 times (`facts`) and 2
+  (`facts2`); another pass over the same pairs would teach the answers, not more facts.
+- **More pairs (2026-11-22):** generation resumed on three cards (two non-stop; the dead-fan card in 128-passage chunks
+  with 5 min rest and a wait below 60 °C, `--pause`/`--cool`); the fourth card is free for tuning.
