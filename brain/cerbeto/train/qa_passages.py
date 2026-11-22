@@ -4,6 +4,7 @@ which are decoded document by document (every document ends with <|eos|>). A pas
 120-350 words, mostly letters (no tables, code or long formulas). 2% of passages, chosen by hash, are held out.
 
     uv run python -m cerbeto.train.qa_passages --n 120000 --out ../data/qa/passages.jsonl
+    uv run python -m cerbeto.train.qa_passages --n 400000 --seed 20 --exclude ~/qa_data/passages.jsonl --out ~/qa_data/passages2.jsonl
 """
 import argparse, hashlib, html, json, random
 from pathlib import Path
@@ -73,11 +74,13 @@ def main() -> None:
     ap.add_argument("--n", type=int, default=120000)
     ap.add_argument("--out", type=Path, default=paths.DATA / "qa" / "passages.jsonl")
     ap.add_argument("--seed", type=int, default=19)
+    ap.add_argument("--exclude", type=Path, nargs="*", default=[], help="earlier passage files: none of their passages again")
     a = ap.parse_args()
     rng, tok = random.Random(a.seed), load(VOCAB)
     eos = tok.token_to_id("<|eos|>")
     a.out.parent.mkdir(parents=True, exist_ok=True)
-    seen, counts = set(), {}
+    seen, counts = {json.loads(x)["pid"] for f in a.exclude for x in f.open()}, {}
+    print("excluded", len(seen), "earlier passages", flush=True)
     with a.out.open("w") as out:
         for shelf, share in SHARES.items():
             root = paths.SHELVES / shelf
