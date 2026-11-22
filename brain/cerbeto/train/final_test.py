@@ -15,6 +15,7 @@ import contextlib
 import json
 import os
 import math
+from pathlib import Path
 import random
 import re
 import shutil
@@ -791,13 +792,19 @@ def add_probes(name: str) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("what", choices=["train", "eval", "probes"])
-    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest | bil10 | talk10 | talk10b | bil20 | facts | facts2 (eval also: v0017)")
+    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest | bil10 | talk10 | talk10b | bil20 | facts | facts2 | facts3 (eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     p.add_argument("--name", help="train: run folder (default the arm), e.g. a baseline beside a DiLoCo run")
     p.add_argument("--no-recompute", action="store_true", help="train: keep all activations (12 GB cards)")
     p.add_argument("--max-temp", type=int, help="train: pause between steps to keep the NVIDIA card under this (C)")
+    p.add_argument("--start", type=Path, help="train: start from this checkpoint instead of the arm's (continued tuning)")
+    p.add_argument("--facts", type=Path, help="train: fact pairs from this file instead of the arm's")
     a = p.parse_args()
+    if a.start:
+        ARM_START[a.arm] = a.start.resolve()
+    if a.facts:
+        ARM_FACTS[a.arm] = a.facts.resolve()
     if a.what == "train":
         train(a.arm, a.tokens, bf16=not a.fp32, name=a.name, recompute=not a.no_recompute, max_temp=a.max_temp)
     elif a.what == "probes":
