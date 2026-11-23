@@ -45,7 +45,7 @@ svg.lc{cursor:crosshair;overflow:visible}#f-eval{overflow-x:auto}
 <body>
 <header>
   <h1>Cerbeto · school</h1><span id="pill" class="pill"></span>
-  <nav><button data-t="overview" class="on">AB:Overview</button><button data-t="lessons">AB:Lessons</button><button data-t="exams">AB:Exams</button><button data-t="final">C:100-300Mp fail</button><button data-t="mid">D:80Mt run</button><button data-t="bil">E:1Bt run</button><button data-t="talk">E:talk</button><button data-t="v16k">F:v16k</button><button data-t="vext">F:vext</button><button data-t="bil2">G:1Bt run #2</button><button data-t="bil10">H:10Bt run</button><button data-t="bil20">I:20Bt run</button><button data-t="log">Log</button></nav>
+  <nav><button data-t="overview" class="on">AB:Overview</button><button data-t="lessons">AB:Lessons</button><button data-t="exams">AB:Exams</button><button data-t="final">C:100-300Mp fail</button><button data-t="mid">D:80Mt run</button><button data-t="bil">E:1Bt run</button><button data-t="talk">E:talk</button><button data-t="v16k">F:v16k</button><button data-t="vext">F:vext</button><button data-t="bil2">G:1Bt run #2</button><button data-t="bil10">H:10Bt run</button><button data-t="bil20">I:20Bt run</button><button data-t="big">J:290M loop</button><button data-t="log">Log</button></nav>
   <span class="mut" id="upd" style="margin-left:auto"></span>
 </header>
 <main>
@@ -105,7 +105,7 @@ const STACKED=matchMedia("(max-width:1100px),(max-height:620px)");
 const rowsFit=el=>STACKED.matches?25:Math.max(8,Math.floor((el.closest(".card").clientHeight-90)/22));
 let tab="overview", off=0, eoff=0, S=null;
 function go(t){tab=t;document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x.dataset.t===t));
-  const sec=t==="mid"||t==="bil"||t==="talk"||t==="v16k"||t==="vext"||t==="bil2"||t==="bil10"||t==="bil20"?"final":t;
+  const sec=t==="mid"||t==="bil"||t==="talk"||t==="v16k"||t==="vext"||t==="bil2"||t==="bil10"||t==="bil20"||t==="big"?"final":t;
   ["overview","lessons","exams","final","log"].forEach(x=>$("#"+x).classList.toggle("hide",x!==sec));
   if(location.hash.slice(1)!==t) history.replaceState(null,"","#"+t); try{localStorage.setItem("cerbeto.tab",t)}catch(e){}
   refresh()}
@@ -115,7 +115,7 @@ document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.t)
 const cls=(v,t)=>v==null?"":v>=t?"ok":v>=t-0.15?"warn":"bad";
 
 async function refresh(){
-  if(tab==="lessons") return loadLessons(); if(tab==="exams") return loadExam(); if(tab==="final"||tab==="mid"||tab==="bil"||tab==="talk"||tab==="v16k"||tab==="vext"||tab==="bil2"||tab==="bil10"||tab==="bil20") return loadFinal();
+  if(tab==="lessons") return loadLessons(); if(tab==="exams") return loadExam(); if(tab==="final"||tab==="mid"||tab==="bil"||tab==="talk"||tab==="v16k"||tab==="vext"||tab==="bil2"||tab==="bil10"||tab==="bil20"||tab==="big") return loadFinal();
   const d=await (await fetch("/api/status")).json(); if(d.error){$("#upd").textContent=d.error;return} S=d;
   $("#upd").textContent="updated "+d.now.slice(11);
   const st=d.state, pill=$("#pill"); pill.textContent=!st?"not started":d.running?"running":"stopped"; pill.style.background=!st?"#888":d.running?"var(--ok)":"var(--bad)";
@@ -274,7 +274,7 @@ document.addEventListener("click",e=>{const svg=e.target.closest?.("svg.lc"); if
   else {const p=guideAt(svg,e); if(!p) return; (PINS[k]=PINS[k]||[]).push(p.v)}
   drawPins()});
 const FINAL_TABS={
-  final:{arms:n=>!["mid","bil","bil2","bil2-avg","bil10","bil20","v16k","vext","honest"].includes(n)&&!n.startsWith("talk"),title:"300M — v0017 grown to a deep 283M student, trained on request → reply data",
+  final:{arms:n=>!["mid","bil","bil2","bil2-avg","bil10","bil20","big","big_facts","v16k","vext","honest"].includes(n)&&!n.startsWith("talk"),title:"300M — v0017 grown to a deep 283M student, trained on request → reply data",
     note:`Start: school v0017 (34.6M), grown function-preservingly to 282.6M: d 512→896, 28 heads, MLP 3072, 24 blocks with no loop (K = 1); bf16 on the Mac mini M6.
       Two of three steps are shelf windows (stories 40%, speech 30%, books 18%, edu 9%, Wikipedia 3%; every token learned); every third step is request → reply
       pairs (a story on request 55%, preschool lessons 40%, who the student is 5%; only the student's turn learned). Stopped at 18M tokens: no gain over v0017
@@ -322,6 +322,12 @@ const FINAL_TABS={
       (edu 12 40%, stories 19%, textbooks 15%, earlier 26%, so each is read ~1.25 times), the fourth talk2's conversations. Learning rate
       warmed up again to 1e-4 over 2,000 steps, cosine to 1e-5. Validation in bits per byte against v6 (legend), the new shelves marked (new).
       Gate at 500M: edu and textbooks not above the start by more than 0.05 bits per byte.`},
+  big:{arms:n=>n==="big"||n==="big_facts",evals:n=>n==="big"||n==="big_facts",title:"A ~290M student grown from v20, with a loop inside its core (spec 0021)",
+    note:`Start: big/start, v20 (facts2/final) grown function-preservingly to 287.7M: d 896, 28 heads, 2 + 24 + 2 blocks. The last 8 core
+      blocks are a loop (K passes sampled 1–3 in training, 2 in evaluation). Three of four steps bil10's shelves with Simple Wikipedia at 5%,
+      the fourth conversations, a quarter of them fact pairs (397k, with basic-fact pairs from Simple Wikipedia leads). Learning rate
+      warmed up to 1e-4 over 2,000 steps, cosine to 1e-5; 3B tokens, ~3.2 days. Gate at ~300M tokens: shelf validation within +0.25 of
+      the start and falling. Then big_facts: facts2's tuning, and bench1000 against v20.`},
   bil20:{arms:n=>n==="bil20",evals:n=>n==="bil20",title:"Twenty billion more tokens from bil10 on the same shelves (spec 0018)",
     note:`Start: bil10/final (12.5B tokens read in all). After ten billion tokens validation still fell on every new shelf, so the same
       student reads 20B more on the same shelves in bil10's shares (~2.5 passes more, ~3.75 in all, below the ~4 where repetition starts
@@ -373,7 +379,7 @@ async function loadFinal(){
   $("#f-eval").innerHTML=h}
 
 {let t=location.hash.slice(1); if(!TABS.includes(t)){try{t=localStorage.getItem("cerbeto.tab")}catch(e){t=null}} go(TABS.includes(t)?t:"overview")}
-setInterval(()=>{if(tab==="overview"||tab==="log"||tab==="final"||tab==="mid"||tab==="bil"||tab==="talk"||tab==="v16k"||tab==="vext"||tab==="bil2"||tab==="bil10"||tab==="bil20")refresh()},5000);
+setInterval(()=>{if(tab==="overview"||tab==="log"||tab==="final"||tab==="mid"||tab==="bil"||tab==="talk"||tab==="v16k"||tab==="vext"||tab==="bil2"||tab==="bil10"||tab==="bil20"||tab==="big")refresh()},5000);
 window.onresize=()=>{clearTimeout(window._rs);window._rs=setTimeout(refresh,150)};   // also on zoom: charts redraw at the new width
 </script>
 </body>
