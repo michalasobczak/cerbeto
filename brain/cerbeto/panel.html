@@ -326,7 +326,7 @@ const FINAL_TABS={
     note:`Start: big/start, v20 (facts2/final) grown function-preservingly to 287.7M: d 896, 28 heads, 2 + 24 + 2 blocks. The last 8 core
       blocks are a loop (K passes sampled 1–3 in training, 2 in evaluation). Three of four steps bil10's shelves with Simple Wikipedia at 5%,
       the fourth conversations, a quarter of them fact pairs (397k, with basic-fact pairs from Simple Wikipedia leads). Learning rate
-      warmed up to 3e-5 over 2,000 steps, cosine to 3e-6 (big_1e4: the first try at 1e-4, stopped at 168M); 3B tokens, ~3.2 days. Gate at ~300M tokens: shelf validation within +0.25 of
+      warmed up to 3e-5 over 2,000 steps, cosine to 3e-6 (big_1e4: the first try at 1e-4, stopped at 168M); 10B tokens (raised from 3B at 0.25B), ~12 days, weights every hour. Gate at ~300M tokens: shelf validation within +0.25 of
       the start and falling. Then big_facts: facts2's tuning, and bench1000 against v20.`},
   bil20:{arms:n=>n==="bil20",evals:n=>n==="bil20",title:"Twenty billion more tokens from bil10 on the same shelves (spec 0018)",
     note:`Start: bil10/final (12.5B tokens read in all). After ten billion tokens validation still fell on every new shelf, so the same

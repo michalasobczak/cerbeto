@@ -108,3 +108,8 @@ Two findings of 2026-11-22/23 decide this step:
   dialogue 1.543, edu 8 3.444, s4 textbooks 2.470, s4 stories 2.468). So the 1e-4 run's 3.78 was a real jump (+0.37)
   that came back to +0.12 by 168M, and the 3e-5 run at 222M is within −0.015…+0.037 of the start on every shelf:
   **G2 passed**. K hardly matters yet: `big/latest` at 168M gives edu 12 3.3561 / 3.3558 / 3.3562 at K = 1 / 2 / 3.
+- **Target raised to 10B tokens (the user's decision, 2026-11-23 ~22:30 UTC, at ~0.25B):** ~12 days at ~9,900 tokens/s;
+  each shelf ~1.6 passes, the fact pairs ~26 (50B was asked first: ~58 days, the 4-pass shelf limit near ~33B, ~130
+  passes over the pairs). The cosine now spans 10B; the coordinator resumed from `latest` and the workers rejoined with
+  fresh optimizers, so a worker that joins a run under way ramps its rate over its first 200 steps (`REWARM`). Weights
+  every hour to .15 (`checkpoints/final/big/hourly/`, the last 24 kept).

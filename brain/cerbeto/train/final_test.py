@@ -219,6 +219,7 @@ ARM_K["big_facts"] = ARM_K["big"]
 ARM_START["big_facts"] = CKPT / "big" / "final"
 BY_TOKENS.add("big_facts")
 MAX_PASSES = 4
+REWARM = 200
 
 
 class ThermalPacer:
@@ -626,6 +627,9 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True, *, name: st
     kk = ks(arm)
     embed_until, embed_x = ARM_EMBED_FIRST.get(arm, (0, 1.0))
     embed_phase = None
+    # a DiLoCo worker joining a run under way has a fresh optimizer: its first Adam steps are sign-like at the full rate,
+    # so its rate ramps up over its first REWARM steps (spec 0021: big's target raised mid-run, workers restarted)
+    rewarm_from = state["step"] if sync is not None and state["step"] > 0 else None
     while (sync is not None or progress() < 1) and not stop["now"]:     # a DiLoCo worker ends when the coordinator says
         step = state["step"]
         first = state["tokens"] < embed_until
@@ -634,8 +638,9 @@ def train(arm: str, tokens: float, seed: int = 0, bf16: bool = True, *, name: st
                 p.requires_grad_(not first or name.startswith("embed."))
             embed_phase = first
             print(f"{arm}: {'only the embedding learns' if first else 'every weight learns'} from step {step}", flush=True)
+        ramp = 1.0 if rewarm_from is None else min(1.0, (step - rewarm_from + 1) / REWARM)
         for g in opt.param_groups:
-            g["lr"] = lr_now() * (embed_x if first else 1.0)
+            g["lr"] = lr_now() * ramp * (embed_x if first else 1.0)
         k = int(rng.integers(kk["k_min"], kk["k_max"] + 1))
         if step % every >= every - pair_steps:
             x, y = encode_dialogues(pairs.batch(CFG["pairs"]), tok, device, max_len=CFG["seq_len"])

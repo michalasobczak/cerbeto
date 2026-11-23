@@ -31,7 +31,7 @@ model above the chat) · weights: **[michalasobczak/cerbeto](https://huggingface
 | 19 | [0020](specs/0020-fact-questions.md) | `final/facts` | 11-21 | 50M / 12.5B | tuning of `bil10` on 145k fact questions from the shelves | – | bench1000 **525**, knowledge 117/280 (from 69), but shelf validation +0.11–0.22: forgot |
 | 20 | [0020](specs/0020-fact-questions.md) | **`v20-12538M`** (`final/facts2`) | 11-22 | 50M / 12.5B | the same with every other step on the shelves (less forgetting) | ✅ default | bench1000 **547**, knowledge 120/280, shelf validation +0.04–0.07: G3 missed by 0.02 |
 | 21 | [0021](specs/0021-big-student.md) | `final/facts3_r1` … `r5` | 11-22 → 11-23 | tuning / 12.5B | `facts2`'s recipe on more pairs (160k → 203k), then continued tuning from r3 | – | bench1000 530–548, knowledge 106–122: more pairs of the same kind do not move knowledge |
-| 22 | [0021](specs/0021-big-student.md) | `final/big` | 11-23 → | 3B / 15.5B | v20 grown to 287.7M (2 + 24 + 2 blocks, the last 8 core blocks a loop run 1–3 times), shelves + 397k fact pairs incl. basic facts from Simple Wikipedia | – | **training** (~3.2 days); then `big_facts` tuning and bench1000 |
+| 22 | [0021](specs/0021-big-student.md) | `final/big` | 11-23 → | 10B / 22.5B | v20 grown to 287.7M (2 + 24 + 2 blocks, the last 8 core blocks a loop run 1–3 times), shelves + 397k fact pairs incl. basic facts from Simple Wikipedia | – | **training**, 10B tokens at a 3e-5 peak (~12 days; the first try at 1e-4 stopped); then `big_facts` tuning and bench1000 |
 
 **Tokens: run / in all** — tokens read in that run / in the model's whole life. **Chat** — 160 sampled questions, counted right by a
 pattern (`scripts/hf/spot_check.py`). **Bench** — 100 questions asked once, greedy (`scripts/hf/bench.py`). Validation is compared in bits
@@ -85,7 +85,7 @@ from fact tables, none of them in the tuning data; between two models a differen
    → answer pairs from the shelf passages the student has read, each checked twice; then tuning of `bil10/final` on them,
    measured on the 1000-question benchmark. Done: `v20-12538M` is the chat's default (2026-11-22); more pairs did not help (row 21).
 3. **Now: a larger student with basic facts** ([0021](specs/0021-big-student.md)): v20 grown to 287.7M, the last 8 core
-   blocks a loop, 3B tokens of the shelves with 397k fact pairs (basic facts from the openings of the most mentioned Simple
+   blocks a loop, 10B tokens of the shelves with 397k fact pairs (basic facts from the openings of the most mentioned Simple
    Wikipedia articles among them), then facts2's tuning. Gate: bench1000 and knowledge each +25 on v20.
 4. Honest answers ([0013](specs/0013-honest-answers.md)).
 
