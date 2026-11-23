@@ -210,7 +210,8 @@ ARM_TURNS["big"] = ARM_TURNS["facts"]
 ARM_PAIR_MIX["big"] = {"facts": 0.25, **{k: v * 0.75 for k, v in ARM_PAIR_MIX["talk2"].items()}}
 ARM_FACTS["big"] = ARM_FACTS["facts"]
 ARM_PAIR_STEPS["big"] = (1, 4)
-ARM_LR["big"] = (1e-4, 2000)
+# 1e-4 (as bil10) took edu 12 from 3.08 to 3.78 and back only to 3.53 by 168M tokens (G2 missed, 2026-11-23): 3e-5
+ARM_LR["big"] = (3e-5, 2000)
 BY_TOKENS.add("big")
 for _d in (ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_LR, ARM_FACTS, ARM_PAIR_STEPS):
     _d["big_facts"] = _d["facts2"]

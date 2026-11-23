@@ -322,11 +322,11 @@ const FINAL_TABS={
       (edu 12 40%, stories 19%, textbooks 15%, earlier 26%, so each is read ~1.25 times), the fourth talk2's conversations. Learning rate
       warmed up again to 1e-4 over 2,000 steps, cosine to 1e-5. Validation in bits per byte against v6 (legend), the new shelves marked (new).
       Gate at 500M: edu and textbooks not above the start by more than 0.05 bits per byte.`},
-  big:{arms:n=>n==="big"||n==="big_facts",evals:n=>n==="big"||n==="big_facts",title:"A ~290M student grown from v20, with a loop inside its core (spec 0021)",
+  big:{arms:n=>n.startsWith("big"),evals:n=>n.startsWith("big"),title:"A ~290M student grown from v20, with a loop inside its core (spec 0021)",
     note:`Start: big/start, v20 (facts2/final) grown function-preservingly to 287.7M: d 896, 28 heads, 2 + 24 + 2 blocks. The last 8 core
       blocks are a loop (K passes sampled 1–3 in training, 2 in evaluation). Three of four steps bil10's shelves with Simple Wikipedia at 5%,
       the fourth conversations, a quarter of them fact pairs (397k, with basic-fact pairs from Simple Wikipedia leads). Learning rate
-      warmed up to 1e-4 over 2,000 steps, cosine to 1e-5; 3B tokens, ~3.2 days. Gate at ~300M tokens: shelf validation within +0.25 of
+      warmed up to 3e-5 over 2,000 steps, cosine to 3e-6 (big_1e4: the first try at 1e-4, stopped at 168M); 3B tokens, ~3.2 days. Gate at ~300M tokens: shelf validation within +0.25 of
       the start and falling. Then big_facts: facts2's tuning, and bench1000 against v20.`},
   bil20:{arms:n=>n==="bil20",evals:n=>n==="bil20",title:"Twenty billion more tokens from bil10 on the same shelves (spec 0018)",
     note:`Start: bil10/final (12.5B tokens read in all). After ten billion tokens validation still fell on every new shelf, so the same

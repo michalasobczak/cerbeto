@@ -99,3 +99,7 @@ Two findings of 2026-11-22/23 decide this step:
 - **Run started (2026-11-23 10:42 UTC):** three of four passages3 shards done at 10:33 (~10.7k pairs each), all pairs
   merged (397,527 in `qa_facts.jsonl`; 824 dropped near bench1000), DiLoCo `big` with the loop at 239178e: ~3,600
   tokens/s per card (v20-sized blocks without the loop: ~4,600), 8.6 GB of 12, so ~3.2 days for 3B tokens.
+- **G2 missed at 1e-4, restarted at 3e-5 (2026-11-23 ~15:40 UTC):** edu 12 validation 3.08 (start) → 3.48 at 5M →
+  3.78 at 16M (the warm-up's top) → 3.55 at 114M → 3.53 at 168M, falling ~0.02 per 50M, so ~3.48 at 300M against the
+  gate's 3.33. Stopped at 168M (kept as `runs/final/big_1e4`, `checkpoints/final/big_1e4`); the same run from
+  `big/start` at a 3e-5 peak, cosine to 3e-6.
