@@ -199,7 +199,10 @@ BY_TOKENS.add("facts3")
 # Then `big_facts`: facts2's tuning of the result on all pairs.
 BIG_START = CKPT / "big" / "start"
 ARM_START["big"] = BIG_START
-ARM_K["big"] = ARM_K["bil10"]
+# the 8 new blocks (the last of the core) are a loop (the user's decision, 2026-11-23): K passes sampled 1-3 in
+# training, 2 in evaluation. Their outputs start at zero, so at any K the start answers as v20; ~+29% compute at K = 2.
+BIG_LOOP = 8
+ARM_K["big"] = {"k_min": 1, "k_max": 3, "k_eval": 2}
 ARM_SHELF_MIX["big"] = {**{s: v * 0.95 / (1 - 0.002) for s, v in ARM_SHELF_MIX["bil10"].items() if s != "s2_wiki_plus"},
                         "s2_wiki_plus": 0.05}
 ARM_VALID["big"] = ARM_VALID["bil10"]
@@ -211,6 +214,7 @@ ARM_LR["big"] = (1e-4, 2000)
 BY_TOKENS.add("big")
 for _d in (ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_LR, ARM_FACTS, ARM_PAIR_STEPS):
     _d["big_facts"] = _d["facts2"]
+ARM_K["big_facts"] = ARM_K["big"]
 ARM_START["big_facts"] = CKPT / "big" / "final"
 BY_TOKENS.add("big_facts")
 MAX_PASSES = 4
@@ -500,6 +504,7 @@ def grow_big(device) -> None:
     for line in log.read_text().splitlines()[-10:]:
         e = json.loads(line)
         print(e["op"], e.get("params_after", ""), "Δ loss", e.get("delta_loss"), "ok" if e.get("accepted") else e.get("error"))
+    model.cfg = model.cfg.with_(n_loop=BIG_LOOP)
     checkpoint.save(model, BIG_START, parent=CKPT / "facts2" / "final", meta={"grow": "spec 0021"})
     print("big/start:", f"{model.num_params():,}", "parameters ->", BIG_START)
 
@@ -509,7 +514,10 @@ def start_model(arm: str, device):
         from cerbeto.tokenizer.vocab import transfer
         return transfer(checkpoint.load(ARM_TRANSFER[arm], "cpu"), ARM_VOCAB[arm]).to(device)
     if arm in ARM_START:
-        return checkpoint.load(ARM_START[arm], device)
+        model = checkpoint.load(ARM_START[arm], device)
+        if arm == "big" and not model.cfg.n_loop:     # big/start was saved before the loop
+            model.cfg = model.cfg.with_(n_loop=BIG_LOOP)
+        return model
     model = checkpoint.load(START, device)
     if arm == "control":
         return model

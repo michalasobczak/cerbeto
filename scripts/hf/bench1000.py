@@ -56,11 +56,12 @@ def ask(t: Talker, item: dict) -> str:
 
 torch.set_num_threads(4)
 DEV = os.environ.get("BENCH_DEVICE", "cpu")    # cuda: a training card between rounds (minutes, not an hour of a busy CPU)
+BENCH_K = int(os.environ.get("BENCH_K", "1"))  # passes of a looped core (spec 0021's students: 2)
 OUT.mkdir(exist_ok=True)
 names, res = sys.argv[1:], {}
 for name in names:
     t0 = time.time()
-    t = Talker(checkpoint.load(fetch(name), DEV), torch.device(DEV), k=1, temperature=0, max_new_tokens=40)
+    t = Talker(checkpoint.load(fetch(name), DEV), torch.device(DEV), k=BENCH_K, temperature=0, max_new_tokens=40)
     rows = []
     for item in QS:
         a = ask(t, item)

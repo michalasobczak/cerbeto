@@ -3,7 +3,8 @@
     tokens → embedding → prelude blocks → core blocks × K → coda blocks → norm → tied head
 
 The core is applied K times with shared weights; K is sampled during training and can be raised at
-inference so the student "thinks longer". All shapes live in `StudentConfig`, which growth operators
+inference so the student "thinks longer". With `n_loop` > 0 only the last `n_loop` core blocks loop (the ones
+before them run once): an unrolled deep core with a loop inside it (spec 0021). All shapes live in `StudentConfig`, which growth operators
 rewrite (see growth.py).
 """
 from dataclasses import asdict, dataclass, replace
@@ -24,6 +25,7 @@ class StudentConfig:
     n_prelude: int = 2
     n_core: int = 2
     n_coda: int = 2
+    n_loop: int = 0              # 0: the whole core loops K times; n > 0: only its last n blocks do
     max_seq_len: int = 512
     rope_theta: float = 10000.0
     norm_eps: float = 1e-6
@@ -163,8 +165,11 @@ class Student(nn.Module):
         x = self.embed(idx)
         for block in self.prelude:
             x = run(block, x)
+        once = len(self.core) - self.cfg.n_loop if self.cfg.n_loop else 0
+        for block in list(self.core)[:once]:
+            x = run(block, x)
         for _ in range(k):
-            for block in self.core:
+            for block in list(self.core)[once:]:
                 x = run(block, x)
         for block in self.coda:
             x = run(block, x)

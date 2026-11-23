@@ -6,7 +6,7 @@ vocabulary size.
     uv run --no-project --python 3.12 --with torch --with transformers --with safetensors --with tokenizers --with huggingface_hub \
         python scripts/hf/to_llama.py /tmp/web/cerbeto_hf [CHECKPOINT]
 """
-import importlib.util, json, shutil, sys
+import importlib.util, json, os, shutil, sys
 from pathlib import Path
 import torch
 from huggingface_hub import hf_hub_download
@@ -28,7 +28,9 @@ cfg = student.StudentConfig.from_dict(arch["config"])
 if "tokenizer.json" not in files:
     files["tokenizer.json"] = HERE / "tokenizer/artifacts" / ("tokenizer.json" if cfg.vocab_size == 8192 else f"tokenizer_{cfg.vocab_size}.json")
 src = student.Student(cfg).eval(); src.load_state_dict(load_file(files["model.safetensors"]))
-blocks = list(src.blocks())
+K = int(os.environ.get("LOOP_K", "2")) if cfg.n_loop else 1   # a looped core (spec 0021) is written out unrolled
+once = len(src.core) - cfg.n_loop if cfg.n_loop else len(src.core)
+blocks = [*src.prelude, *list(src.core)[:once], *list(src.core)[once:] * K, *src.coda]
 print("blocks", len(blocks), cfg)
 
 lc = LlamaConfig(vocab_size=cfg.vocab_size, hidden_size=cfg.d_model, intermediate_size=cfg.mlp_hidden, num_hidden_layers=len(blocks),
@@ -62,7 +64,7 @@ same_argmax = (a.argmax(-1) == b.argmax(-1)).float().mean().item()
 print(f"max |logit diff| {diff:.2e} · same argmax {same_argmax:.3f}")
 assert diff < 1e-3 and same_argmax == 1.0
 with torch.no_grad():
-    g1 = src.generate(ids, 40, k=1, temperature=0)[0, ids.shape[1]:].tolist()
+    g1 = src.generate(ids, 40, k=K, temperature=0)[0, ids.shape[1]:].tolist()
     g2 = dst.generate(ids, max_new_tokens=40, do_sample=False)[0, ids.shape[1]:].tolist()
 print("greedy 40 tokens identical:", g1 == g2)
 

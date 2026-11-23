@@ -18,7 +18,7 @@ b = importlib.util.module_from_spec(spec); spec.loader.exec_module(b)
 name, K, T = args[0], int(args[1]) if len(args) > 1 else 8, float(args[2]) if len(args) > 2 else 0.7
 dev = os.environ.get("BENCH_DEVICE", "cpu")
 torch.manual_seed(19)
-t = b.Talker(b.checkpoint.load(b.fetch(name), dev), torch.device(dev), k=1, temperature=0, max_new_tokens=40)
+t = b.Talker(b.checkpoint.load(b.fetch(name), dev), torch.device(dev), k=b.BENCH_K, temperature=0, max_new_tokens=40)
 t0, rows = time.time(), []
 for item in b.QS:
     t.temperature = 0

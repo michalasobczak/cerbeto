@@ -74,6 +74,7 @@ def unroll_core(model: Student, times: int, noise: float = 0.0) -> tuple[Student
     Exact copies barely move apart: after 18M tokens the 283M student's copies still had the same weight norms
     to 0.5% (2026-11-06). `noise` adds Gaussian noise of that fraction of each weight's spread to every copy after
     the first, so they start different; the Δ loss guard keeps the behaviour."""
+    assert not model.cfg.n_loop, "unroll_core unrolls a whole looped core; this one loops only its last blocks"
     new = copy.deepcopy(model)
     new.core = nn.ModuleList(copy.deepcopy(b) for _ in range(times) for b in model.core)
     if noise:

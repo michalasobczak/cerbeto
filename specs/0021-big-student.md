@@ -51,6 +51,12 @@ Two findings of 2026-11-22/23 decide this step:
 - **Growth** (`final_test.py grow big`): `facts2/final` (112.1M with the 16k vocabulary) → d 896, heads 20 → 28,
   MLP 1792 → 2432, then 8 core blocks: 2 + 24 + 2 = 28 blocks, **287,688,576 parameters**. New readers at std 0.003;
   each new block a copy of core block 8–15 with its outputs zeroed (see §5).
+- **A loop inside the core** (the user's decision, 2026-11-23; `StudentConfig.n_loop`): the 8 new blocks, the last of
+  the core, run K times with shared weights; the 2 + 16 blocks before them and the coda once. K is sampled 1–3 in
+  training and 2 in evaluation (bench1000/passk: `BENCH_K=2`; `to_llama.py` writes the loop out unrolled, `LOOP_K`).
+  Their outputs start at zero, so the start answers as v20 at any K. Compute at K = 2: 36 block passes instead of 28
+  (~+29%, ~3.2 days for 3B tokens). The loop may give more steps of thought for multi-step questions (arithmetic 6/100);
+  it does not add room for facts (looped models store about as much knowledge as their parameters allow).
 - **Arm `big`**: from `big/start`, `bil10`'s shelves with Simple Wikipedia raised to 5% three of four steps; the fourth
   conversations, a quarter of them fact pairs (all pairs, passages3's included), the rest talk2's mix; 1e-4 after 2,000
   steps, cosine to 1e-5; validation on `bil10`'s shelves. ~3B tokens, DiLoCo on three cards (~4,600 tokens/s per card).
@@ -71,6 +77,7 @@ Two findings of 2026-11-22/23 decide this step:
 | `scripts/qa/lead_passages.py` | system | created |
 | `growth.grow_depth(like=…)` | system | created |
 | `final_test.py`: `grow big`, arms `big`, `big_facts` | system | created |
+| `StudentConfig.n_loop` (loop of the last core blocks), `tests/test_loop.py` | system | created |
 | `scripts/hf/passk.py` | system | created |
 | `passages3.jsonl` (40,000; data host) | data | built |
 | `checkpoints/final/big/start` (.15) | data | built |
