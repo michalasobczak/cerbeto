@@ -46,13 +46,19 @@ def _event(op: str, before: Student, after: Student, **details) -> dict:
     return {"op": op, "params_before": before.num_params(), "params_after": after.num_params(), **details}
 
 
-def grow_depth(model: Student, std: float = 0.01) -> tuple[Student, dict]:
-    """Add one block at the end of the recurrent core; its attention and MLP outputs start at zero."""
+def grow_depth(model: Student, std: float = 0.01, like: int | None = None) -> tuple[Student, dict]:
+    """Add one block at the end of the recurrent core; its attention and MLP outputs start at zero.
+    `like`: the new block's readers and norms are a copy of core block `like` (spec 0021: a trained student's residual
+    stream is quiet, RMS ~0.015, and its blocks read it through norm gains ~0.35; a fresh block with gains 1 and random
+    readers has ~150x larger hidden units, so its first optimizer steps write ~100x too much and the loss jumps)."""
     new = copy.deepcopy(model)
     device = next(model.parameters()).device
     block = Block(model.cfg).to(device)
-    for lin in (block.attn.q, block.attn.k, block.attn.v, block.mlp.gate, block.mlp.up):
-        nn.init.normal_(lin.weight, std=model.cfg.init_std)
+    if like is not None:
+        block.load_state_dict(model.core[like].state_dict())
+    else:
+        for lin in (block.attn.q, block.attn.k, block.attn.v, block.mlp.gate, block.mlp.up):
+            nn.init.normal_(lin.weight, std=model.cfg.init_std)
     nn.init.zeros_(block.attn.o.weight)
     nn.init.zeros_(block.mlp.down.weight)
     new.core.append(block)

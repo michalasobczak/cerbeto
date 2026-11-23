@@ -191,6 +191,28 @@ BY_TOKENS.add("facts2")
 for _d in (ARM_START, ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_LR, ARM_FACTS, ARM_PAIR_STEPS):
     _d["facts3"] = _d["facts2"]
 BY_TOKENS.add("facts3")
+# spec 0021 (`big`, 2026-11-23): v20 (facts2/final) at its ceiling, knowledge 120 of 280 however it is tuned, pass@8 156:
+# a larger student. `grow big` widens facts2/final 640 -> 896 (heads 20 -> 28, MLP 1792 -> 2432) and adds 8 core blocks
+# with zero output, 20 -> 28 blocks, ~288M parameters, answering as v20 at the start (checkpoints/final/big/start).
+# The run reads bil10's shelves with Simple Wikipedia raised (the shelf of the facts, 0.2% in bil10) three of four steps,
+# the fourth conversations, a quarter of them the fact pairs from the start; 1e-4 after 2,000 steps, cosine to 1e-5.
+# Then `big_facts`: facts2's tuning of the result on all pairs.
+BIG_START = CKPT / "big" / "start"
+ARM_START["big"] = BIG_START
+ARM_K["big"] = ARM_K["bil10"]
+ARM_SHELF_MIX["big"] = {**{s: v * 0.95 / (1 - 0.002) for s, v in ARM_SHELF_MIX["bil10"].items() if s != "s2_wiki_plus"},
+                        "s2_wiki_plus": 0.05}
+ARM_VALID["big"] = ARM_VALID["bil10"]
+ARM_TURNS["big"] = ARM_TURNS["facts"]
+ARM_PAIR_MIX["big"] = {"facts": 0.25, **{k: v * 0.75 for k, v in ARM_PAIR_MIX["talk2"].items()}}
+ARM_FACTS["big"] = ARM_FACTS["facts"]
+ARM_PAIR_STEPS["big"] = (1, 4)
+ARM_LR["big"] = (1e-4, 2000)
+BY_TOKENS.add("big")
+for _d in (ARM_K, ARM_SHELF_MIX, ARM_VALID, ARM_TURNS, ARM_PAIR_MIX, ARM_LR, ARM_FACTS, ARM_PAIR_STEPS):
+    _d["big_facts"] = _d["facts2"]
+ARM_START["big_facts"] = CKPT / "big" / "final"
+BY_TOKENS.add("big_facts")
 MAX_PASSES = 4
 
 
@@ -456,6 +478,30 @@ def start_mid(model, probe, log):
         except growth.GrowthRejected:
             continue
     return model
+
+
+def grow_big(device) -> None:
+    """Spec 0021: facts2/final (v20) grown function-preservingly to ~288M, saved as checkpoints/final/big/start.
+    d 640 -> 896 with heads 20 -> 28 and MLP 1792 -> 2432, then 8 core blocks with zero output: 20 -> 28 blocks.
+    Every step is checked on a probe of shelf windows (|Δ loss| < 0.01). The new parts must be as quiet as the old ones
+    (the first try, with fresh blocks and readers at 0.01, jumped from 3.08 to 4.5 in 10 steps at a rate of 5e-7): new
+    readers at 0.003, and each new block a copy of one of the last eight core blocks with its outputs zeroed."""
+    model = checkpoint.load(CKPT / "facts2" / "final", device)
+    probe = ShelfStream("s4_edu_12", "valid", CFG["seq_len"], vocab=model.cfg.vocab_size).batch(8, np.random.default_rng(1), device)
+    log = RUN / "big" / "growth_log.jsonl"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    kw = dict(k=1, max_params=300_000_000, max_delta_loss=0.01, log_path=log, reason="big: ~290M from v20", std=0.003)
+    torch.manual_seed(21)
+    with torch.no_grad():
+        model = growth.apply(model, "grow_model_dim", probe, new_d=896, **kw)
+        model = growth.apply(model, "grow_width", probe, extra_heads=8, extra_mlp=640, **kw)
+        for j in range(8):
+            model = growth.apply(model, "grow_depth", probe, like=8 + j, **kw)
+    for line in log.read_text().splitlines()[-10:]:
+        e = json.loads(line)
+        print(e["op"], e.get("params_after", ""), "Δ loss", e.get("delta_loss"), "ok" if e.get("accepted") else e.get("error"))
+    checkpoint.save(model, BIG_START, parent=CKPT / "facts2" / "final", meta={"grow": "spec 0021"})
+    print("big/start:", f"{model.num_params():,}", "parameters ->", BIG_START)
 
 
 def start_model(arm: str, device):
@@ -791,8 +837,8 @@ def add_probes(name: str) -> dict:
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("what", choices=["train", "eval", "probes"])
-    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest | bil10 | talk10 | talk10b | bil20 | facts | facts2 | facts3 (eval also: v0017)")
+    p.add_argument("what", choices=["train", "eval", "probes", "grow"])
+    p.add_argument("arm", help="control | grown | deep | mid | bil | talk | talk2 | v16k | vext | bil2 | honest | bil10 | talk10 | talk10b | bil20 | facts | facts2 | facts3 | big | big_facts (grow: big; eval also: v0017)")
     p.add_argument("--tokens", type=float, default=80e6)
     p.add_argument("--fp32", action="store_true", help="no bf16 mixed precision")
     p.add_argument("--name", help="train: run folder (default the arm), e.g. a baseline beside a DiLoCo run")
@@ -805,7 +851,9 @@ def main() -> None:
         ARM_START[a.arm] = a.start.resolve()
     if a.facts:
         ARM_FACTS[a.arm] = a.facts.resolve()
-    if a.what == "train":
+    if a.what == "grow":
+        grow_big(pick_device())
+    elif a.what == "train":
         train(a.arm, a.tokens, bf16=not a.fp32, name=a.name, recompute=not a.no_recompute, max_temp=a.max_temp)
     elif a.what == "probes":
         add_probes(a.arm)
