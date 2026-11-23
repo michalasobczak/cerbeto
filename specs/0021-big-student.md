@@ -103,3 +103,8 @@ Two findings of 2026-11-22/23 decide this step:
   3.78 at 16M (the warm-up's top) → 3.55 at 114M → 3.53 at 168M, falling ~0.02 per 50M, so ~3.48 at 300M against the
   gate's 3.33. Stopped at 168M (kept as `runs/final/big_1e4`, `checkpoints/final/big_1e4`); the same run from
   `big/start` at a 3e-5 peak, cosine to 3e-6.
+- **Correction (2026-11-23 evening): the 3.08 above was the growth probe's windows, not the validator's.** On the
+  validator's windows `big/start` scores edu 12 **3.415** (speech 3.215, stories 1.468, edu plus 3.468, textbooks 2.436,
+  dialogue 1.543, edu 8 3.444, s4 textbooks 2.470, s4 stories 2.468). So the 1e-4 run's 3.78 was a real jump (+0.37)
+  that came back to +0.12 by 168M, and the 3e-5 run at 222M is within −0.015…+0.037 of the start on every shelf:
+  **G2 passed**. K hardly matters yet: `big/latest` at 168M gives edu 12 3.3561 / 3.3558 / 3.3562 at K = 1 / 2 / 3.
