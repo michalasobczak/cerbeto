@@ -2,11 +2,11 @@
 
 *Cerbeto* (Esperanto: *cerbo* "brain" + *-et-* diminutive) — "little brain".
 
-A small English language model trained from random weights: 106.8M parameters, raised like a child (nursery → preschool) and then fed
+A small English language model trained from random weights: 112.1M parameters (a 287.7M one in training), raised like a child (nursery → preschool) and then fed
 more and more text. Try it in the browser: **[chat on Hugging Face](https://huggingface.co/spaces/michalasobczak/cerbeto-chat)** (pick a
 model above the chat) · weights: **[michalasobczak/cerbeto](https://huggingface.co/michalasobczak/cerbeto)**.
 
-## Checkpoints (2026-11-20)
+## Checkpoints (2026-11-23)
 
 | # | Spec | Checkpoint | Date | Tokens: run / in all | What it is | In the chat | Results |
 |---|---|---|---|---|---|---|---|
@@ -30,6 +30,8 @@ model above the chat) · weights: **[michalasobczak/cerbeto](https://huggingface
 | 18 | [0018](specs/0018-twenty-billion.md) | `final/bil20` | 11-20 → 11-21 | 2.16B / 14.6B | twenty billion more on `bil10`'s shelves ([0018](specs/0018-twenty-billion.md)) | – | **cancelled** at 2.16B: more text did not move the answers |
 | 19 | [0020](specs/0020-fact-questions.md) | `final/facts` | 11-21 | 50M / 12.5B | tuning of `bil10` on 145k fact questions from the shelves | – | bench1000 **525**, knowledge 117/280 (from 69), but shelf validation +0.11–0.22: forgot |
 | 20 | [0020](specs/0020-fact-questions.md) | **`v20-12538M`** (`final/facts2`) | 11-22 | 50M / 12.5B | the same with every other step on the shelves (less forgetting) | ✅ default | bench1000 **547**, knowledge 120/280, shelf validation +0.04–0.07: G3 missed by 0.02 |
+| 21 | [0021](specs/0021-big-student.md) | `final/facts3_r1` … `r5` | 11-22 → 11-23 | tuning / 12.5B | `facts2`'s recipe on more pairs (160k → 203k), then continued tuning from r3 | – | bench1000 530–548, knowledge 106–122: more pairs of the same kind do not move knowledge |
+| 22 | [0021](specs/0021-big-student.md) | `final/big` | 11-23 → | 3B / 15.5B | v20 grown to 287.7M (2 + 24 + 2 blocks, the last 8 core blocks a loop run 1–3 times), shelves + 397k fact pairs incl. basic facts from Simple Wikipedia | – | **training** (~3.2 days); then `big_facts` tuning and bench1000 |
 
 **Tokens: run / in all** — tokens read in that run / in the model's whole life. **Chat** — 160 sampled questions, counted right by a
 pattern (`scripts/hf/spot_check.py`). **Bench** — 100 questions asked once, greedy (`scripts/hf/bench.py`). Validation is compared in bits
@@ -63,6 +65,7 @@ from fact tables, none of them in the tuning data; between two models a differen
 | 17 | `talk10b` | 12.6B | **494** |
 | 19 | `facts` | 12.5B | **525** |
 | 20 | `v20-12538M` (`facts2`) | 12.5B | **547** |
+| 21 | `facts3_r1` … `r5` | 12.5B | **541, 539, 548, 530, 537** |
 
 - The one big step is conversation tuning (v5 → v6, +172); everything after it is within ~20 points, about the size of chance.
 - Ten billion tokens of school text raised completing (71 → 79–83) and yes/no (118 → 124), but not knowledge asked as a
@@ -70,15 +73,20 @@ from fact tables, none of them in the tuning data; between two models a differen
 - Arithmetic stays at 3–9 of 100 in every model.
 - Fact questions ([0020](specs/0020-fact-questions.md)) are the second big step: knowledge 69 → 117–120 of 280,
   `facts2` 547 overall (+44 on `bil10/final`), published as `v20-12538M` (2026-11-22) though it misses G3 by 0.02.
+- More fact pairs of the same kind (`facts3`, 160k → 203k) leave knowledge at 106–122 (2026-11-23; r1–r4 on the CPU,
+  r5 on a GPU, where v20 scores 537, 10 below the CPU). pass@8 of v20 is 661 (knowledge 156): little hidden knowledge,
+  and 84 of the 120 knowledge questions it never answers have no pair with their answer in the data
+  ([0021](specs/0021-big-student.md)).
 
 **Next:**
 1. ~~`talk10b` as a release~~: failed [0017](specs/0017-talk10.md) G1 (shelves +0.03–0.06); `bil10` was published as `v15-12488M`.
 2. ~~More data at the same size~~: `bil20` ([0018](specs/0018-twenty-billion.md)) cancelled at 2.16B of 20B (2026-11-21).
    **Instead, fact questions** ([0020](specs/0020-fact-questions.md)): a teacher writes hundreds of thousands of question
    → answer pairs from the shelf passages the student has read, each checked twice; then tuning of `bil10/final` on them,
-   measured on the 1000-question benchmark. Done: `v20-12538M` is the chat's default (2026-11-22); more pairs are being generated.
-3. **More parameters only if knowledge stays flat:** a ~300M student *grown* from this one (not from scratch), the most
-   that fits our training cards; the browser chat still fits (~350 MB in int8).
+   measured on the 1000-question benchmark. Done: `v20-12538M` is the chat's default (2026-11-22); more pairs did not help (row 21).
+3. **Now: a larger student with basic facts** ([0021](specs/0021-big-student.md)): v20 grown to 287.7M, the last 8 core
+   blocks a loop, 3B tokens of the shelves with 397k fact pairs (basic facts from the openings of the most mentioned Simple
+   Wikipedia articles among them), then facts2's tuning. Gate: bench1000 and knowledge each +25 on v20.
 4. Honest answers ([0013](specs/0013-honest-answers.md)).
 
 ## More

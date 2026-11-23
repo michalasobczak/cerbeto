@@ -24,6 +24,6 @@ One file per change, in Rondo's sections (TL;DR, Abstract, Objective, … Contro
 | [0018](0018-twenty-billion.md) twenty billion more tokens on the same shelves | cancelled (2026-11-21) at 2.16B of 20B: more text did not move the answers; the cards go to 0020 |
 | [0019](0019-voice-chat-panel.md) voice chat panel: the admin talks to Cerbeto (Agentaro voice mode + `cerbeto serve`) | implemented (2026-11-21): `cerbeto serve` + the panel at 127.0.0.1:8766; E2E with voice pending |
 | [0020](0020-fact-questions.md) fact questions from the shelves, then tuning | released (2026-11-22) as `v20-12538M`: bench1000 547, knowledge 120/280 |
-| [0021](0021-big-student.md) a larger student (~290M) grown from v20, with basic facts in its data | in progress (2026-11-23): data generating, growth checked |
+| [0021](0021-big-student.md) a larger student (~290M) grown from v20, with basic facts in its data | in progress (2026-11-23): `big` training since 10:42 UTC (3B tokens, loop in the core) |
 
 Source document of the MVP: [source-mvp-specification.md](source-mvp-specification.md).

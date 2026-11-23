@@ -1,6 +1,6 @@
 # 0021 — A larger student (~290M) grown from v20, with basic facts in its data
 
-Status: in progress (2026-11-23): data generating, growth checked · Depends on: 0016, 0020 · Unblocks: a release
+Status: in progress (2026-11-23): `big` training · Depends on: 0016, 0020 · Unblocks: a release
 
 ## 1. TL;DR
 v20 (`facts2`) is at its ceiling: more fact pairs and continued tuning leave knowledge at ~120 of 280. pass@8 shows

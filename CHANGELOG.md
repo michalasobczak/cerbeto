@@ -2,6 +2,21 @@
 
 What has actually been delivered, by date (newest first). Intent of changes: `specs/`. Proof: tests.
 
+## 2026-11-23 — a larger student grown from v20, with a loop in its core
+
+[0021](specs/0021-big-student.md): `facts3` (more fact pairs, 160k → 203k, and continued tuning) left knowledge at
+106–122 of 280; pass@8 of v20 (661, knowledge 156) and a coverage check (84 of the 120 never-answered knowledge
+questions have no pair with their answer) point to missing data, not a missing form.
+
+- `scripts/qa/lead_passages.py`: 40,000 basic-fact passages, the openings of the Simple Wikipedia articles mentioned most
+  by others; pairs generated from them and merged (397,527 pairs in all).
+- `final_test.py grow big`: v20 → 287.7M function-preservingly (Δ loss ≤ 2.4e-7); new blocks copy core blocks 8–15 with
+  outputs zeroed and new readers at std 0.003 (fresh blocks made the loss jump from 3.08 to 4.5).
+- `StudentConfig.n_loop`: only the last core blocks loop (`big`: 8 blocks, K 1–3 in training, 2 in evaluation);
+  `bench1000.py`/`passk.py` take `BENCH_K`, `to_llama.py` writes the loop out unrolled.
+- `scripts/hf/passk.py`: pass@1 against pass@K on bench1000.
+- DiLoCo run `big` started (3B tokens, three cards, ~10k tokens/s); the panel has a tab for it.
+
 ## 2026-11-22 — v20: tuned on fact questions
 
 [0020](specs/0020-fact-questions.md): `bil10/final` tuned on 145k teacher-written fact questions from its own shelves.
