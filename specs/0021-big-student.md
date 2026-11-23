@@ -96,3 +96,6 @@ Two findings of 2026-11-22/23 decide this step:
 ## 6. Results
 - **Data (2026-11-23):** passages3 built (40,000); generation on all four cards from 07:52 UTC, ~15k pairs in the first
   ~2.5 h on three cards.
+- **Run started (2026-11-23 10:42 UTC):** three of four passages3 shards done at 10:33 (~10.7k pairs each), all pairs
+  merged (397,527 in `qa_facts.jsonl`; 824 dropped near bench1000), DiLoCo `big` with the loop at 239178e: ~3,600
+  tokens/s per card (v20-sized blocks without the loop: ~4,600), 8.6 GB of 12, so ~3.2 days for 3B tokens.
