@@ -92,7 +92,7 @@ from fact tables, none of them in the tuning data; between two models a differen
 4. Honest answers ([0013](specs/0013-honest-answers.md)).
 
 ## More
-- [docs/cerbeto.gif](docs/cerbeto.gif) — an animated overview: where it started, where it is, the 10B plan for `big`.
+- [docs/cerbeto.gif](docs/cerbeto.gif) — an animated overview: why, what was learned, what v22 could bring.
 - [CHANGELOG.md](CHANGELOG.md) — what was done and measured, by date (every phase in detail).
 - [specs/](specs/README.md) — one specification per change, with status.
 - [scripts/hf/README.md](scripts/hf/README.md) — publishing to Hugging Face; [MANIFESTO.md](MANIFESTO.md) — implementation principles.
