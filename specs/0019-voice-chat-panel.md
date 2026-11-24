@@ -92,7 +92,7 @@ Rails panel of 0006, changes to training or to the student.
 | `brain/cerbeto/cli.py` — subcommand `serve` | system | done |
 | `brain/tests/test_serve.py` — contract tests on a scripted talker and a tiny student (as `test_talk.py`) | test | done |
 | `brain/tests/test_voice.py` — speech programs replaced by scripts | test | done |
-| `docs/voice-panel.md` — how to start, models to install, API | doc | done |
+| `docs/voice-panel.md` — how to start, models to install, API | doc | removed (2026-11-24) |
 | Agentaro: `config/routes.rb`, `CerbetoController`, `app/models/cerbeto_client.rb`, view `cerbeto/show`, state labels in `chat.js` | system (other repo) | not needed for the first version (panel in Cerbeto) |
 | Agentaro: `whisper-cli` + weights, Piper + an English ONNX voice, paths in `config/application.rb` | environment | to confirm on the admin's machine |
 | Port 8766 on 127.0.0.1 (next to the panel's 8765; 8700 stays reserved for 0006) | system | to create |
@@ -184,7 +184,7 @@ it again brings the panel back to `ready` without a reload.
 - **Model through the server (v6-1032M, CPU, 4 threads, k = 4, T = 0), 10 questions:** load 1.35 s; reply median
   **0.46 s**, 0.26–0.67 s for 7–13 tokens, 2.1 s once (42 tokens: an unclosed thought, empty answer — shown as
   "(no answer)" with the thought dimmed). "What is the opposite of hot?" → "The opposite of hot is cold." in 0.36 s.
-- **Step 4 (2026-11-21), [report](../docs/voice-panel-e2e-report.md):** `scripts/voice_e2e.py` — recorded questions
+- **Step 4 (2026-11-21):** `scripts/voice_e2e.py` — recorded questions
   (another Piper voice, down-sampled like the panel's `wav()`) → real handler → local Whisper → v6 → local Piper, no
   port, CPU only. **G3 server side passed:** 9 of 10 transcripts exact (the 10th: "two plus three" written "2 plus
   3"), a 17 s utterance exact, silence → "", 3 turns with memory, reset forgets, 409 at once while busy.

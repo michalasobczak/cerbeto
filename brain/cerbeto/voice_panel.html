@@ -117,7 +117,7 @@ button{font:inherit;color:inherit;cursor:pointer}button:disabled{cursor:not-allo
     $("offline").hidden = next !== "offline";
     const free = next === "ready" || next === "error";
     micButton.disabled = !(free || next === "listening") || !(health && health.voice && health.voice.listening);
-    micButton.title = health && health.voice && !health.voice.listening ? "Speech recognition is not installed (see docs/voice-panel.md)"
+    micButton.title = health && health.voice && !health.voice.listening ? "Speech recognition is not installed (see specs/0019-voice-chat-panel.md)"
       : next === "listening" ? "Cancel listening" : "Speak (Space)";
     $("send").disabled = !free;
     $("done").hidden = next !== "listening";

@@ -6,6 +6,8 @@ A small English language model trained from random weights: 112.1M parameters (a
 more and more text. Try it in the browser: **[chat on Hugging Face](https://huggingface.co/spaces/michalasobczak/cerbeto-chat)** (pick a
 model above the chat) · weights: **[michalasobczak/cerbeto](https://huggingface.co/michalasobczak/cerbeto)**.
 
+![Cerbeto: where it started, where it is, the plan for 10B tokens on the 287.7M student](docs/cerbeto.gif)
+
 ## Checkpoints (2026-11-23)
 
 | # | Spec | Checkpoint | Date | Tokens: run / in all | What it is | In the chat | Results |
@@ -90,11 +92,9 @@ from fact tables, none of them in the tuning data; between two models a differen
 4. Honest answers ([0013](specs/0013-honest-answers.md)).
 
 ## More
-- [Cerbeto model analysis and MVP plan (Polish)](docs/analiza-modelu-cerbeto.md) — architecture options, training estimates, and evaluation criteria.
-- [docs/voice-panel.md](docs/voice-panel.md) — the voice panel: talk to the student (local Whisper and Piper, as in Agentaro).
+- [docs/cerbeto.gif](docs/cerbeto.gif) — an animated overview: where it started, where it is, the 10B plan for `big`.
 - [CHANGELOG.md](CHANGELOG.md) — what was done and measured, by date (every phase in detail).
 - [specs/](specs/README.md) — one specification per change, with status.
-- [docs/background.md](docs/background.md) — the school path (teacher, day → sleep → exam), hypotheses, datasets, commands, related work.
 - [scripts/hf/README.md](scripts/hf/README.md) — publishing to Hugging Face; [MANIFESTO.md](MANIFESTO.md) — implementation principles.
 
 **Methodology:** [Rondo](https://workwithrondo.com) — CDD (Context-Driven Development): README the current state, `specs/` the intent of

@@ -2,6 +2,12 @@
 
 What has actually been delivered, by date (newest first). Intent of changes: `specs/`. Proof: tests.
 
+## 2026-11-24 — docs trimmed to Rondo artefacts
+
+- `docs/*.md` removed (the Polish analysis notes: architecture review, model size and budget, hardware roles, data strategy,
+  evaluation protocol, the model analysis, the voice-panel e2e report; and `background.md`, `voice-panel.md`). What stays:
+  README, CHANGELOG, MANIFESTO, `specs/`, `docs/img/` and `docs/cerbeto.gif`, an animated overview (start → now → the 10B plan).
+
 ## 2026-11-23 — a larger student grown from v20, with a loop in its core
 
 [0021](specs/0021-big-student.md): `facts3` (more fact pairs, 160k → 203k, and continued tuning) left knowledge at
@@ -31,7 +37,7 @@ default (v20, v15, v6). `facts` (3 of 4 steps on questions) reached 525 / 117 bu
 [0019](specs/0019-voice-chat-panel.md): **`uv run cerbeto serve`** loads a student once and serves, on `127.0.0.1:8766`
 only, a small API (`/v1/health`, `/v1/reply`, `/v1/reset`) and a voice panel. The admin speaks, local Whisper writes it
 down, the student answers, the answer appears as text and local Piper reads it aloud at once. How to start it and what
-to install: [docs/voice-panel.md](docs/voice-panel.md).
+to install: `docs/voice-panel.md` (removed 2026-11-24; see [0019](specs/0019-voice-chat-panel.md)).
 
 - **Reused from Agentaro's voice mode:** the same `whisper-cli`, Whisper weights, Piper and voices (found in
   `../agentaro/storage/voice`, or set by Agentaro's own environment variables), the same Whisper arguments and the
@@ -49,7 +55,7 @@ to install: [docs/voice-panel.md](docs/voice-panel.md).
   ran 60 tokens. v6 on CPU: **0.26–0.67 s** per short answer (median 0.46 s over 10 questions) instead of ~3.4 s.
 - Tests: `test_serve.py` (contract, 400 / 409 / 500, histories apart, loopback only), `test_voice.py` (Whisper and
   Piper replaced by scripts).
-- **End-to-end check (step 4, [report](docs/voice-panel-e2e-report.md)):** `scripts/voice_e2e.py` runs recorded
+- **End-to-end check (step 4):** `scripts/voice_e2e.py` runs recorded
   questions through local Whisper → v6 → local Piper via the real handler: 9/10 transcripts exact, end of speech →
   first sound median **2.38 s** (max 2.59 s) on CPU, nothing leaves the machine. Fixed on the way: Whisper falls back
   to the CPU (`-ng`) when Metal aborts it, Whisper's own speed (audio window sized to the clip, ~7 s → ~1.6 s), ONNX
@@ -75,7 +81,7 @@ The grade-12 limit kept much less of Cosmopedia than estimated, so the shares fo
 - Panel: tab *H:10Bt run*; progress by tokens for `bil2-avg` and `bil10`.
 - Chat Space: a model picker (`models.json`); the Space keeps every model: v6 (default) and the preview `bil2-avg`; `scripts/final/bil10_previews.sh` adds a `bil10` preview every 2B tokens. `to_llama.py` converts a local checkpoint; the 16k models export to ONNX int8 with the same greedy output as PyTorch.
 - `scripts/hf/bench.py`: 100 questions asked once, greedy. v6 **62/100**, `bil2-avg` **72/100** (knowledge 16 → 19 of 30, completing 11 → 16 of 20, yes/no 10 → 12 of 15; arithmetic 0 of 10 both).
-- README reduced to the table of checkpoints; the phases moved here, the school path and related work to [docs/background.md](docs/background.md), the specification index to [specs/README.md](specs/README.md).
+- README reduced to the table of checkpoints; the phases moved here, the school path and related work to `docs/background.md` (removed 2026-11-24), the specification index to [specs/README.md](specs/README.md).
 
 ## 2026-11-12 → 11-15 — a second billion tokens; DiLoCo
 
