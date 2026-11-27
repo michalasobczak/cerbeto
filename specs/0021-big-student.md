@@ -113,3 +113,18 @@ Two findings of 2026-11-22/23 decide this step:
   passes over the pairs). The cosine now spans 10B; the coordinator resumed from `latest` and the workers rejoined with
   fresh optimizers, so a worker that joins a run under way ramps its rate over its first 200 steps (`REWARM`). Weights
   every hour to .15 (`checkpoints/final/big/hourly/`, the last 24 kept).
+- **Probe at 3.53B tokens (2026-11-27, the user asked whether to finish or give the cards to other work):** big_facts'
+  recipe shortened to 20M tokens (`runs/big_probe2.sh`, worker 2's card; the run went on with two workers for ~3.5 h),
+  then bench1000 at K = 2 on the same GPU as v20's 547:
+
+  | part | v20 (`facts2`) | big at 3.53B + 20M facts |
+  |---|---|---|
+  | yes/no | 122 | 119 |
+  | preschool | 117 | 130 |
+  | knowledge | 120 | **155** |
+  | arithmetic | 6 | 13 |
+  | complete | 80 | 90 |
+  | memory | 102 | 105 |
+  | **all** | **547** | **612** |
+
+  G3 (all ≥ v20 + 25, knowledge ≥ v20 + 25) already passes at a third of the run (+65, +35). The run goes on to 10B.
